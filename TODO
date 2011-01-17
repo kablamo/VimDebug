@@ -1,0 +1,28 @@
+TODO
+(key: + done, - not done)
+
+- test and fix edge cases: perl not found, ruby not found, compiler error, etc.
+- behavior if buffer was edited?
+- when a runtime error or compile time error occurs, jump to the bad line
+- add an optional stack frame window?
+- add watchpoints
+
+greater os support
+- windows support
+- does vimDebug work on cygwin?  if not, make it happen.
+- does vimDebug work on solaris? if not, make it happen. (need a box to test on)
+- etc.
+
+more support for different debuggers
+- gdb
+- should we borrow emacs java debugger code?  jdb is ok, but not great.  sun
+  wrote it more as an example of how to use the JDPA (java debugger
+  programmer's api), than for people to actually use.  should we implement our
+  own java debugger like the emacs folks did with their emacs jde
+  (http://jdee.sunsite.dk/)?  Sun's debugger api to make writing our own java
+  debugger easy-ish:
+  http://java.sun.com/j2se/1.4.1/docs/guide/jpda/architecture.html.
+- dbx support (SUN's C debugger)
+- etc.
+
+- switch from IPC::Run to IPC::Cmd?

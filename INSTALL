@@ -1,0 +1,65 @@
+REQUIREMENTS
+
+perl 5.6.0+
+IPC::Run (perl module)
+vim with +signs compiled in.
+
+
+INSTALLATION
+
+To install this module, run the following commands:
+
+    perl Makefile.PL
+    make
+    make test
+    make install
+    cp vim/*.vim yourVimPluginDir
+
+Also make sure that the debuggers you intend to use are in your path so that
+VimDebug can invoke them.
+
+
+# the following is deprecated.  don't read:
+DEBUGGER SPECIFIC INSTALL NOTES
+
+pdb (python debugger)
+
+   you need to set $dbgrPath in Pdb.pm if your pdb.py isn't located in
+   /usr/lib/python2.2
+
+
+jdb (java debugger)
+
+   if the code you are editing is in more than one directory, you are going
+   to want to do the following stuff:
+
+      - you will probably want to specify your classpath in the environment
+        variable CLASSPATH.  you could however pass it on the command line
+        using <Leader>s (see the README file).
+
+      - you will probably want to specify a source path so jdb knows where to
+        find your source code.  if you specify these directories in a ":"
+        seperated list (";" seperated list if you are on windows) in the
+        SOURCEPATH environment variable, vimDebug always uses the option
+        -sourcepath $SOURCEPATH (or -sourcepath %SOURCEPATH% on windows)
+        whenever it invokes jdb.
+
+      - in your vimrc you need to add your SOURCEPATH to the path.  so,
+        assuming you have a SOURCEPATH environment variable setup already,
+        you could just add this line to your .vimrc:
+           set path+=$SOURCEPATH
+
+        (technical babble: the reason this is necessary is that, for example,
+        when stepping, jdb doesn't report the current line number and a file
+        name.  instead it gives back a class name and the line number indicates
+        how many lines from the beginning of that class.  so when vimDebug
+        tries to highlight the next line code when you are stepping, it takes
+        the class name jdb gave, adds a .java and searches the path for
+        a file like that (:help find).  this means that debugging is probably
+        foobared if you are using nested classes or more than one class per
+        file.  suggestions?)
+
+
+
+
+

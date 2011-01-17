@@ -1,0 +1,204 @@
+#!/usr/bin/perl -w
+#
+# vddTester
+# Vim Debugger Daemon Tester
+#
+#
+# (c) eric johnson 2002-3020
+# distribution under the GPL
+#
+# email: vimDebug at iijo dot org
+# http://iijo.org
+#
+# $Id: vddTester 88 2006-02-09 05:04:36Z eric $
+
+use strict;
+use Cwd;
+use File::Basename;
+use Getopt::Long;
+use Term::ANSIColor;
+use Term::ReadLine;
+use vars qw(
+   $unix $sessionId $debuggerName $sourcePath @commandLineOptions $help_option
+   $ctlTOvdd $ctlFROMvdd $dbgTOvdd $dbgFROMvdd $sigIntCaught $quitting $term $PID $prevCommand
+);
+
+$unix         = 1; # valid values are 1 and 0
+$sigIntCaught = 0;
+$quitting     = 0;
+
+init();
+main();
+
+
+sub getCommandLineOptions {
+
+   # call GetOptions to parse the command line
+   Getopt::Long::Configure(qw(permute));
+   $Getopt::Long::ignorecase = 0;
+   usage(1) unless GetOptions(
+         "help|h|?"      => \$help_option
+   );
+
+   usage() if $help_option;
+   usage() unless(scalar(@ARGV) >= 2);
+
+   $sessionId          = int(rand(99999));
+   $debuggerName       = shift @ARGV or die; # which debugger to use
+   $sourcePath         = shift @ARGV or die; # path to source you want to debug
+   @commandLineOptions = @ARGV;              # command line options of program
+}
+
+
+sub usage {
+   print "
+usage: vddTester [options] DEBUGGER SOURCEPATH [debuggerCommandLineOptions]
+
+a test shell for the vim debugger daemon.
+
+";
+
+   exit(0);
+}
+
+
+sub initializeReadLine {
+
+   $term = new Term::ReadLine('sanity');
+   $term->ornaments(0);
+
+   if($term->ReadLine eq 'Term::ReadLine::Gnu') {
+      # Term::ReadLine::Gnu specific setup
+   }
+#   elsif($term->ReadLine eq 'Term::ReadLine::Perl') {
+#      # Term::ReadLine::Perl specific setup
+#      $termPerl = 1;
+#   }
+
+   if ($term->ReadLine eq 'Term::ReadLine::Stub') {
+      warn("neither Term::ReadLine::Gnu or Term::ReadLine::Perl are installed.\n"
+        . "please install from CPAN for advanced functionality.  until then "
+        . "sanity will run\ncrippled. (like possibly no command history "
+        . "or line editing...\n");
+   }
+}
+
+sub init {
+   $| = 1;
+
+   getCommandLineOptions();
+
+   $ctlTOvdd   = ".ctl.vimTOvdd." . $sessionId; # control fifo; write to vdd
+   $ctlFROMvdd = ".ctl.vddTOvim."   . $sessionId; # control fifo; read from vim
+   $dbgTOvdd   = ".dbg.vimTOvdd." . $sessionId; # debug   fifo; write to vdd
+   $dbgFROMvdd = ".dbg.vddTOvim."   . $sessionId; # debug   fifo; read from vim
+
+
+   unlink $ctlFROMvdd;
+   unlink $ctlTOvdd;
+   unlink $dbgFROMvdd;
+   unlink $dbgTOvdd;
+
+   initializeReadLine();
+}
+
+
+
+sub main {
+   spawnProcess("vdd $sessionId $debuggerName '$sourcePath'");
+   readFromVDD();
+
+   # loop until request to exit
+   while(1) {
+      print color("green"), ":";
+      my $command = $term->readline("vdd:$debuggerName> ");
+         $command = "quit" unless defined $command;
+
+      for ($command)   {
+         /^n$/           and $command = "next";
+         /^s$/           and $command = "step";
+         /^c$/           and $command = "cont";
+         /^q$/           and $command = "quit";
+         /^r$/           and $command = "restart";
+         /^b (.+)$/      and $command = "break:$1:$sourcePath";
+         /^B (.+)$/      and $command = "clear:$1:$sourcePath";
+         /^l (.+)$/      and $command = "clearAll";
+         /^p (.+)$/      and $command = "printExpression:$1";
+         /^d (.+)$/      and $command = "command:$1";
+      }
+
+      sendToVDD($command);
+      exit if $command eq "quit";
+
+      readFromVDD();
+   }
+}
+
+sub makeNamedPipe {
+   my $fifo = shift or die "gotta pass a fifo to this function";
+
+   # if pipe is already there, die
+   if (-p $fifo) {
+      print "vddTester: $fifo already exists.  perhaps another instance of" .
+            " vimDebug is running?\nif not, just delete $fifo.\n";
+      exit();
+   }
+
+   #if( unix() )   {
+      if(    system( 'mkfifo', $fifo )
+          && system( 'mknod',  $fifo, 'p' ) )   {
+         die "is mkfifo or mknod in your path?\n";
+      }
+   #}
+   #elsif( dos() )   {
+   #   die "not yet implemented for a microsoft operating system\n";
+   #}
+}
+
+
+# blocks until there is something to read
+sub readFromVDD {
+   sleep 1 until -r $ctlFROMvdd;
+
+   # read from control fifo
+print ">>vddTester opening control fifo to read<<\n";
+   open(ctlFROMvdd, "< $ctlFROMvdd") or die;
+   my @msg = <ctlFROMvdd>;
+   print color("blue"), "received '", @msg, "'", color("white"), "\n";
+   close(ctlFROMvdd);
+print ">>vddTester read from control fifo<<\n";
+
+   # read from debug fifo
+print ">>vddTester opening debug fifo to read<<\n";
+   open(dbgFROMvdd, "< $dbgFROMvdd") or die;
+   @msg = <dbgFROMvdd>;
+   print color("blue"), "received '", @msg, "'", color("white"), "\n";
+   close(dbgFROMvdd);
+print ">>vddTester read from debug fifo<<\n";
+}
+
+
+# blocks until someone reads
+# obviously this stuff isn't going to work on windows.  for windows we
+# should use gvim --remote stuff.  i don't want to use gvim on unix because
+# then you can't debug over a telnet session.
+sub sendToVDD {
+   my $stuffToSend = (shift or $prevCommand);
+
+   print color("blue"), "sending  '$stuffToSend'", color("white"), "\n";
+   open(ctlTOvdd, "> $ctlTOvdd") or die;  # blocks until there is a reader
+   print ctlTOvdd $stuffToSend;
+   close(ctlTOvdd);
+
+   $prevCommand = $stuffToSend;
+}
+
+sub spawnProcess {
+   my @incantation = @_ or die;
+
+   die "cannot fork" unless(defined(my $PID = fork));
+   if($PID == 0) {
+      exec(@incantation) or die "failed to run " . join(' ', @incantation);
+   }
+}
+

@@ -1,0 +1,9 @@
+Kevin Harris
+helped make PerlDebugger work for perl v.5.6+ instead of v.5.8+
+
+Eric Sherman
+fixed jdb bug where vim crashed in an infinite loop because the debugger
+started at ClassName:1 instead of ClassName.main
+
+Alan Grow
+vim filetype patch

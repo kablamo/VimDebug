@@ -1,0 +1,67 @@
+
+.:: some notes on the vimDebug architecture
+
+here is a description of how the streams are set up, and how commands are
+passed from vim to vdd to the debugger and vice versa:
+
+                ------------------------------
+               |            vim              |
+               |  (vim/plugin/vimDebug.vim)  |
+                ------------------------------
+                   s:ctlFROMvdd      s:ctlTOvdd
+
+                           ^      |
+                           |      |
+                           |      |
+                           |      |
+     fifo: .ctl.vddTOvim   |      |   fifo: .ctl.vimTOvdd
+                           |      |
+                           |      |
+                           |      |
+                           |      v
+
+                  $ctlTOvim       $ctlFROMvim
+                     ---------------------
+                     |  vimDebug daemon  |
+                     |    (bin/vdd.pl)   |
+                     ---------------------
+         access via VimDebug::DebuggerInterface API
+
+                           ^      |
+                           |      |
+                           |      |
+                           |      |
+                           |      |
+              $VimDebug::  |      | $VimDebug::
+      DebuggerInterface::  |      | DebuggerInterface::
+                   Base::  |      | Base::
+                     READ  |      | WRITE
+                           |      |
+                           |      |
+                           |      |
+                           |      |
+                           |      v
+
+                      STDOUT      STDIN
+                  ---------------------------
+                  | forked debugger process |
+                  |  (either                |
+                  |   perl -d      or       |
+                  |   python -d    or       |
+                  |   ruby -rdebug or       |
+                  |   gdb          or       |
+                  |   jdb          or       |
+                  |   whatever              |
+                  ---------------------------
+
+
+all debugger interfaces should inherit from lib/VimDebug/DebuggerInterface.pm.
+so for example, Perl.pm and Ruby.pm both inherit from DebuggerInterface.  the
+debugger interfaces override the callback functions (like step(), _next(),
+etc.) in Debugger.  vdd calls these functions at the right time.  for example,
+when vim issues a step command to vdd, vdd will call $debugger->step() (where
+$debugger is an instance of Perl.pm or whatever).
+
+in addition to the control fifo described above, there is now a similar fifo
+dedicated to debugger output which gets put directly onto the debugger console
+in vim.

@@ -1,0 +1,230 @@
+#!/usr/bin/perl -w
+#
+# vdd
+# Vim Debugger Daemon
+#
+#
+# (c) eric johnson 2002-3020
+# distribution under the GPL
+#
+# email: vimDebug at iijo dot org
+# http://iijo.org
+#
+# $Id: vdd 87 2006-02-09 05:01:31Z eric $
+
+use strict;
+use File::Basename;
+use Getopt::Long;
+use UNIVERSAL;
+use vars qw(
+   $unix $sessionId $debuggerName $sourcePath @commandLineOptions $help_option
+   $ctlTOvim $ctlFROMvim $dbgTOvim $dbgFROMvim $debugger $debug_option
+   $color_option
+);
+
+$unix         = 1; # valid values are 1 and 0
+$debug_option = 0;
+$color_option = 0;
+my $LINE_INFO      = "vimDebug:";
+my $COMPILER_ERROR = "compiler error";
+my $RUNTIME_ERROR  = "runtime error";
+my $APP_EXITED     = "application exited";
+my $DBGR_READY     = "debugger ready";
+
+$SIG{INT} = \&signalHandler;
+getCommandLineOptions();
+init();
+main();
+
+
+sub signalHandler {
+   exit;
+}
+
+
+sub getCommandLineOptions {
+
+   usage() unless(scalar(@ARGV) >= 3);
+
+   $sessionId          = shift @ARGV;   # session id
+   $debuggerName       = shift @ARGV;   # which debugger to use
+   $sourcePath         = shift @ARGV;   # path to source you want to debug
+   @commandLineOptions = @ARGV;         # command line options of program
+
+}
+
+
+sub usage {
+   print "
+Usage: vdd SESSION_ID DEBUGGER SOURCEPATH [DBGR_CMDLINE_OPTS]
+
+The vim debugger daemon uses the perl module VimDebug::DebuggerInterface::DEBUGGER to
+invoke a debugger on the code in the program located at SOURCEPATH.
+Communication with the daemon occurs via fifos located at
+\".ctl.vddTOvim.SESSION_ID\", \".ctl.vimFROMvdd.SESSION_ID\",
+\".dbg.vddTOvim.SESSION_ID\", \".dbg.vimFROMvdd.SESSION_ID\".  Any command line
+options are passed on to the debugger.
+
+"; exit(0);
+}
+
+
+sub init {
+   $| = 1;
+
+   $ctlTOvim   = ".ctl.vddTOvim." . $sessionId; # control fifo; write to   VIM
+   $ctlFROMvim = ".ctl.vimTOvdd." . $sessionId; # control fifo; read  from VIM
+   $dbgTOvim   = ".dbg.vddTOvim." . $sessionId; # debug   fifo; write to   VIM
+   $dbgFROMvim = ".dbg.vimTOvdd." . $sessionId; # debug   fifo; read  from VIM
+
+   if ($color_option) {
+      eval('require Term::ANSIColor;import Term::ANSIColor;') and
+         warn "fancy color printing disabled.  couldn't find Term::ANSIColor\n";
+   }
+}
+
+
+sub main {
+   makeNamedPipe($ctlFROMvim); # control fifo
+   makeNamedPipe($ctlTOvim);
+   makeNamedPipe($dbgFROMvim); # debugger fifo
+   makeNamedPipe($dbgTOvim);
+   startDebugger();
+
+   # loop until request to exit
+   while (1) {
+      my $command = readFromVim();     # blocks until there is something to read
+
+      for ($command) {   # this works like a switch statement
+         /^break:(\d+):(.+)$/o     && act('setBreakPoint',   $1, $2) && last;
+         /^clear:(\d+):(.+)$/o     && act('clearBreakPoint', $1, $2) && last;
+         /^clearAll$/o             && act('clearAllBreakPoints')     && last;
+         /^printExpression:(.+)$/o && act('printExpression', $1)     && last;
+         /^command:(.+)$/o         && act('command', $1)             && last;
+         /^(\w+)$/                 && act($1)                        && last;
+         sendToVim("vdd: bad command");                                 last;
+      }
+   }
+}
+
+sub END {
+   close $ctlFROMvim    if defined $ctlFROMvim;
+   close $ctlTOvim      if defined $ctlTOvim;
+   close $dbgFROMvim    if defined $dbgFROMvim;
+   close $dbgTOvim      if defined $dbgTOvim;
+
+   unlink $ctlFROMvim   if defined $ctlFROMvim;
+   unlink $ctlTOvim     if defined $ctlTOvim;
+   unlink $dbgFROMvim   if defined $dbgFROMvim;
+   unlink $dbgTOvim     if defined $dbgTOvim;
+
+   exit;
+}
+
+
+sub makeNamedPipe {
+   my $fifo = shift or die "gotta pass a fifo to this function";
+
+   # if pipe is already there, die
+   if (-p $fifo) {
+      print "vdd: $fifo already exists.  perhaps another instance of" .
+            " vimDebug is running?\nif not, just delete $fifo.\n";
+      exit();
+   }
+
+   #if( unix() )   {
+      if(    system( 'mkfifo', $fifo )
+          && system( 'mknod',  $fifo, 'p' ) )   {
+         die "is mkfifo or mknod in your path?\n";
+      }
+   #}
+   #elsif( dos() )   {
+   #   die "not yet implemented for a microsoft operating system\n";
+   #}
+}
+
+
+sub logger {
+   my $printMe = shift or die;
+   my $color   = (shift or color("blue"));
+
+   $color_option ?
+      print $color, $printMe, color("white"), "\n"
+    : print "[" . $printMe . "]\n";
+}
+
+
+
+### debugger related subroutines ###############################################
+
+
+# blocks until there is something to read
+sub readFromVim {
+   open(ctlFROMvim, "< $ctlFROMvim") or act('quit');
+   my $from = <ctlFROMvim>;
+   logger("received '$from'") if $debug_option;
+   return $from;
+}
+
+
+# blocks until someone reads
+# obviously this stuff isn't going to work on windows.  for windows we
+# should use gvim --remote stuff.  i don't want to use gvim on unix because
+# then you can't debug over a telnet session.
+sub sendToVim {
+   my $stuffToSend = shift;
+   my $debugOutput = shift;
+
+   logger("sending  '$stuffToSend'") if $debug_option;
+   open(ctlTOvim, "> $ctlTOvim") or act('quit');
+   print ctlTOvim $stuffToSend;
+   close(ctlTOvim);
+
+   logger("sending  '$debugOutput'") if $debug_option;
+   open(dbgTOvim, "> $dbgTOvim") or act('quit');
+   print dbgTOvim $debugOutput;
+   close(dbgTOvim);
+}
+
+sub startDebugger {
+
+   # load module
+   my $moduleName = 'VimDebug/DebuggerInterface/' . $debuggerName . '.pm';
+   require $moduleName ;
+
+   # create debugger object
+   $debuggerName = 'VimDebug::DebuggerInterface::' . $debuggerName;
+   $debugger = eval $debuggerName . "->new();";
+   die "no such module exists: $debuggerName" unless defined $debugger;
+
+   act("startDebugger", $sourcePath, @commandLineOptions);
+}
+
+
+# have the debugger perform an action
+sub act {
+   my $action  = shift or die;
+   my @options = @_;
+
+   if (! UNIVERSAL::can($debugger, $action)) {
+      sendToVim("vdd: bad command", "\n");
+      return 1;
+   }
+
+   my $rv = eval '$debugger->' . $action . '(@options);';
+   if ($action eq 'quit') {
+      exit();
+   }
+   elsif (defined $debugger->lineNumber and defined $debugger->filePath) {
+      sendToVim(
+         $LINE_INFO . $debugger->lineNumber . ":" . $debugger->filePath, 
+         $debugger->output
+      );
+   }
+   else {
+      sendToVim($DBGR_READY, $debugger->output);
+   }
+
+   return 1;
+}
+

@@ -1,0 +1,9 @@
+KNOWN BUGS
+
+- all the break point stuff should be handled in one place.  currently there is
+  an array to keep track of that stuff in vimscript.  and there is an array to
+  keep track of that stuff in some of the debugger modules.
+
+- doesn't work in windows.  might be able to fix this using gvim --session?
+
+- this stuff just needs to be test and i need bug reports from people

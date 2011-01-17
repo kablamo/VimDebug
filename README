@@ -1,0 +1,10 @@
+VimDebug is designed to integrate your favorite debugger with Vim.  Currently
+supported debuggers: Perl, Ruby, Python.  Hopefully more are coming.  This is a
+much more mature version than the last release.  But it is still beta.  Tested
+on Linux and SunOS.  Doesn't work on Windows (might with cygwin).  
+
+Now includes a console showing debug output straight from the debugger.
+
+Please email me about any problems you may have.
+
+Eric

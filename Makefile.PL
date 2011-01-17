@@ -9,6 +9,7 @@ WriteMakefile(
    PREREQ_PM    => {
       'File::Which'  => 0,
       'Getopt::Long' => 0,
+      'IO::Pty'      => 0,
       'IPC::Run'     => 0,
       'Test::Class'  => 0,
       'Test::More'   => 0,

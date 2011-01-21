@@ -67,6 +67,7 @@ use strict;
 use warnings 'FATAL' => 'all';
 
 use Carp;
+use IO::Pty;
 use IPC::Run qw(start pump finish timeout);
 use base qw(VimDebug::DebuggerInterface);
 

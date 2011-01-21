@@ -1,32 +1,20 @@
-DEVELOPER HOWTO
+VimDebug is now on github: https://github.com/kablamo/VimDebug
 
-if you just want to add a new debgger to vimDebug, its fairly easy.  really.
-here's how in 4 steps:
 
-step 0:
-   learn perl.
+If you just want to add support for your debugger, its easy.  Really.  Here's
+how in just 3 steps:
 
-step 1:
-   read the ARCHITECTURE document (its short and straightforward)
-   perldoc VimDebug::DebuggerInterface
-   perldoc VimDebug::DebuggerInterface::Base
-   perldoc VimDebug::DebuggerInterface::Python
+STEP 1: Read the ARCHITECTURE document (its short and easy)
+        perldoc VimDebug::DebuggerInterface
+        perldoc VimDebug::DebuggerInterface::Base
+        perldoc VimDebug::DebuggerInterface::Python
 
-step 2:
-   write lib/VimDebug/DebuggerInterface/DebuggerName.pm (not so hard)
+STEP 2: Create lib/VimDebug/DebuggerInterface/DebuggerName.pm (not hard)
 
-step 3:
-   edit DBGRgetDebuggerName() in vimDebug.vim if necessary.
+STEP 3: Look at DBGRgetDebuggerName() in vimDebug.vim.  If necessary, add code like:
 
-   add some lines that look something like this:
+           elseif l:fileExtension == ".java"
+              let l:debugger = "Jdb"
+              return l:debugger
 
-      elseif l:fileExtension == ".java"
-         let l:debugger = "Jdb"
-         return l:debugger
-
-   l:debugger should match the name of your perl class in step 2.  so in this
-   example its expected that someone has written a Jdb.pm and that vdd.pl can
-   find it.
-
-step 4:
-   send me the code!  or questions or suggestions or bugs. 
+        l:debugger should match the name of your Perl module in step 2.  

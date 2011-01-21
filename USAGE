@@ -1,24 +1,20 @@
-USAGE
+If you want to customize these keymappings, edit VimDebug.vim:
 
-if you want to customize these keymappings, edit vimDebug.vim:
+<F12>      Start the debugger
+<Leader>s/ Start the debugger.  Prompts for command line arguments.
+<F10>      Restart debugger. Break points are ALWAYS saved (for all dbgrs).
+<F11>      Exit the debugger
 
-<F12>      starts the debugger
-<Leader>s/ starts the debugger with command line arguments that you type in
-<F10>      restart debugger.  break points are ALWAYS saved (for all dbgrs)
-<F11>      exit the debugger
+<F6>       Next
+<F7>       Step
+<F8>       Continue
 
-<F6>       next
-<F7>       step
-<F8>       continue
+<Leader>b  Set break point on the current line
+<Leader>c  Clear break point on the current line
 
-<Leader>b  set break point on the current line
-<Leader>c  clear break point on the current line
+<Leader>v  Print the value of the variable under the cursor
+<Leader>v/ Print the value of an expression thats entered
 
-<Leader>v  print the value of variable under the cursor
-<Leader>v/ print the value of an expression that you type in
-
-<Leader>/  type in a command for the debugger to execute, and echo the result.
-           (note that its not hard to make everything crash horribly with this
-           command if you do something like change the prompt.)
+<Leader>/  Type a command for the debugger to execute and echo the result
 
 

@@ -216,7 +216,9 @@ sub output {
 
    if (@_) {
       $output = shift;
-      $output =~ s///mg;
+      # vim is not displaying newline characters correctly for some reason.
+      # this localizes the newlines.
+      $output =~ s/(?:\015{1,2}\012|\015|\012)/\n/sg;
       $self->{output} = $output;
    }
 

@@ -1,22 +1,37 @@
 REQUIREMENTS
 
-perl 5.6.0+
-IPC::Run (perl module)
-vim with +signs compiled in.
+Perl 5.6.0+
+a small number of Perl modules
+Vim with +signs compiled in.
 
 
-INSTALLATION
 
-To install this module, run the following commands:
+HOW TO INSTALL VIMDEBUG
 
+    tar xvzf VimDebug*.tar.gz
+    cd VimDebug*
     perl Makefile.PL
     make
-    make test
-    make install
-    cp vim/*.vim yourVimPluginDir
+    sudo make install
+    cp -r vim/* $VIMHOME/
 
-Also make sure that the debuggers you intend to use are in your path so that
-VimDebug can invoke them.
+
+
+HOW TO INSTALL PERL MODULES
+
+Perl modules are easily installed using cpanm.  If you don't have cpanm, this
+is the simplest way to get it:
+
+    curl -L http://cpanmin.us | perl - --sudo App::cpanminus
+
+Then just type:
+
+    sudo cpanm IO::Pty
+    sudo cpanm IPC::Run
+
+For more help see:
+http://search.cpan.org/~miyagawa/App-cpanminus-1.1007/lib/App/cpanminus.pm
+
 
 
 # the following is deprecated.  don't read:
@@ -58,8 +73,3 @@ jdb (java debugger)
         a file like that (:help find).  this means that debugging is probably
         foobared if you are using nested classes or more than one class per
         file.  suggestions?)
-
-
-
-
-

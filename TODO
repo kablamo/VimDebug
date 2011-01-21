@@ -6,6 +6,10 @@ TODO
 - when a runtime error or compile time error occurs, jump to the bad line
 - add an optional stack frame window?
 - add watchpoints
+- all the break point stuff should be handled in one place.  currently there is
+  an array to keep track of that stuff in vimscript.  and there is an array to
+  keep track of that stuff in some of the debugger modules.
+
 
 greater os support
 - windows support

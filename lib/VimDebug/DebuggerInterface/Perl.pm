@@ -152,21 +152,5 @@ sub parseForLineNumber {
    return undef;
 }
 
-sub output {
-   my $self = shift or die;
-   my $output;
-
-   if (@_) {
-      $output = shift;
-      $output =~ s/\n/\n/mg;
-      $output =~ s//\n/mg;
-      $output =~ s///mg;
-      return $self->SUPER::output($output);
-   }
-   else {
-      return $self->SUPER::output();
-   }
-}
-
 
 1;

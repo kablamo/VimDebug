@@ -12,8 +12,8 @@
 
 
 " key bindings
-map <F12>      :call DBGRstartVimDebuggerDaemon(' ')<cr>
-map <Leader>s/ :DBGRstartVDD
+map <F12>      :call DBGRstartVimDebuggerDaemon(' ')<CR>
+map <Leader>s/ :call DBGRstartVimDebuggerDaemon()<CR>
 
 map <F7>       :call DBGRstep()<CR>
 map <F8>       :call DBGRnext()<CR>
@@ -112,16 +112,9 @@ function! DBGRstartVimDebuggerDaemon(...)
    endif
 
    " get program arguments
-   let l:i = 1
-   if a:0 == 0 || (a:0 == 1 && a:1 == " ")
+   if a:0 <= 0
       let g:DBGRprogramArgs = input('program arguments: ', g:DBGRprogramArgs)
-   elseif l:i <= a:0
-      let g:DBGRprogramArgs = ""
    endif
-   while l:i <= a:0
-      exe 'let g:DBGRprogramArgs = g:DBGRprogramArgs . " " . a:' . l:i . '"'
-      let l:i = l:i + 1
-   endwhile
 
    " build command
    let l:cmd = "vdd " . s:sessionId . " " . l:debugger . " '" . s:fileName . "'"

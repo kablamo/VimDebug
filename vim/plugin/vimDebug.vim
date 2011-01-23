@@ -720,7 +720,13 @@ function! DBGRprint(msg)
    endif
    exe l:consoleWinNr . "wincmd w"
 
-   exe 'normal GA' . a:msg . ''
+   let l:oldValue = @x
+   let @x = a:msg
+
+   exe 'normal G$"xp'
+
+   let @x = l:oldValue
+
    normal G
    wincmd p
 endfunction

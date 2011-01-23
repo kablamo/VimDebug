@@ -24,9 +24,7 @@ map <Leader>c  :call DBGRclearBreakPoint()<CR>
 map <Leader>ca :call DBGRclearAllBreakPoints()<CR>
 
 map <Leader>v/ :DBGRprintExpression 
-map <Leader>v  :DBGRprintExpression2 expand("<cWORD>")<CR>   " print value
-                                                             " of WORD under
-                                                             " the cursor
+map <Leader>v  :DBGRprintExpressionExpand expand("<cWORD>")<CR> " print value under the cursor
 
 map <Leader>/  :DBGRcommand 
 
@@ -34,11 +32,10 @@ map <F10>      :call DBGRrestart()<CR>
 map <F11>      :call DBGRquit()<CR>
 
 
-command! -nargs=* DBGRstartVDD call DBGRstartVimDebuggerDaemon(<f-args>)
-command! -nargs=* DBGRprintExpression  call DBGRprintExpression(<f-args>)
-command! -nargs=1 DBGRprintExpression2 call DBGRprintExpression(<args>)
-command! -nargs=* DBGRprintExpression call DBGRprintExpression(<f-args>)
-command! -nargs=* DBGRcommand call DBGRcommand(<f-args>)
+command! -nargs=1 DBGRstartVDD call DBGRstartVimDebuggerDaemon("<args>")
+command! -nargs=1 DBGRprintExpression  call DBGRprintExpression("<args>")
+command! -nargs=1 DBGRprintExpressionExpand  call DBGRprintExpression(<args>)
+command! -nargs=1 DBGRcommand call DBGRcommand("<args>")
 
 
 " colors and symbols
@@ -315,16 +312,7 @@ function! DBGRprintExpression(...)
    endif
 
    if a:0 > 0
-      " build command
-      let l:i = 1
-      let l:expression = ""
-      while l:i <= a:0
-         exe 'let l:expression = l:expression . " " . a:' . l:i . '"'
-         let l:i = l:i + 1
-      endwhile
-
-      call system("echo 'printExpression:" . l:expression . "' >> " . s:ctlTOvdd)
-
+      call system("echo 'printExpression:" . a:1 . "' >> " . s:ctlTOvdd)
       call DBGRhandleCmdResult()
    endif
 
@@ -341,17 +329,8 @@ function! DBGRcommand(...)
    echo ""
 
    if a:0 > 0
-      " build command
-      let l:i = 1
-      let l:command = ""
-      while l:i <= a:0
-         exe 'let l:command = l:command . " " . a:' . l:i . '"'
-         let l:i = l:i + 1
-      endwhile
-
       " issue command to debugger
-      call system( "echo 'command:" . l:command . "' >> " . s:ctlTOvdd )
-
+      call system( "echo 'command:" . a:1 . "' >> " . s:ctlTOvdd )
       call DBGRhandleCmdResult()
    endif
 
@@ -538,7 +517,7 @@ function! DBGRhandleCmdResult(...)
 
    elseif l:cmdResult == s:APP_EXITED
       call DBGRhandleProgramTermination()
-      redraw! | echo "\rthe application being debugged terminated hoooo"
+      redraw! | echo "\rthe application being debugged terminated"
 
    elseif match(l:cmdResult, '^' . s:COMPILER_ERROR) != -1
       " call confirm(substitute(l:cmdResult, '^' . s:COMPILER_ERROR, "", ""), "&Ok")

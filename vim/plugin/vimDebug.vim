@@ -130,56 +130,32 @@ function! DBGRstart(...)
    redraw!
    call HandleCmdResult("started the debugger")
 endfunction
-
 function! DBGRnext()
-   if s:fileName == ""
-      echo "\rthe debugger is not running"
-      return
-   elseif s:programDone
-      echo "\rthe application being debugged terminated"
+   if !Copacetic()
       return
    endif
    echo "\rnext"
-
    call system('echo "next" >> ' . s:ctlTOvdd) " send msg to vdd
-
    call HandleCmdResult()
 endfunction
 function! DBGRstep()
-   if s:fileName == ""
-      echo "\rthe debugger is not running"
-      return
-   elseif s:programDone
-      echo "\rthe application being debugged terminated"
+   if !Copacetic()
       return
    endif
    echo "\rstep"
-
    call system('echo "step" >> ' . s:ctlTOvdd) " send msg to vdd
-
    call HandleCmdResult()
 endfunction
 function! DBGRcont()
-   if s:fileName == ""
-      echo "\rthe debugger is not running"
-      return
-   elseif s:programDone
-      echo "\rthe application being debugged terminated"
+   if !Copacetic()
       return
    endif
    echo "\rcontinue"
-
    call system('echo "cont" >> ' . s:ctlTOvdd) " send msg to vdd
-
    call HandleCmdResult()
 endfunction
-
 function! DBGRsetBreakPoint()
-   if s:fileName == ""
-      echo "\rthe debugger is not running"
-      return
-   elseif s:programDone
-      echo "\rthe application being debugged terminated"
+   if !Copacetic()
       return
    endif
 
@@ -220,11 +196,7 @@ function! DBGRsetBreakPoint()
    call HandleCmdResult("breakpoint set")
 endfunction
 function! DBGRclearBreakPoint()
-   if s:fileName == ""
-      echo "\rthe debugger is not running"
-      return
-   elseif s:programDone
-      echo "\rthe application being debugged terminated"
+   if !Copacetic()
       return
    endif
 
@@ -262,11 +234,7 @@ function! DBGRclearBreakPoint()
    call HandleCmdResult("breakpoint disabled")
 endfunction
 function! DBGRclearAllBreakPoints()
-   if s:fileName == ""
-      echo "\rthe debugger is not running"
-      return
-   elseif s:programDone
-      echo "\rthe application being debugged terminated"
+   if !Copacetic()
       return
    endif
 
@@ -291,37 +259,24 @@ function! DBGRclearAllBreakPoints()
 endfunction
 
 function! DBGRprint(...)
-   if s:fileName == ""
-      echo "\rthe debugger is not running"
-      return
-   elseif s:programDone
-      echo "\rthe application being debugged terminated"
+   if !Copacetic()
       return
    endif
-
    if a:0 > 0
       call system("echo 'printExpression:" . a:1 . "' >> " . s:ctlTOvdd)
       call HandleCmdResult()
    endif
-
 endfunction
 function! DBGRcommand(...)
-   if s:fileName == ""
-      echo "\rthe debugger is not running"
-      return
-   elseif s:programDone
-      echo "\rthe application being debugged terminated"
+   if !Copacetic()
       return
    endif
-
    echo ""
-
    if a:0 > 0
       " issue command to debugger
       call system( "echo 'command:" . a:1 . "' >> " . s:ctlTOvdd )
       call HandleCmdResult()
    endif
-
 endfunction
 
 function! DBGRrestart()
@@ -374,18 +329,25 @@ endfunction
 
 " utility functions
 
+" returns 1 if everything is copacetic
+" returns 0 if things are not copacetic
+function! s:Copacetic()
+   if s:fileName == ""
+      echo "\rthe debugger is not running"
+      return 0
+   elseif s:programDone
+      echo "\rthe application being debugged terminated"
+      return 0
+   endif
+   return 1
+endfunction
 function! s:PlaceEmptySign()
-
    let l:id       = CreateId(bufnr("%"), "1")
    let l:fileName = bufname("%")
-
    if !MvContainsElement(s:emptySignArray, s:sep, l:id) == 1
-
       let s:emptySignArray = MvAddElement(s:emptySignArray, s:sep, l:id)
       exe "sign place " . l:id . " line=1 name=empty file=" . l:fileName
-
    endif
-
 endfunction
 function! s:UnplaceEmptySigns()
 

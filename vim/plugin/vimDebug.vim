@@ -23,8 +23,8 @@ map <Leader>b  :call DBGRsetBreakPoint()<CR>
 map <Leader>c  :call DBGRclearBreakPoint()<CR>
 map <Leader>ca :call DBGRclearAllBreakPoints()<CR>
 
-map <Leader>v/ :DBGRprintExpression 
-map <Leader>v  :DBGRprintExpressionExpand expand("<cWORD>")<CR> " print value under the cursor
+map <Leader>v/ :DBGRprint 
+map <Leader>v  :DBGRprintExpand expand("<cWORD>")<CR> " print value under the cursor
 
 map <Leader>/  :DBGRcommand 
 
@@ -33,8 +33,8 @@ map <F11>      :call DBGRquit()<CR>
 
 
 command! -nargs=* DBGRstart call DBGRstart("<args>")
-command! -nargs=1 DBGRprintExpression  call DBGRprintExpression("<args>")
-command! -nargs=1 DBGRprintExpressionExpand  call DBGRprintExpression(<args>)
+command! -nargs=1 DBGRprint  call DBGRprint("<args>")
+command! -nargs=1 DBGRprintExpand  call DBGRprint(<args>)
 command! -nargs=1 DBGRcommand call DBGRcommand("<args>")
 
 
@@ -299,7 +299,7 @@ function! DBGRclearAllBreakPoints()
    call DBGRhandleCmdResult("all breakpoints disabled")
 endfunction
 
-function! DBGRprintExpression(...)
+function! DBGRprint(...)
    if s:fileName == ""
       echo "\rthe debugger is not running"
       return

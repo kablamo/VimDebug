@@ -12,8 +12,8 @@
 
 
 " key bindings
-map <F12>      :call DBGRstartVimDebuggerDaemon(' ')<CR>
-map <Leader>s/ :call DBGRstartVimDebuggerDaemon()<CR>
+map <F12>      :DBGRstart<CR>
+map <Leader>s/ :DBGRstart 
 
 map <F7>       :call DBGRstep()<CR>
 map <F8>       :call DBGRnext()<CR>
@@ -32,7 +32,7 @@ map <F10>      :call DBGRrestart()<CR>
 map <F11>      :call DBGRquit()<CR>
 
 
-command! -nargs=1 DBGRstartVDD call DBGRstartVimDebuggerDaemon("<args>")
+command! -nargs=* DBGRstart call DBGRstart("<args>")
 command! -nargs=1 DBGRprintExpression  call DBGRprintExpression("<args>")
 command! -nargs=1 DBGRprintExpressionExpand  call DBGRprintExpression(<args>)
 command! -nargs=1 DBGRcommand call DBGRcommand("<args>")
@@ -94,13 +94,14 @@ let s:sep             = "-"                          " array separator
 
 " debugger functions
 
-function! DBGRstartVimDebuggerDaemon(...)
+function! DBGRstart(...)
    if s:fileName != ""
       echo "\rthe debugger is already running"
       return
    endif
 
    " gather information and initialize script variables
+   let g:DBGRprogramArgs = a:1
    let s:fileName  = bufname("%")                         " get file name
    let s:bufNr     = bufnr("%")                           " get buffer number
    let l:debugger  = DBGRgetDebuggerName(s:fileName)      " get dbgr name
@@ -108,10 +109,6 @@ function! DBGRstartVimDebuggerDaemon(...)
       return
    endif
 
-   " get program arguments
-   if a:0 <= 0
-      let g:DBGRprogramArgs = input('program arguments: ', g:DBGRprogramArgs)
-   endif
 
    " build command
    let l:cmd = "vdd " . s:sessionId . " " . l:debugger . " '" . s:fileName . "'"

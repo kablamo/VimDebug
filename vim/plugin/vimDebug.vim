@@ -102,9 +102,9 @@ function! DBGRstart(...)
 
    " gather information and initialize script variables
    let g:DBGRprogramArgs = a:1
-   let s:fileName  = bufname("%")                         " get file name
-   let s:bufNr     = bufnr("%")                           " get buffer number
-   let l:debugger  = DBGRgetDebuggerName(s:fileName)      " get dbgr name
+   let s:fileName  = bufname("%")                 " get file name
+   let s:bufNr     = bufnr("%")                   " get buffer number
+   let l:debugger  = DbgrName(s:fileName)      " get dbgr name
    if l:debugger == "none"
       return
    endif
@@ -137,7 +137,7 @@ function! DBGRstart(...)
    endif
 
    redraw!
-   call DBGRhandleCmdResult("started the debugger")
+   call HandleCmdResult("started the debugger")
 endfunction
 
 function! DBGRnext()
@@ -152,7 +152,7 @@ function! DBGRnext()
 
    call system('echo "next" >> ' . s:ctlTOvdd) " send msg to vdd
 
-   call DBGRhandleCmdResult()
+   call HandleCmdResult()
 endfunction
 function! DBGRstep()
    if s:fileName == ""
@@ -166,7 +166,7 @@ function! DBGRstep()
 
    call system('echo "step" >> ' . s:ctlTOvdd) " send msg to vdd
 
-   call DBGRhandleCmdResult()
+   call HandleCmdResult()
 endfunction
 function! DBGRcont()
    if s:fileName == ""
@@ -180,7 +180,7 @@ function! DBGRcont()
 
    call system('echo "cont" >> ' . s:ctlTOvdd) " send msg to vdd
 
-   call DBGRhandleCmdResult()
+   call HandleCmdResult()
 endfunction
 
 function! DBGRsetBreakPoint()
@@ -196,7 +196,7 @@ function! DBGRsetBreakPoint()
    let l:currFileName = bufname("%")
    let l:bufNr        = bufnr("%")
    let l:currLineNr   = line(".")
-   let l:id           = DBGRcreateId(l:bufNr, l:currLineNr)
+   let l:id           = CreateId(l:bufNr, l:currLineNr)
 
 
    " check if a breakPoint sign is already placed
@@ -226,7 +226,7 @@ function! DBGRsetBreakPoint()
    "let l:debuggerReady = system('cat ' . s:ctlFROMvdd)
    "redraw! | echo "\rbreakpoint set"
 
-   call DBGRhandleCmdResult("breakpoint set")
+   call HandleCmdResult("breakpoint set")
 endfunction
 function! DBGRclearBreakPoint()
    if s:fileName == ""
@@ -241,7 +241,7 @@ function! DBGRclearBreakPoint()
    let l:currFileName = bufname("%")
    let l:bufNr        = bufnr("%")
    let l:currLineNr   = line(".")
-   let l:id           = DBGRcreateId(l:bufNr, l:currLineNr)
+   let l:id           = CreateId(l:bufNr, l:currLineNr)
 
 
    " check if a breakPoint sign has really been placed here
@@ -268,7 +268,7 @@ function! DBGRclearBreakPoint()
    "let l:debuggerReady = system('cat ' . s:ctlFROMvdd)
    "redraw! | echo "\rbreakpoint disabled"
 
-   call DBGRhandleCmdResult("breakpoint disabled")
+   call HandleCmdResult("breakpoint disabled")
 endfunction
 function! DBGRclearAllBreakPoints()
    if s:fileName == ""
@@ -279,24 +279,24 @@ function! DBGRclearAllBreakPoints()
       return
    endif
 
-   call DBGRunplaceBreakPointSigns()
+   call UnplaceBreakPointSigns()
 
    let l:currFileName = bufname("%")
    let l:bufNr        = bufnr("%")
    let l:currLineNr   = line(".")
-   let l:id           = DBGRcreateId(l:bufNr, l:currLineNr)
+   let l:id           = CreateId(l:bufNr, l:currLineNr)
 
    silent exe "redir >> " . s:ctlTOvdd . '| echon "clearAll" | redir END'
 
    " do this in case the last current line had a break point on it
-   call DBGRunplaceTheLastCurrentLineSign()              " unplace the old sign
-   call DBGRplaceCurrentLineSign(s:lineNumber, s:fileName) " place the new sign
+   call UnplaceTheLastCurrentLineSign()                " unplace the old sign
+   call PlaceCurrentLineSign(s:lineNumber, s:fileName) " place the new sign
 
    "" block until the debugger is ready
    "let l:debuggerReady = system('cat ' . s:ctlFROMvdd)
    "redraw! | echo "\rall breakpoints disabled"
 
-   call DBGRhandleCmdResult("all breakpoints disabled")
+   call HandleCmdResult("all breakpoints disabled")
 endfunction
 
 function! DBGRprint(...)
@@ -310,7 +310,7 @@ function! DBGRprint(...)
 
    if a:0 > 0
       call system("echo 'printExpression:" . a:1 . "' >> " . s:ctlTOvdd)
-      call DBGRhandleCmdResult()
+      call HandleCmdResult()
    endif
 
 endfunction
@@ -328,7 +328,7 @@ function! DBGRcommand(...)
    if a:0 > 0
       " issue command to debugger
       call system( "echo 'command:" . a:1 . "' >> " . s:ctlTOvdd )
-      call DBGRhandleCmdResult()
+      call HandleCmdResult()
    endif
 
 endfunction
@@ -344,10 +344,10 @@ function! DBGRrestart()
    " do after the system() call so that nongui vim doesn't show a blank screen
    echo "\rrestarting..."
 
-   call DBGRunplaceTheLastCurrentLineSign()
+   call UnplaceTheLastCurrentLineSign()
 
    redraw!
-   call DBGRhandleCmdResult("restarted")
+   call HandleCmdResult("restarted")
 
    let s:programDone = 0
 endfunction
@@ -358,10 +358,10 @@ function! DBGRquit()
    endif
 
    " unplace all signs that were set in this debugging session
-   call DBGRunplaceBreakPointSigns()
-   call DBGRunplaceEmptySigns()
-   call DBGRunplaceTheLastCurrentLineSign()
-   call DBGRsetNoLineNumbers()
+   call UnplaceBreakPointSigns()
+   call UnplaceEmptySigns()
+   call UnplaceTheLastCurrentLineSign()
+   call SetNoLineNumbers()
    call DBGRcloseConsole()
 
    call system('echo "quit" >> ' . s:ctlTOvdd)
@@ -383,9 +383,9 @@ endfunction
 
 " utility functions
 
-function! DBGRplaceEmptySign()
+function! s:PlaceEmptySign()
 
-   let l:id       = DBGRcreateId(bufnr("%"), "1")
+   let l:id       = CreateId(bufnr("%"), "1")
    let l:fileName = bufname("%")
 
    if !MvContainsElement(s:emptySignArray, s:sep, l:id) == 1
@@ -396,14 +396,14 @@ function! DBGRplaceEmptySign()
    endif
 
 endfunction
-function! DBGRunplaceEmptySigns()
+function! s:UnplaceEmptySigns()
 
    let l:oldBufNr = bufnr("%")
    call MvIterCreate(s:emptySignArray, s:sep, "VimDebugIteratorE")
 
    while MvIterHasNext("VimDebugIteratorE")
       let l:id         = MvIterNext("VimDebugIteratorE")
-      let l:bufNr      = DBGRcalculateBufNrFromId(l:id)
+      let l:bufNr      = CalculateBufNrFromId(l:id)
       if bufexists(l:bufNr) != 0
          if bufnr("%") != l:bufNr
             exe "buffer " . l:bufNr
@@ -418,14 +418,14 @@ function! DBGRunplaceEmptySigns()
    let s:emptySignArray  = ""
 
 endfunction
-function! DBGRunplaceBreakPointSigns()
+function! s:UnplaceBreakPointSigns()
 
    let l:oldBufNr = bufnr("%")
    call MvIterCreate(s:breakPointArray, s:sep, "VimDebugIteratorB")
 
    while MvIterHasNext("VimDebugIteratorB")
       let l:id         = MvIterNext("VimDebugIteratorB")
-      let l:bufNr      = DBGRcalculateBufNrFromId(l:id)
+      let l:bufNr      = CalculateBufNrFromId(l:id)
       if bufexists(l:bufNr) != 0
          if bufnr("%") != l:bufNr
             exe "buffer " . l:bufNr
@@ -440,24 +440,24 @@ function! DBGRunplaceBreakPointSigns()
    let s:breakPointArray = ""
 
 endfunction
-function! DBGRsetLineNumbers()
+function! s:SetLineNumbers()
    if g:DBGRlineNumbers == 1
       set number
    endif
 endfunction
-function! DBGRsetNoLineNumbers()
+function! s:SetNoLineNumbers()
    if g:DBGRlineNumbers == 1
       set nonumber
    endif
 endfunction
 " place an empty sign on line 1 of the file
-function! DBGRcreateId(bufNr, lineNumber)
+function! s:CreateId(bufNr, lineNumber)
    return a:bufNr * 10000000 + a:lineNumber
 endfunction
-function! DBGRcalculateBufNrFromId(id)
+function! s:CalculateBufNrFromId(id)
    return a:id / 10000000
 endfunction
-function! DBGRcalculateLineNumberFromId(id)
+function! s:CalculateLineNumberFromId(id)
    return a:id % 10000000
 endfunction
 " determine which debugger to invoke from the file extension
@@ -468,9 +468,9 @@ endfunction
 " that particular file extension.  (l:debugger is expected to match up
 " with a perl class.  so, for example, if 'Jdb' is returned, there is
 " hopefully a Jdb.pm out there somewhere where vdd can find it.
-function! DBGRgetDebuggerName(fileName)
+function! s:DbgrName(fileName)
 
-   let l:fileExtension = DBGRgetFileExtension(a:fileName)
+   let l:fileExtension = FileExtension(a:fileName)
 
    " consult file extension and filetype
    if     &l:filetype == "perl"   || l:fileExtension == ".pl"
@@ -489,7 +489,7 @@ function! DBGRgetDebuggerName(fileName)
 
 endfunction
 " can vim do this for me?  i wish it would
-function! DBGRgetFileExtension(path)
+function! s:FileExtension(path)
    let l:temp = substitute(a:path, '\(^.*\/\)', "", "") " path
    let l:temp = substitute(l:temp, '^\.\+', "", "")     " dot files
    let l:temp = matchstr(l:temp, '\..*$')               " get extension
@@ -498,7 +498,7 @@ function! DBGRgetFileExtension(path)
 endfunction
 
 
-function! DBGRhandleCmdResult(...)
+function! s:HandleCmdResult(...)
 
    " get command results from control fifo
    let l:cmdResult = system('cat ' . s:ctlFROMvdd)
@@ -506,14 +506,14 @@ function! DBGRhandleCmdResult(...)
    if match(l:cmdResult, '^' . s:LINE_INFO . '\d\+:.*$') != -1
       let l:cmdResult = substitute(l:cmdResult, '^' . s:LINE_INFO, "", "")
       if a:0 <= 0 || (a:0 > 0 && match(a:1, 'breakpoint') == -1)
-         call DBGRdoCurrentLineMagicStuff(l:cmdResult)
+         call CurrentLineMagic(l:cmdResult)
       endif
       if a:0 > 0
          echo "\r" . a:1 . "                    "
       endif
 
    elseif l:cmdResult == s:APP_EXITED
-      call DBGRhandleProgramTermination()
+      call HandleProgramTermination()
       redraw! | echo "\rthe application being debugged terminated"
 
    elseif match(l:cmdResult, '^' . s:COMPILER_ERROR) != -1
@@ -558,21 +558,21 @@ endfunction
 " parameters
 "    lineInfo: a string with the format 'lineNumber:fileName'
 " returns nothing
-function! DBGRdoCurrentLineMagicStuff(lineInfo)
+function! s:CurrentLineMagic(lineInfo)
 
    let l:lineNumber = substitute(a:lineInfo, "\:.*$", "", "")
    let l:fileName   = substitute(a:lineInfo, "^\\d\\+\:", "", "")
-   let l:fileName   = DBGRjumpToLine(l:lineNumber, l:fileName)
+   let l:fileName   = JumpToLine(l:lineNumber, l:fileName)
 
    " if there haven't been any signs placed in this file yet, place one the
    " user can't see on line 1 just to shift everything over.  otherwise, the
    " code will shift left when the old currentline sign is unplaced and then
    " shift right again when the new currentline sign is placed.  and thats
    " really annoying for the user.
-   call DBGRplaceEmptySign()
-   call DBGRunplaceTheLastCurrentLineSign()              " unplace the old sign
-   call DBGRplaceCurrentLineSign(l:lineNumber, l:fileName) " place the new sign
-   call DBGRsetLineNumbers()
+   call PlaceEmptySign()
+   call UnplaceTheLastCurrentLineSign()                " unplace the old sign
+   call PlaceCurrentLineSign(l:lineNumber, l:fileName) " place the new sign
+   call SetLineNumbers()
    "z. " scroll page so that this line is in the middle
 
    " set script variables for next time
@@ -588,7 +588,7 @@ endfunction
 "    lineNumber
 "    fileName
 " returns a fileName.
-function! DBGRjumpToLine(lineNumber, fileName)
+function! s:JumpToLine(lineNumber, fileName)
    let l:fileName = a:fileName
 
    " no buffer with this file has been loaded
@@ -615,8 +615,8 @@ function! DBGRjumpToLine(lineNumber, fileName)
 
    return bufname(l:fileName)
 endfunction
-function! DBGRunplaceTheLastCurrentLineSign()
-   let l:lastId = DBGRcreateId(s:bufNr, s:lineNumber)
+function! s:UnplaceTheLastCurrentLineSign()
+   let l:lastId = CreateId(s:bufNr, s:lineNumber)
 
    exe 'sign unplace ' . l:lastId
 
@@ -630,11 +630,11 @@ endfunction
 "    lineNumber
 "    fileName
 " returns nothing
-function! DBGRplaceCurrentLineSign(lineNumber, fileName)
+function! s:PlaceCurrentLineSign(lineNumber, fileName)
 
    " place the new currentline sign
    let l:bufNr = bufnr(a:fileName)
-   let l:id    = DBGRcreateId(l:bufNr, a:lineNumber)
+   let l:id    = CreateId(l:bufNr, a:lineNumber)
 
    if MvContainsElement(s:breakPointArray, s:sep, l:id) == 1
       exe "sign place " . l:id .
@@ -653,8 +653,8 @@ endfunction
 "
 " sets s:programDone = 1.  so the only functions we should be calling
 " after this situation is DBGRquit() or DBGRrestart().
-function! DBGRhandleProgramTermination()
-   call DBGRunplaceTheLastCurrentLineSign()
+function! s:HandleProgramTermination()
+   call UnplaceTheLastCurrentLineSign()
    let s:lineNumber  = 0
    let s:bufNr       = 0
    let s:programDone = 1
@@ -668,7 +668,7 @@ function! DBGRopenConsole()
    let s:consoleBufNr = bufnr('%')
    exe "resize " . g:DBGRconsoleHeight
    exe "sign place 9999 line=1 name=empty buffer=" . s:consoleBufNr
-   call DBGRsetLineNumbers()
+   call SetLineNumbers()
    set buftype=nofile
    wincmd p
 endfunction

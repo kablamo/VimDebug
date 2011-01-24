@@ -17,7 +17,7 @@ map <Leader>s/ :DBGRstart
 
 map <F7>       :call DBGRstep()<CR>
 map <F8>       :call DBGRnext()<CR>
-map <F9>       :call DBGRcont()<CR>                          " continue
+map <F9>       :call DBGRcont()<CR>                   " continue
 
 map <Leader>b  :call DBGRsetBreakPoint()<CR>
 map <Leader>c  :call DBGRclearBreakPoint()<CR>
@@ -31,39 +31,30 @@ map <Leader>/  :DBGRcommand
 map <F10>      :call DBGRrestart()<CR>
 map <F11>      :call DBGRquit()<CR>
 
-
+" commands
 command! -nargs=* DBGRstart call DBGRstart("<args>")
 command! -nargs=1 DBGRprint  call DBGRprint("<args>")
 command! -nargs=1 DBGRprintExpand  call DBGRprint(<args>)
 command! -nargs=1 DBGRcommand call DBGRcommand("<args>")
 
-
-" colors and symbols
-
-" you may want to set SignColumn highlight in your .vimrc
-" :help sign
-" :help SignColumn
-
+" colors
 hi currentLine term=reverse cterm=reverse gui=reverse
 hi breakPoint  term=NONE    cterm=NONE    gui=NONE
 hi empty       term=NONE    cterm=NONE    gui=NONE
 
+" signs
 sign define currentLine linehl=currentLine
 sign define breakPoint  linehl=breakPoint  text=>>
 sign define both        linehl=currentLine text=>>
 sign define empty       linehl=empty
 
-
 " global variables
-
 let g:DBGRprogramArgs     = ""
 let g:DBGRconsoleHeight   = 7
 let g:DBGRlineNumbers     = 1
 let g:DBGRshowConsole     = 1
 
-
 " script variables
-
 let s:LINE_INFO       = "vimDebug:"
 let s:COMPILER_ERROR  = "compiler error"
 let s:RUNTIME_ERROR   = "runtime error"

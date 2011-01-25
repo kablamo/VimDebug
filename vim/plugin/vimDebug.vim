@@ -470,12 +470,12 @@ function! s:HandleCmdResult(...)
 
    elseif match(l:cmdResult, '^' . s:COMPILER_ERROR) != -1
       " call confirm(substitute(l:cmdResult, '^' . s:COMPILER_ERROR, "", ""), "&Ok")
-      call DBGRprint(substitute(l:cmdResult, '^' . s:COMPILER_ERROR, "", ""))
+      call s:ConsolePrint(substitute(l:cmdResult, '^' . s:COMPILER_ERROR, "", ""))
       call DBGRquit()
 
    elseif match(l:cmdResult, '^' . s:RUNTIME_ERROR) != -1
       " call confirm(substitute(l:cmdResult, '^' . s:RUNTIME_ERROR, "", ""), "&Ok")
-      call DBGRprint(substitute(l:cmdResult, '^' . s:RUNTIME_ERROR, "", ""))
+      call s:ConsolePrint(substitute(l:cmdResult, '^' . s:RUNTIME_ERROR, "", ""))
       call DBGRquit()
 
    elseif l:cmdResult == s:DBGR_READY
@@ -489,17 +489,17 @@ function! s:HandleCmdResult(...)
       if match(l:cmdResult, "\n") != -1
          redraw!
          " call confirm(l:cmdResult, "&Ok")
-         call DBGRprint(l:cmdResult)
+         call s:ConsolePrint(l:cmdResult)
       else
          " echo l:cmdResult
-         call DBGRprint(l:cmdResult)
+         call s:ConsolePrint(l:cmdResult)
       endif
 
    endif
 
    " get results from debug out fifo
    let l:dbgOut = system('cat ' . s:dbgFROMvdd)
-   call DBGRprint(l:dbgOut)
+   call s:ConsolePrint(l:dbgOut)
 
    return
 endfunction
@@ -632,7 +632,7 @@ function! DBGRcloseConsole()
    exe l:consoleWinNr . "wincmd w"
    q
 endfunction
-function! DBGRprint(msg)
+function! s:ConsolePrint(msg)
    let l:consoleWinNr = bufwinnr(s:consoleBufNr)
    if l:consoleWinNr == -1
       "call confirm(a:msg, "&Ok")

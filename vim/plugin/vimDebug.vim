@@ -248,7 +248,6 @@ function! DBGRclearAllBreakPoints()
 
    call s:HandleCmdResult("all breakpoints disabled")
 endfunction
-
 function! DBGRprint(...)
    if !s:Copacetic()
       return
@@ -269,7 +268,6 @@ function! DBGRcommand(...)
       call s:HandleCmdResult()
    endif
 endfunction
-
 function! DBGRrestart()
    if s:fileName == ""
       echo "\rthe debugger is not running"
@@ -406,8 +404,6 @@ function! s:CalculateLineNumberFromId(id)
 endfunction
 " determine which debugger to invoke from the file extension
 "
-" parameters
-"    fileName
 " returns debugger name or 'none' if there isn't a debugger available for
 " that particular file extension.  (l:debugger is expected to match up
 " with a perl class.  so, for example, if 'Jdb' is returned, there is
@@ -528,9 +524,6 @@ endfunction
 " other piece of code in an another file.  load the new file if thats
 " necessary and then jump to lineNumber
 "
-" parameters
-"    lineNumber
-"    fileName
 " returns a fileName.
 function! s:JumpToLine(lineNumber, fileName)
    let l:fileName = a:fileName
@@ -570,9 +563,6 @@ function! s:UnplaceTheLastCurrentLineSign()
    endif
 
 endfunction
-" parameters
-"    lineNumber
-"    fileName
 " returns nothing
 function! s:PlaceCurrentLineSign(lineNumber, fileName)
 

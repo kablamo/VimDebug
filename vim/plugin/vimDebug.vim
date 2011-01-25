@@ -623,7 +623,7 @@ function! s:ConsolePrint(msg)
    exe l:consoleWinNr . "wincmd w"
    let l:oldValue = @x
    let @x = a:msg
-   exe 'normal G$"xp'
+   silent exe 'normal G$"xp'
    let @x = l:oldValue
    normal G
    wincmd p

@@ -125,7 +125,7 @@ function! DBGRnext()
    if !s:Copacetic()
       return
    endif
-   echo "\rnext"
+   echo "\rnext..."
    call system('echo "next" >> ' . s:ctlTOvdd) " send msg to vdd
    call s:HandleCmdResult()
 endfunction
@@ -133,7 +133,7 @@ function! DBGRstep()
    if !s:Copacetic()
       return
    endif
-   echo "\rstep"
+   echo "\rstep..."
    call system('echo "step" >> ' . s:ctlTOvdd) " send msg to vdd
    call s:HandleCmdResult()
 endfunction
@@ -141,7 +141,7 @@ function! DBGRcont()
    if !s:Copacetic()
       return
    endif
-   echo "\rcontinue"
+   echo "\rcontinue..."
    call system('echo "cont" >> ' . s:ctlTOvdd) " send msg to vdd
    call s:HandleCmdResult()
 endfunction
@@ -263,7 +263,6 @@ function! DBGRcommand(...)
    endif
    echo ""
    if a:0 > 0
-      " issue command to debugger
       call system( "echo 'command:" . a:1 . "' >> " . s:ctlTOvdd )
       call s:HandleCmdResult()
    endif
@@ -273,17 +272,12 @@ function! DBGRrestart()
       echo "\rthe debugger is not running"
       return
    endif
-
    call system( 'echo "restart" >> ' . s:ctlTOvdd )
-
    " do after the system() call so that nongui vim doesn't show a blank screen
    echo "\rrestarting..."
-
    call s:UnplaceTheLastCurrentLineSign()
-
    redraw!
    call s:HandleCmdResult("restarted")
-
    let s:programDone = 0
 endfunction
 function! DBGRquit()
@@ -392,7 +386,6 @@ function! s:SetNoLineNumbers()
       set nonumber
    endif
 endfunction
-" place an empty sign on line 1 of the file
 function! s:CreateId(bufNr, lineNumber)
    return a:bufNr * 10000000 + a:lineNumber
 endfunction
@@ -410,17 +403,17 @@ endfunction
 " hopefully a Jdb.pm out there somewhere where vdd can find it.
 function! s:DbgrName(fileName)
 
-   let l:fileExtension = s:FileExtension(a:fileName)
+   let l:fileExtension = fnamemodify(a:fileName, ':e')
 
    " consult file extension and filetype
-   if     &l:filetype == "perl"   || l:fileExtension == ".pl"
+   if     &l:filetype == "perl"   || l:fileExtension == "pl"
       return "Perl"
-   elseif &l:filetype == "c"      || l:fileExtension == ".c"   ||
-        \ &l:filetype == "cpp"    || l:fileExtension == ".cpp"
+   elseif &l:filetype == "c"      || l:fileExtension == "c"   ||
+        \ &l:filetype == "cpp"    || l:fileExtension == "cpp"
       return "Gdb"
-   elseif &l:filetype == "python" || l:fileExtension == ".py"
+   elseif &l:filetype == "python" || l:fileExtension == "py"
       return "Python"
-   elseif &l:filetype == "ruby"   || l:fileExtension == ".r"
+   elseif &l:filetype == "ruby"   || l:fileExtension == "r"
       return "Ruby"
    else
       echo "\rthere is no debugger associated with this file type"
@@ -428,20 +421,13 @@ function! s:DbgrName(fileName)
    endif
 
 endfunction
-" can vim do this for me?  i wish it would
-function! s:FileExtension(path)
-   let l:temp = substitute(a:path, '\(^.*\/\)', "", "") " path
-   let l:temp = substitute(l:temp, '^\.\+', "", "")     " dot files
-   let l:temp = matchstr(l:temp, '\..*$')               " get extension
-   let l:temp = substitute(l:temp, '^\..*\.', '.', '')  " remove > 1 extensions
-   return l:temp
-endfunction
 
 
 function! s:HandleCmdResult(...)
 
    " get command results from control fifo
    let l:cmdResult = system('cat ' . s:ctlFROMvdd)
+   " call confirm('cmdResult: ' . l:cmdResult, 'ok')
 
    if match(l:cmdResult, '^' . s:LINE_INFO . '\d\+:.*$') != -1
       let l:cmdResult = substitute(l:cmdResult, '^' . s:LINE_INFO, "", "")
@@ -620,7 +606,7 @@ function! s:ConsolePrint(msg)
       call DBGRopenConsole()
       let l:consoleWinNr = bufwinnr(s:consoleBufNr)
    endif
-   exe l:consoleWinNr . "wincmd w"
+   silent exe l:consoleWinNr . "wincmd w"
    let l:oldValue = @x
    let @x = a:msg
    silent exe 'normal G$"xp'

@@ -1,14 +1,6 @@
-" vimDebug.vim
-"
-" (c) eric johnson 09.31.2002
-" distribution under the GPL
-"
+" (c) eric johnson
 " email: vimDebug at iijo dot org
 " http://iijo.org
-"
-" $Id: vimDebug.vim 63 2005-10-04 22:14:23Z eric $
-"
-
 
 
 " key bindings
@@ -614,7 +606,6 @@ endfunction
 
 
 " debugger console functions
-
 function! DBGRopenConsole()
    new "debugger console"
    let s:consoleBufNr = bufnr('%')
@@ -640,16 +631,10 @@ function! s:ConsolePrint(msg)
       let l:consoleWinNr = bufwinnr(s:consoleBufNr)
    endif
    exe l:consoleWinNr . "wincmd w"
-
    let l:oldValue = @x
    let @x = a:msg
-
    exe 'normal G$"xp'
-
    let @x = l:oldValue
-
    normal G
    wincmd p
 endfunction
-
-

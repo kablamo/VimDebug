@@ -50,24 +50,23 @@ let g:DBGRconsoleHeight   = 7
 let g:DBGRlineNumbers     = 1
 let g:DBGRshowConsole     = 1
 
-" script variables
+" script constants
 let s:LINE_INFO       = "vimDebug:"
 let s:COMPILER_ERROR  = "compiler error"
 let s:RUNTIME_ERROR   = "runtime error"
 let s:APP_EXITED      = "application exited"
 let s:DBGR_READY      = "debugger ready"
 
+" script variables
 let s:sessionId       = system("perl -e 'print int(rand(99999))'") " random num
 let s:ctlFROMvdd      = ".ctl.vddTOvim." . s:sessionId " control fifo to read  from vdd
 let s:ctlTOvdd        = ".ctl.vimTOvdd." . s:sessionId " control fifo to write to   vdd
 let s:dbgFROMvdd      = ".dbg.vddTOvim." . s:sessionId " debug out fifo to read  from vdd
 let s:dbgTOvdd        = ".dbg.vimTOvdd." . s:sessionId " debug out fifo to write to   vdd
-
 let s:lineNumber      = 0
 let s:fileName        = ""
 let s:bufNr           = 0
 let s:programDone     = 0
-
 let s:consoleBufNr    = -99
 
 " note that these aren't really arrays.  its a string.  different values are

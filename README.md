@@ -7,9 +7,9 @@ and is still missing some important capabilities.
 
 ### Requirements
 
-Perl 5.6.0+
-a small number of Perl modules
-Vim with +signs compiled in.
+ - Perl 5.6.0+
+ - A small number of Perl modules
+ - Vim with +signs compiled in.
 
 
 ### Install instructions

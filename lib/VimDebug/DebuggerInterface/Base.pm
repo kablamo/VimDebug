@@ -2,10 +2,6 @@
 
 VimDebug::DebuggerInterface::Base - a base class for VimDebug::DebuggerInterface::* modules
 
-=head1 VERSION
-
-$Id: Debugger.pm 93 2007-12-22 21:05:20Z eric $
-
 =head1 SYNOPSIS
 
    package VimDebug::DebuggerInterface::Perl;

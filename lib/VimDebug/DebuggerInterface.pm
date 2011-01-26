@@ -2,10 +2,6 @@
 
 VimDebug::DebuggerInterface - Debugger interface to many debuggers
 
-=head1 VERSION
-
-$Id: Debugger.pm 93 2007-12-22 21:05:20Z eric $
-
 =head1 SYNOPSIS
 
    use VimDebug::DebuggerInterface;

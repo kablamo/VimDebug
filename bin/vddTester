@@ -3,14 +3,9 @@
 # vddTester
 # Vim Debugger Daemon Tester
 #
-#
 # (c) eric johnson 2002-3020
-# distribution under the GPL
-#
 # email: vimDebug at iijo dot org
 # http://iijo.org
-#
-# $Id: vddTester 88 2006-02-09 05:04:36Z eric $
 
 use strict;
 use Cwd;

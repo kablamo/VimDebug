@@ -45,17 +45,17 @@ These are the default key bindings.  To change them, edit VimDebug.vim:
     <Leader>s/ Start the debugger.  Prompts for command line arguments.
     <F10>      Restart debugger. Break points are ALWAYS saved (for all dbgrs).
     <F11>      Exit the debugger
-    
+
     <F6>       Next
     <F7>       Step
     <F8>       Continue
-    
+
     <Leader>b  Set break point on the current line
     <Leader>c  Clear break point on the current line
-    
+
     <Leader>v  Print the value of the variable under the cursor
     <Leader>v/ Print the value of an expression thats entered
-    
+
     <Leader>/  Type a command for the debugger to execute and echo the result
 
 

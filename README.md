@@ -1,5 +1,4 @@
-VIMDEBUG
-========
+# VIMDEBUG
 
 VimDebug integrates your language's debugger with Vim.  Currently there is
 support for Perl, Ruby, and Gdb.  Please note that this code very much in beta
@@ -13,7 +12,7 @@ a small number of Perl modules
 Vim with +signs compiled in.
 
 
-### How to install VimDebug
+### Install instructions
 
     tar xvzf VimDebug*.tar.gz
     cd VimDebug*
@@ -35,10 +34,10 @@ Then just type:
     sudo cpanm IO::Pty
     sudo cpanm IPC::Run
 
-For more help see the [cpanm documentation][1]
+For more help with installing Perl modules, see the [cpanm documentation][1]
 
 
-### Usage
+### VimDebug usage
 
 These are the default key mappings.  To change them, edit VimDebug.vim:
 

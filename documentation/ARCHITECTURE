@@ -6,7 +6,7 @@ passed from vim to vdd to the debugger and vice versa:
 
                 ------------------------------
                |            vim              |
-               |  (vim/plugin/vimDebug.vim)  |
+               |  (vim/plugin/VimDebug.vim)  |
                 ------------------------------
                    s:ctlFROMvdd      s:ctlTOvdd
 

@@ -6,14 +6,16 @@ support for Perl, Ruby, and Gdb.  Please note that this code very much in beta
 and is still missing some important capabilities.
 
 
-REQUIREMENTS
+Requirements
+------------
 
 Perl 5.6.0+
 a small number of Perl modules
 Vim with +signs compiled in.
 
 
-HOW TO INSTALL VIMDEBUG
+How to install VimDebug
+-----------------------
 
     tar xvzf VimDebug*.tar.gz
     cd VimDebug*
@@ -23,7 +25,8 @@ HOW TO INSTALL VIMDEBUG
     cp -r vim/* $VIMHOME/
 
 
-HOW TO INSTALL PERL MODULES
+How to install Perl modules
+---------------------------
 
 Perl modules are easily installed using cpanm.  If you don't have cpanm, this
 is the simplest way to get it:
@@ -38,7 +41,8 @@ Then just type:
 For more help see the [cpanm documentation][1]
 
 
-USAGE
+Usage
+-----
 
 These are the default key mappings.  To change them, edit VimDebug.vim:
 

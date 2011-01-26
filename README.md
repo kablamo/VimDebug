@@ -1,8 +1,12 @@
 VIMDEBUG
 ========
 
+Integrates your language's debugger with Vim.  Currently there is support for
+Perl, Ruby, and Gdb.  Please note that this code very much in beta and is
+still missing some important capabilities.
 
-REQUIREMENTS
+
+## REQUIREMENTS ##
 
 Perl 5.6.0+
 a small number of Perl modules
@@ -10,7 +14,7 @@ Vim with +signs compiled in.
 
 
 
-HOW TO INSTALL VIMDEBUG
+## HOW TO INSTALL VIMDEBUG ##
 
     tar xvzf VimDebug*.tar.gz
     cd VimDebug*
@@ -21,7 +25,7 @@ HOW TO INSTALL VIMDEBUG
 
 
 
-HOW TO INSTALL PERL MODULES
+## HOW TO INSTALL PERL MODULES ##
 
 Perl modules are easily installed using cpanm.  If you don't have cpanm, this
 is the simplest way to get it:
@@ -38,8 +42,8 @@ http://search.cpan.org/~miyagawa/App-cpanminus-1.1007/lib/App/cpanminus.pm
 
 
 
-USAGE
-=====
+## USAGE ##
+
 
 If you want to customize these keymappings, edit VimDebug.vim:
 

@@ -7,7 +7,6 @@ and is still missing some important capabilities.
 
 
 REQUIREMENTS
-------------
 
 Perl 5.6.0+
 a small number of Perl modules
@@ -15,7 +14,6 @@ Vim with +signs compiled in.
 
 
 HOW TO INSTALL VIMDEBUG
------------------------
 
     tar xvzf VimDebug*.tar.gz
     cd VimDebug*
@@ -26,7 +24,6 @@ HOW TO INSTALL VIMDEBUG
 
 
 HOW TO INSTALL PERL MODULES
----------------------------
 
 Perl modules are easily installed using cpanm.  If you don't have cpanm, this
 is the simplest way to get it:
@@ -42,7 +39,6 @@ For more help see the [cpanm documentation][1]
 
 
 USAGE
------
 
 These are the default key mappings.  To change them, edit VimDebug.vim:
 

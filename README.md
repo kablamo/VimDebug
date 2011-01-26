@@ -37,9 +37,9 @@ Then just type:
 For more help with installing Perl modules, see the [cpanm documentation][1]
 
 
-### VimDebug usage
+### VimDebug key bindings
 
-These are the default key mappings.  To change them, edit VimDebug.vim:
+These are the default key bindings.  To change them, edit VimDebug.vim:
 
     <F12>      Start the debugger
     <Leader>s/ Start the debugger.  Prompts for command line arguments.

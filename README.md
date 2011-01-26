@@ -1,8 +1,8 @@
 # VIMDEBUG
 
 VimDebug integrates your language's debugger with Vim.  Currently there is
-support for Perl, Ruby, and Gdb.  Please note that this code very much in beta
-and is still missing some important capabilities.
+support for Perl, Python, and Ruby.  Please note that this code very much in
+beta and is still missing some important capabilities.
 
 
 ### Requirements

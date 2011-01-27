@@ -4,23 +4,23 @@
 
 
 " key bindings
-" map <Leader>p  :DBGRconfig<CR>                        " configure project
-map <F12>      :DBGRstart<CR>
-map <Leader>s/ :DBGRstart   
-map <F7>       :DBGRstep<CR>
-map <F8>       :DBGRnext<CR>
-map <F9>       :DBGRcont<CR>                   " continue
-map <Leader>b  :DBGRsetBreakPoint<CR>
-map <Leader>c  :DBGRclearBreakPoint<CR>
-map <Leader>ca :DBGRclearAllBreakPoints<CR>
-map <Leader>v/ :DBGRprint 
-map <Leader>v  :DBGRprintExpand expand("<cWORD>")<CR> " print value under the cursor
-map <Leader>/  :DBGRcommand 
-map <F10>      :DBGRrestart<CR>
-map <F11>      :DBGRquit<CR>
+map <Leader><F12> :DBGRconfig<CR>                 " configure project
+map <F12>         :DBGRstart<CR>
+map <Leader>s/    :DBGRstart   
+map <F7>          :DBGRstep<CR>
+map <F8>          :DBGRnext<CR>
+map <F9>          :DBGRcont<CR>                   " continue
+map <Leader>b     :DBGRsetBreakPoint<CR>
+map <Leader>c     :DBGRclearBreakPoint<CR>
+map <Leader>ca    :DBGRclearAllBreakPoints<CR>
+map <Leader>v/    :DBGRprint 
+map <Leader>v     :DBGRprintExpand expand("<cWORD>")<CR> " value under cursor
+map <Leader>/     :DBGRcommand 
+map <F10>         :DBGRrestart<CR>
+map <F11>         :DBGRquit<CR>
 
 " commands
-" command! -nargs=0 DBGRconfig              call DBGRconfig()
+command! -nargs=0 DBGRconfig              call DBGRconfig()
 command! -nargs=* DBGRstart               call DBGRstart("<args>")
 command! -nargs=0 DBGRstep                call DBGRstep()
 command! -nargs=0 DBGRnext                call DBGRnext()
@@ -79,10 +79,10 @@ let s:sep             = "-"                          " array separator
 
 
 " debugger functions
-" function! DBGRconfigure()
-"    let s:project     = input('project name: ')
-"    let s:dbgrCommand = input('debugger command line options: ')
-" endfunction
+function! DBGRconfigure()
+   let s:project     = input('project name: ')
+   let s:dbgrOptions = input('debugger command line options: ')
+endfunction
 function! DBGRstart(...)
    if s:fileName != ""
       echo "\rthe debugger is already running"

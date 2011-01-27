@@ -79,7 +79,7 @@ let s:sep             = "-"                          " array separator
 
 
 " debugger functions
-function! DBGRconfigure()
+function! DBGRconfig()
    let s:project     = input('project name: ')
    let s:dbgrOptions = input('debugger command line options: ')
 endfunction

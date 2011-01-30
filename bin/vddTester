@@ -10,12 +10,12 @@
 use strict;
 use Cwd;
 use File::Basename;
-use Getopt::Long;
 use Term::ANSIColor;
 use Term::ReadLine;
 use vars qw(
-   $unix $sessionId $debuggerName $sourcePath @commandLineOptions $help_option
-   $ctlTOvdd $ctlFROMvdd $dbgTOvdd $dbgFROMvdd $sigIntCaught $quitting $term $PID $prevCommand
+   $unix $sessionId $sourcePath $debuggerName @debuggerCommand $help_option $ctlTOvdd
+   $ctlFROMvdd $dbgTOvdd $dbgFROMvdd $sigIntCaught $quitting $term $PID
+   $prevCommand
 );
 
 $unix         = 1; # valid values are 1 and 0
@@ -27,54 +27,36 @@ main();
 
 
 sub getCommandLineOptions {
-
-   # call GetOptions to parse the command line
-   Getopt::Long::Configure(qw(permute));
-   $Getopt::Long::ignorecase = 0;
-   usage(1) unless GetOptions(
-         "help|h|?"      => \$help_option
-   );
-
-   usage() if $help_option;
-   usage() unless(scalar(@ARGV) >= 2);
+   usage() unless(scalar(@ARGV) >= 4);
 
    $sessionId          = int(rand(99999));
-   $debuggerName       = shift @ARGV or die; # which debugger to use
-   $sourcePath         = shift @ARGV or die; # path to source you want to debug
-   @commandLineOptions = @ARGV;              # command line options of program
+   $debuggerName       = shift @ARGV or die;
+   @debuggerCommand    = @ARGV or die;
 }
 
 
 sub usage {
    print "
-usage: vddTester [options] DEBUGGER SOURCEPATH [debuggerCommandLineOptions]
+usage: vddTester DEBUGGER DEBUGGER_COMMAND
 
 a test shell for the vim debugger daemon.
 
-";
-
-   exit(0);
+"; exit(0);
 }
 
 
 sub initializeReadLine {
-
    $term = new Term::ReadLine('sanity');
    $term->ornaments(0);
 
    if($term->ReadLine eq 'Term::ReadLine::Gnu') {
       # Term::ReadLine::Gnu specific setup
    }
-#   elsif($term->ReadLine eq 'Term::ReadLine::Perl') {
-#      # Term::ReadLine::Perl specific setup
-#      $termPerl = 1;
-#   }
 
    if ($term->ReadLine eq 'Term::ReadLine::Stub') {
       warn("neither Term::ReadLine::Gnu or Term::ReadLine::Perl are installed.\n"
-        . "please install from CPAN for advanced functionality.  until then "
-        . "sanity will run\ncrippled. (like possibly no command history "
-        . "or line editing...\n");
+        . "please install from CPAN to enable command history or line " 
+        . "editing\n")
    }
 }
 
@@ -100,7 +82,7 @@ sub init {
 
 
 sub main {
-   spawnProcess("vdd $sessionId $debuggerName '$sourcePath'");
+   spawnProcess("vdd $sessionId $debuggerName @debuggerCommand");
    readFromVDD();
 
    # loop until request to exit
@@ -132,22 +114,16 @@ sub main {
 sub makeNamedPipe {
    my $fifo = shift or die "gotta pass a fifo to this function";
 
-   # if pipe is already there, die
    if (-p $fifo) {
       print "vddTester: $fifo already exists.  perhaps another instance of" .
             " vimDebug is running?\nif not, just delete $fifo.\n";
       exit();
    }
 
-   #if( unix() )   {
-      if(    system( 'mkfifo', $fifo )
-          && system( 'mknod',  $fifo, 'p' ) )   {
-         die "is mkfifo or mknod in your path?\n";
-      }
-   #}
-   #elsif( dos() )   {
-   #   die "not yet implemented for a microsoft operating system\n";
-   #}
+   if(    system( 'mkfifo', $fifo )
+         && system( 'mknod',  $fifo, 'p' ) )   {
+      die "is mkfifo or mknod in your path?\n";
+   }
 }
 
 

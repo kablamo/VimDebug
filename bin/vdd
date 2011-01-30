@@ -9,12 +9,10 @@
 
 use strict;
 use File::Basename;
-use Getopt::Long;
 use UNIVERSAL;
 use vars qw(
-   $unix $sessionId $debuggerName $sourcePath @commandLineOptions $help_option
-   $ctlTOvim $ctlFROMvim $dbgTOvim $dbgFROMvim $debugger $debug_option
-   $color_option
+   $unix $sessionId $debuggerName @debuggerCommand $help_option $ctlTOvim
+   $ctlFROMvim $dbgTOvim $dbgFROMvim $debugger $debug_option $color_option
 );
 
 $unix         = 1; # valid values are 1 and 0
@@ -36,33 +34,25 @@ sub signalHandler {
    exit;
 }
 
-
 sub getCommandLineOptions {
-
    usage() unless(scalar(@ARGV) >= 3);
-
-   $sessionId          = shift @ARGV;   # session id
-   $debuggerName       = shift @ARGV;   # which debugger to use
-   $sourcePath         = shift @ARGV;   # path to source you want to debug
-   @commandLineOptions = @ARGV;         # command line options of program
-
+   $sessionId       = shift @ARGV; # session id
+   $debuggerName    = shift @ARGV; # which debugger to use
+   @debuggerCommand = @ARGV;       # debugger command
 }
-
 
 sub usage {
    print "
-Usage: vdd SESSION_ID DEBUGGER SOURCEPATH [DBGR_CMDLINE_OPTS]
+Usage: vdd SESSION_ID DEBUGGER COMMAND
 
-The vim debugger daemon uses the perl module VimDebug::DebuggerInterface::DEBUGGER to
-invoke a debugger on the code in the program located at SOURCEPATH.
+The vim debugger daemon uses the perl module
+VimDebug::DebuggerInterface::DEBUGGER to invoke a debugger using the COMMAND.
+
 Communication with the daemon occurs via fifos located at
 \".ctl.vddTOvim.SESSION_ID\", \".ctl.vimFROMvdd.SESSION_ID\",
-\".dbg.vddTOvim.SESSION_ID\", \".dbg.vimFROMvdd.SESSION_ID\".  Any command line
-options are passed on to the debugger.
-
+\".dbg.vddTOvim.SESSION_ID\", \".dbg.vimFROMvdd.SESSION_ID\".
 "; exit(0);
 }
-
 
 sub init {
    $| = 1;
@@ -77,7 +67,6 @@ sub init {
          warn "fancy color printing disabled.  couldn't find Term::ANSIColor\n";
    }
 }
-
 
 sub main {
    makeNamedPipe($ctlFROMvim); # control fifo
@@ -116,28 +105,20 @@ sub END {
    exit;
 }
 
-
 sub makeNamedPipe {
    my $fifo = shift or die "gotta pass a fifo to this function";
 
-   # if pipe is already there, die
    if (-p $fifo) {
       print "vdd: $fifo already exists.  perhaps another instance of" .
             " vimDebug is running?\nif not, just delete $fifo.\n";
       exit();
    }
 
-   #if( unix() )   {
-      if(    system( 'mkfifo', $fifo )
-          && system( 'mknod',  $fifo, 'p' ) )   {
-         die "is mkfifo or mknod in your path?\n";
-      }
-   #}
-   #elsif( dos() )   {
-   #   die "not yet implemented for a microsoft operating system\n";
-   #}
+   if(    system( 'mkfifo', $fifo )
+       && system( 'mknod',  $fifo, 'p' ) )   {
+      die "is mkfifo or mknod in your path?\n";
+   }
 }
-
 
 sub logger {
    my $printMe = shift or die;
@@ -161,11 +142,7 @@ sub readFromVim {
    return $from;
 }
 
-
 # blocks until someone reads
-# obviously this stuff isn't going to work on windows.  for windows we
-# should use gvim --remote stuff.  i don't want to use gvim on unix because
-# then you can't debug over a telnet session.
 sub sendToVim {
    my $stuffToSend = shift;
    my $debugOutput = shift;
@@ -192,11 +169,9 @@ sub startDebugger {
    $debugger = eval $debuggerName . "->new();";
    die "no such module exists: $debuggerName" unless defined $debugger;
 
-   act("startDebugger", $sourcePath, @commandLineOptions);
+   act("startDebugger", @debuggerCommand);
 }
 
-
-# have the debugger perform an action
 sub act {
    my $action  = shift or die;
    my @options = @_;

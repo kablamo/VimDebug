@@ -21,18 +21,12 @@ my  $dbgrPromptRegex    = '\(Pdb\) $';
 # callback functions implemented
 
 sub startDebugger {
-   my $self               = shift or die;
-   my $path               = shift or die;
-   my @commandLineOptions = @_;
+   my $self        = shift or die;
+   my @incantation = @_;
 
-   $self->{breakPointList}     = {};
-   $self->{breakPointCount}    = 1;
-   $self->{path}               = $path;
-   $self->{commandLineOptions} = \@commandLineOptions;
-
-   my   @incantation = $dbgrPath;
-   push(@incantation, $path);
-   push(@incantation, @commandLineOptions);
+   $self->{breakPointList}  = {};
+   $self->{breakPointCount} = 1;
+   $self->{incantation}     = \@incantation;
 
    # this regexe aids in parsing debugger output.
    $self->dbgrPromptRegex($dbgrPromptRegex);
@@ -118,7 +112,7 @@ sub restart {
    # restart
    my $oldBreakPointList = $self->{breakPointList};
    $self->SUPER::_command("quit");
-   $self->startDebugger($self->{path}, @{$self->{commandLineOptions}});
+   $self->startDebugger(@{$self->{incantation}});
 
    # restore break points
    foreach my $breakPoint (keys(%$oldBreakPointList)) {

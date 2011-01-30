@@ -21,19 +21,12 @@ my  $dbgrPromptRegex    = '(\(rdb:\d+\) )|(Really quit\? \(y\/n\) )$';
 # callback functions implemented
 
 sub startDebugger {
-   my $self               = shift or die;
-   my $path               = shift or die;
-   my @commandLineOptions = @_;
+   my $self        = shift or die;
+   my @incantation = @_;
 
-   $self->{breakPointList}     = {};
-   $self->{breakPointCount}    = 1;
-   $self->{path}               = $path;
-   $self->{commandLineOptions} = \@commandLineOptions;
-
-   my   @incantation = $dbgrPath;
-   push(@incantation, "-rdebug");
-   push(@incantation, $path);
-   push(@incantation, @commandLineOptions);
+   $self->{breakPointList}  = {};
+   $self->{breakPointCount} = 1;
+   $self->{incantation}     = \@incantation;
 
    # this is used to parse debugger output.
    $self->dbgrPromptRegex($dbgrPromptRegex);
@@ -114,7 +107,7 @@ sub restart {
 
    my $oldBreakPointList = $self->{breakPointList};
 
-   $self->startDebugger($self->{path}, @{$self->{commandLineOptions}});
+   $self->startDebugger(@{$self->{incantation}});
 
    # restore break points
    foreach my $breakPoint (keys(%$oldBreakPointList)) {

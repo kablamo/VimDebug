@@ -20,16 +20,8 @@ my  $dbgrPromptRegex    = '(\(gdb\) )|(y\? \(y or n\) )';
 # callback functions implemented
 
 sub startDebugger {
-   my $self               = shift or die;
-   my $path               = shift or die;
-   my @commandLineOptions = @_;
-
-   $path =~ s/(\.[^\.]+)$//;
-
-   my   @incantation = $dbgrPath;
-   push(@incantation, $path);
-   push(@incantation, "-f");
-   push(@incantation, @commandLineOptions);
+   my $self        = shift or die;
+   my @incantation = @_;
 
    # this regexe aids in parsing debugger output.
    $self->dbgrPromptRegex($dbgrPromptRegex);

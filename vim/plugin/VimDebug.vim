@@ -4,9 +4,8 @@
 
 
 " key bindings
-map <Leader><F12> :DBGRconfig<CR>                 " configure project
 map <F12>         :DBGRstart<CR>
-map <Leader>s/    :DBGRstart   
+map <Leader><F12> :DBGRstart   
 map <F7>          :DBGRstep<CR>
 map <F8>          :DBGRnext<CR>
 map <F9>          :DBGRcont<CR>                   " continue
@@ -20,7 +19,6 @@ map <F10>         :DBGRrestart<CR>
 map <F11>         :DBGRquit<CR>
 
 " commands
-command! -nargs=0 DBGRconfig              call DBGRconfig()
 command! -nargs=* DBGRstart               call DBGRstart("<args>")
 command! -nargs=0 DBGRstep                call DBGRstep()
 command! -nargs=0 DBGRnext                call DBGRnext()
@@ -45,7 +43,6 @@ sign define both        linehl=currentLine text=>>
 sign define empty       linehl=empty
 
 " global variables
-let g:DBGRprogramArgs     = ""
 let g:DBGRconsoleHeight   = 7
 let g:DBGRlineNumbers     = 1
 let g:DBGRshowConsole     = 1
@@ -63,6 +60,7 @@ let s:ctlFROMvdd      = ".ctl.vddTOvim." . s:sessionId " control fifo to read  f
 let s:ctlTOvdd        = ".ctl.vimTOvdd." . s:sessionId " control fifo to write to   vdd
 let s:dbgFROMvdd      = ".dbg.vddTOvim." . s:sessionId " debug out fifo to read  from vdd
 let s:dbgTOvdd        = ".dbg.vimTOvdd." . s:sessionId " debug out fifo to write to   vdd
+let s:incantation     = ""
 let s:lineNumber      = 0
 let s:fileName        = ""
 let s:bufNr           = 0
@@ -79,34 +77,17 @@ let s:sep             = "-"                          " array separator
 
 
 " debugger functions
-function! DBGRconfig()
-   let s:project     = input('project name: ')
-   let s:dbgrOptions = input('debugger command line options: ')
-endfunction
 function! DBGRstart(...)
    if s:fileName != ""
       echo "\rthe debugger is already running"
       return
    endif
 
-   " gather information and initialize script variables
-   let g:DBGRprogramArgs = a:1
-   let s:fileName  = bufname("%")                 " get file name
-   let s:bufNr     = bufnr("%")                   " get buffer number
-   let l:debugger  = s:DbgrName(s:fileName)       " get dbgr name
-   if l:debugger == "none"
-      return
-   endif
+   let s:incantation = s:Incantation(a:1)
 
+   exec "silent :! " . s:incantation. ' &'
 
-   " build command
-   let l:cmd = "vdd " . s:sessionId . " " . l:debugger . " '" . s:fileName . "'"
-   let l:cmd = l:cmd . " " . g:DBGRprogramArgs
-
-   " invoke the debugger
-   exec "silent :! " . l:cmd . '&'
-
-   " do after the system() call so that nongui vim doesn't show a blank screen
+   " do after system() so nongui vim doesn't show a blank screen
    echo "\rstarting the debugger..."
 
    " loop until vdd says the debugger is done loading
@@ -402,14 +383,30 @@ endfunction
 function! s:CalculateLineNumberFromId(id)
    return a:id % 10000000
 endfunction
-" determine which debugger to invoke from the file extension
-"
-" returns debugger name or 'none' if there isn't a debugger available for
-" that particular file extension.  (l:debugger is expected to match up
-" with a perl class.  so, for example, if 'Jdb' is returned, there is
-" hopefully a Jdb.pm out there somewhere where vdd can find it.
-function! s:DbgrName(fileName)
+function! s:AutoIncantation(...)
+   if     a:1 == "Perl"
+      return "perl -Ilib -d '" . s:fileName . "'"
+   elseif a:1 == "Gdb"
+      return "gdb '" . s:fileName . "' -f"
+   elseif a:1 == "Python"
+      return "pdb '" . s:fileName . "'"
+   elseif a:1 == "Ruby"
+      return "ruby -rdebug '" . s:fileName . "'"
+   endif
+endfunction
+function! s:Incantation(...)
+   let s:bufNr          = bufnr("%")
+   let s:fileName       = bufname("%")
+   let l:debugger       = s:DbgrName(s:fileName)
+   let l:vddIncantation = "vdd " . s:sessionId . " " . l:debugger . " "
 
+   if a:1 == ''
+      return l:vddIncantation . s:AutoIncantation(l:debugger)
+   else
+      return l:vddIncantation . a:1
+   endif
+endfunction 
+function! s:DbgrName(fileName)
    let l:fileExtension = fnamemodify(a:fileName, ':e')
 
    " consult file extension and filetype
@@ -426,7 +423,6 @@ function! s:DbgrName(fileName)
       echo "\rthere is no debugger associated with this file type"
       return "none"
    endif
-
 endfunction
 
 
@@ -490,6 +486,7 @@ endfunction
 "
 " parameters
 "    lineInfo: a string with the format 'lineNumber:fileName'
+"
 " returns nothing
 function! s:CurrentLineMagic(lineInfo)
 
@@ -556,7 +553,6 @@ function! s:UnplaceTheLastCurrentLineSign()
    endif
 
 endfunction
-" returns nothing
 function! s:PlaceCurrentLineSign(lineNumber, fileName)
 
    " place the new currentline sign
@@ -575,11 +571,6 @@ function! s:PlaceCurrentLineSign(lineNumber, fileName)
    let s:bufNr = l:bufNr
 
 endfunction
-" if the program being debugged has terminated, this function turns off the
-" currentline sign but leaves the breakpoint signs on.
-"
-" sets s:programDone = 1.  so the only functions we should be calling
-" after this situation is DBGRquit() or DBGRrestart().
 function! s:HandleProgramTermination()
    call s:UnplaceTheLastCurrentLineSign()
    let s:lineNumber  = 0

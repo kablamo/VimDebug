@@ -56,8 +56,9 @@ my $DBGR_READY     = "debugger ready";
 sub createDebugger : Test(startup) {
    my $self = shift or confess;
 
-   confess "debuggerName not defined" unless exists $self->{debuggerName};
-   confess "testCode not defined"     unless exists $self->{testCode};
+   confess "debuggerName not defined"    unless exists $self->{debuggerName};
+   confess "debuggerCommand not defined" unless exists $self->{debuggerCommand};
+   confess "filename not defined"        unless exists $self->{filename};
 
    # load module
    my $moduleName = 'VimDebug/DebuggerInterface/' . $self->{debuggerName} . '.pm';
@@ -67,17 +68,12 @@ sub createDebugger : Test(startup) {
    my $className = 'VimDebug::DebuggerInterface::' . $self->{debuggerName};
    $self->{dbgr} = eval $className . "->new();";
    confess "no such module exists: $className" unless defined $self->{dbgr};
-
-   # make sure test code exists
-   if (! -r $self->{testCode}) {
-      die "file not readable: " . $self->{testCode};
-   }
 }
 
 sub startDebugger : Test(setup) {
    my $self = shift or confess;
    my $dbgr = $self->{dbgr};
-   $dbgr->startDebugger($self->{testCode});
+   $dbgr->startDebugger(@{$self->{debuggerCommand}});
 }
 
 sub quitDebugger : Test(teardown) {
@@ -144,7 +140,7 @@ sub breakPoints : Test(31) {
    my $dbgr = $self->{dbgr};
    my $rv;
 
-   $rv = $dbgr->setBreakPoint(13, $self->{testCode});
+   $rv = $dbgr->setBreakPoint(13, $self->{filename});
    $dbgr->cont();
    ok(defined $rv)                or diag("setbp returned undef");
    ok($rv == 13)                  or diag("setbp returned " . $rv);
@@ -158,7 +154,7 @@ sub breakPoints : Test(31) {
    ok(defined $dbgr->filePath)    or diag("after0: file path not defined");
    ok($dbgr->lineNumber == 13)    or diag("after0: " . $dbgr->lineNumber);
 
-   $dbgr->clearBreakPoint(13, $self->{testCode});
+   $dbgr->clearBreakPoint(13, $self->{filename});
    $self->restart();
    $dbgr->cont();
    ok(defined $dbgr->lineNumber)  or diag("after0: line number not defined");
@@ -169,8 +165,8 @@ sub clearAllBreakPoints : Test(2) {
    my $self = shift or confess;
    my $dbgr = $self->{dbgr};
    my $rv;
-   $rv = $dbgr->setBreakPoint(13, $self->{testCode});
-   $rv = $dbgr->setBreakPoint(14, $self->{testCode});
+   $rv = $dbgr->setBreakPoint(13, $self->{filename});
+   $rv = $dbgr->setBreakPoint(14, $self->{filename});
    $rv = $dbgr->clearAllBreakPoints();
    $rv = $dbgr->cont();
    ok(defined $dbgr->lineNumber)  or diag("line number not defined");

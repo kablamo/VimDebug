@@ -24,21 +24,14 @@ my  $finishedRegex      = qr/(\/perl5db.pl:)|(Use .* to quit or .* to restart)|(
 # callback functions implemented
 
 sub startDebugger {
-   my $self               = shift or die;
-   my $path               = shift or die;
-   my @commandLineOptions = @_;
+   my $self        = shift or die;
+   my @incantation = @_;
 
    $ENV{"PERL5DB"}     = 'BEGIN {require "perl5db.pl";}';
    #$ENV{"PERLDB_OPTS"} = "ReadLine=0,ornaments=''";
    $ENV{"PERLDB_OPTS"} = "ornaments=''";
 
-   my   @incantation = $dbgrPath;
-   push(@incantation, "-d");
-   push(@incantation, $path);
-   push(@incantation, @commandLineOptions);
-
-   # this regexe aids in parsing debugger output.
-   $self->dbgrPromptRegex($dbgrPromptRegex);
+   $self->dbgrPromptRegex($dbgrPromptRegex); # used to parse debugger output
    return $self->SUPER::_startDebugger(\@incantation);
 }
 

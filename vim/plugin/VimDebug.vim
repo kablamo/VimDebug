@@ -303,10 +303,6 @@ function! DBGRquit()
 
    call system('echo "quit" >> ' . s:ctlTOvdd)
 
-   if has("autocmd")
-     autocmd! VimLeave * call DBGRquit()
-   endif
-
    " reinitialize script variables
    let s:lineNumber      = 0
    let s:fileName        = ""

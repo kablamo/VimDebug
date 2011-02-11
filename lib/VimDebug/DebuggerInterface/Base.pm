@@ -1,6 +1,4 @@
-=head1 NAME
-
-VimDebug::DebuggerInterface::Base - a base class for VimDebug::DebuggerInterface::* modules
+# ABSTRACT: A base class for VimDebug::DebuggerInterface::* modules.
 
 =head1 SYNOPSIS
 

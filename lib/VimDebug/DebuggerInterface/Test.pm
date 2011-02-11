@@ -36,6 +36,7 @@
 
 
 package VimDebug::DebuggerInterface::Test;
+# ABSTRACT: Test the VimDebug interface.
 
 use strict;
 use warnings 'FATAL' => 'all';

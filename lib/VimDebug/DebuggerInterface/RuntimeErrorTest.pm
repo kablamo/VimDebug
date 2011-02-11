@@ -1,4 +1,5 @@
 package VimDebug::DebuggerInterface::RuntimeErrorTest;
+# ABSTRACT: VimDebug runtime error test.
 
 use strict;
 use warnings 'FATAL' => 'all';

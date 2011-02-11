@@ -1,4 +1,5 @@
 package VimDebug::DebuggerInterface::CompilerErrorTest;
+# ABSTRACT: VimDebug compiler error test.
 
 use strict;
 use warnings 'FATAL' => 'all';

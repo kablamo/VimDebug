@@ -57,7 +57,7 @@ let s:RUNTIME_ERROR   = "runtime error"
 let s:APP_EXITED      = "application exited"
 let s:DBGR_READY      = "debugger ready"
 
-let s:sessionId       = system("perl -e 'print int(rand(99999))'") " random num
+let s:sessionId       = getpid()
 let s:ctlFROMvdd      = ".ctl.vddTOvim." . s:sessionId " control fifo to read  from vdd
 let s:ctlTOvdd        = ".ctl.vimTOvdd." . s:sessionId " control fifo to write to   vdd
 let s:dbgFROMvdd      = ".dbg.vddTOvim." . s:sessionId " debug out fifo to read  from vdd

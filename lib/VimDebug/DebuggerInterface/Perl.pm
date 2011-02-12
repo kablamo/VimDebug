@@ -11,7 +11,6 @@ use warnings 'FATAL' => 'all';
 use Carp;
 use base qw(VimDebug::DebuggerInterface::Base);
 
-
 # set some global variables
 
 our $dbgrPath           = "perl";
@@ -122,19 +121,34 @@ sub parseOutput {
 sub parseForFilePath {
    my $self   = shift or die;
    my $output = shift or die;
-   if ($output =~ /\w*::(\w*)?\(+(.+):(\d+)\)+:/om) {
-      $self->filePath($2);
-   }
+   my ($filePath, undef) = _getFileAndLine($output);
+   $self->filePath($filePath) if defined $filePath;
    return undef;
 }
 
 sub parseForLineNumber {
    my $self   = shift or die;
    my $output = shift or die;
-   if ($output =~ /\w*::(\w*)?\(+(.+):(\d+)\)+:/om) {
-      $self->lineNumber($3);
-   }
+   my (undef, $lineNumber) = _getFileAndLine($output);
+   $self->lineNumber($lineNumber) if defined $lineNumber;
    return undef;
+}
+
+sub _getFileAndLine {
+   # main::(/opt/apps/perl/bin/cpan:9): 
+   # Foo::meh(/some/where/Foo.pm:353):
+   # App::Cpan::run(/opt/apps/perl/lib/5.12.2/App/Cpan.pm:353):
+   # App::Cpan::CODE(0xa3fd670)(/opt/apps/perl/lib/5.12.2/App/Cpan.pm:459):
+   my ($str) = shift;
+   $str =~ /
+      ^ \w+ ::
+      (?:\w+::)*
+      (?:CODE\(0x\w+\)|\w+)?
+      \(
+         (.+) : (\d+)
+      \):
+   /xm;
+   return ($1, $2);
 }
 
 

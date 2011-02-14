@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl
 #
 # vdd
 # Vim Debugger Daemon
@@ -8,6 +8,7 @@
 # http://iijo.org
 
 use strict;
+use warnings;
 use File::Basename;
 use UNIVERSAL;
 use vars qw(

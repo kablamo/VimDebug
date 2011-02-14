@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl
 #
 # vddTester
 # Vim Debugger Daemon Tester
@@ -8,6 +8,7 @@
 # http://iijo.org
 
 use strict;
+use warnings;
 use Cwd;
 use File::Basename;
 use Term::ANSIColor;

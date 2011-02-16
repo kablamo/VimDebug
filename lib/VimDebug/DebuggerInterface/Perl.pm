@@ -135,17 +135,15 @@ sub parseForLineNumber {
 }
 
 sub _getFileAndLine {
-   # main::(/opt/apps/perl/bin/cpan:9): 
-   # Foo::meh(/some/where/Foo.pm:353):
-   # App::Cpan::run(/opt/apps/perl/lib/5.12.2/App/Cpan.pm:353):
-   # App::Cpan::CODE(0xa3fd670)(/opt/apps/perl/lib/5.12.2/App/Cpan.pm:459):
+   # See .../t/VD_DI_Perl.t for test cases.
    my ($str) = shift;
    $str =~ /
       ^ \w+ ::
-      (?:\w+::)*
-      (?:CODE\(0x\w+\)|\w+)?
+      (?: \w+ :: )*
+      (?: CODE \( 0x \w+ \) | \w+ )?
       \(
-         (.+) : (\d+)
+         (?: .* \x20 )?
+         ( .+ ) : ( \d+ )
       \):
    /xm;
    return ($1, $2);

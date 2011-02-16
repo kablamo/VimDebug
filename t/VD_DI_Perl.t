@@ -36,6 +36,11 @@ for my $t_ref (
       "App::Cpan::CODE(0xa3fd670)(/opt/apps/perl/lib/5.12.2/App/Cpan.pm:459):",
       qw<                         /opt/apps/perl/lib/5.12.2/App/Cpan.pm 459 >,
    ],
+   [
+      "Another code ref", 
+      "Class::Foo::CODE(0xa1e4988)(accessor amount defined at lib/Currency.pm:8):",
+      qw<                                                     lib/Currency.pm 8 >,
+   ],
 ) {
     my ($test_name, $str, $exp_f, $exp_l) = @$t_ref;
     my ($got_f, $got_l) = VimDebug::DebuggerInterface::Perl::_getFileAndLine($str);

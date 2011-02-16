@@ -434,7 +434,7 @@ function! s:HandleCmdResult(...)
 
    if match(l:cmdResult, '^' . s:LINE_INFO . '\d\+:.*$') != -1
       let l:cmdResult = substitute(l:cmdResult, '^' . s:LINE_INFO, "", "")
-      if a:0 <= 0 || (a:0 > 0 && match(a:1, 'breakpoint') == -1)
+      if a:0 == 0 || match(a:1, 'breakpoint') == -1
          call s:CurrentLineMagic(l:cmdResult)
       endif
       if a:0 > 0

@@ -40,9 +40,13 @@ sub getCommandLineOptions {
 
 sub usage {
    print "
-usage: vddTester DEBUGGER DEBUGGER_COMMAND
+usage: vddTester DEBUGGER DEBUGGER COMMAND
 
-a test shell for the vim debugger daemon.
+A test shell for the vim debugger daemon.  Invocation is weird because it
+doesn't want quotes around the DEBUGGER COMMAND.  This is so tab completion
+works.
+
+example: vddTester Perl perl -Ilib -d t/Perl.testCode
 
 "; exit(0);
 }

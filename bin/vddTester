@@ -15,15 +15,11 @@ use Cwd;
 use File::Basename;
 use Term::ANSIColor;
 use Term::ReadLine;
-use vars qw(
-   $unix $sessionId $sourcePath $debuggerName @debuggerCommand $help_option $ctlTOvdd
-   $ctlFROMvdd $dbgTOvdd $dbgFROMvdd $sigIntCaught $quitting $term $PID
-   $prevCommand
-);
 
-$unix         = 1; # valid values are 1 and 0
-$sigIntCaught = 0;
-$quitting     = 0;
+my ($sessionId, $sourcePath, $debuggerName, @debuggerCommand); 
+my ($ctlTOvdd, $ctlFROMvdd, $dbgTOvdd, $dbgFROMvdd); 
+my ($term, $PID, $prevCommand);
+
 
 init();
 main();
@@ -73,10 +69,9 @@ sub init {
    getCommandLineOptions();
 
    $ctlTOvdd   = ".ctl.vimTOvdd." . $sessionId; # control fifo; write to vdd
-   $ctlFROMvdd = ".ctl.vddTOvim."   . $sessionId; # control fifo; read from vim
+   $ctlFROMvdd = ".ctl.vddTOvim." . $sessionId; # control fifo; read from vim
    $dbgTOvdd   = ".dbg.vimTOvdd." . $sessionId; # debug   fifo; write to vdd
-   $dbgFROMvdd = ".dbg.vddTOvim."   . $sessionId; # debug   fifo; read from vim
-
+   $dbgFROMvdd = ".dbg.vddTOvim." . $sessionId; # debug   fifo; read from vim
 
    unlink $ctlFROMvdd;
    unlink $ctlTOvdd;

@@ -1,6 +1,4 @@
-=head1 NAME
-
-VimDebug::DebuggerInterface - Debugger interface to many debuggers
+# ABSTRACT: Debugger interface to many debuggers
 
 =head1 SYNOPSIS
 

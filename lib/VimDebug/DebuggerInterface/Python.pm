@@ -1,6 +1,7 @@
 # (c) eric johnson 2002-3020
 # email: vimDebug at iijo dot org
 # http://iijo.org
+# ABSTRACT: VimDebug Python interface.
 
 
 package VimDebug::DebuggerInterface::Python;

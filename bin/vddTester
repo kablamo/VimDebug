@@ -6,6 +6,8 @@
 # (c) eric johnson 2002-3020
 # email: vimDebug at iijo dot org
 # http://iijo.org
+# PODNAME: vddTester
+# ABSTRACT: Tests the vdd program.
 
 use strict;
 use warnings;

@@ -22,14 +22,10 @@ my $APP_EXITED     = "application exited";
 my $DBGR_READY     = "debugger ready";
 
 # global variables
-my (
-   $sessionId, $debuggerName, @debuggerCommand, $debugger, 
-   $ctlTOvim, $ctlFROMvim, $dbgTOvim, $dbgFROMvim, 
-   $debug_option, $color_option,
-);
-
-$debug_option = 0;
-$color_option = 0;
+my ($sessionId, $debuggerName, @debuggerCommand, $debugger);
+my ($ctlTOvim, $ctlFROMvim, $dbgTOvim, $dbgFROMvim);
+my $debug_option = 0;
+my $color_option = 0;
 
 
 

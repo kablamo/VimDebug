@@ -123,7 +123,7 @@ sub parseForFilePath {
    my $self   = shift or die;
    my $output = shift or die;
    my ($filePath, undef) = _getFileAndLine($output);
-   $self->filePath($filePath);
+   $self->filePath($filePath || '');
    return undef;
 }
 
@@ -131,7 +131,7 @@ sub parseForLineNumber {
    my $self   = shift or die;
    my $output = shift or die;
    my (undef, $lineNumber) = _getFileAndLine($output);
-   $self->lineNumber($lineNumber);
+   $self->lineNumber($lineNumber || '');
    return undef;
 }
 

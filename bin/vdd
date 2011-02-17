@@ -13,19 +13,25 @@ use strict;
 use warnings;
 use File::Basename;
 use UNIVERSAL;
-use vars qw(
-   $unix $sessionId $debuggerName @debuggerCommand $help_option $ctlTOvim
-   $ctlFROMvim $dbgTOvim $dbgFROMvim $debugger $debug_option $color_option
-);
 
-$unix         = 1; # valid values are 1 and 0
-$debug_option = 0;
-$color_option = 0;
+# constants
 my $LINE_INFO      = "vimDebug:";
 my $COMPILER_ERROR = "compiler error";
 my $RUNTIME_ERROR  = "runtime error";
 my $APP_EXITED     = "application exited";
 my $DBGR_READY     = "debugger ready";
+
+# global variables
+my (
+   $sessionId, $debuggerName, @debuggerCommand, $debugger, 
+   $ctlTOvim, $ctlFROMvim, $dbgTOvim, $dbgFROMvim, 
+   $debug_option, $color_option,
+);
+
+$debug_option = 0;
+$color_option = 0;
+
+
 
 $SIG{INT} = \&signalHandler;
 getCommandLineOptions();

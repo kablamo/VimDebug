@@ -398,13 +398,10 @@ function! s:Incantation(...)
    let s:bufNr          = bufnr("%")
    let s:fileName       = bufname("%")
    let l:debugger       = s:DbgrName(s:fileName)
-   let l:vddIncantation = "vdd " . s:sessionId . " " . l:debugger . " "
+   let l:vddIncantation =
+    \ "vdd " . s:sessionId . " " . l:debugger . " " . s:AutoIncantation(l:debugger)
 
-   if a:1 == ''
-      return l:vddIncantation . s:AutoIncantation(l:debugger)
-   else
-      return l:vddIncantation . a:1
-   endif
+   return l:vddIncantation . (a:0 == 0 ? '' : (" " . join(a:000, " ")))
 endfunction 
 function! s:DbgrName(fileName)
    let l:fileExtension = fnamemodify(a:fileName, ':e')

@@ -56,6 +56,7 @@ let s:DBGR_READY      = "debugger ready"
 
 " script variables
 let s:sessionId       = getpid()
+let s:dbgrIsRunning   = 0
 let s:ctlFROMvdd      = ".ctl.vddTOvim." . s:sessionId " control fifo to read  from vdd
 let s:ctlTOvdd        = ".ctl.vimTOvdd." . s:sessionId " control fifo to write to   vdd
 let s:dbgFROMvdd      = ".dbg.vddTOvim." . s:sessionId " debug out fifo to read  from vdd
@@ -78,12 +79,16 @@ let s:sep             = "-"                          " array separator
 
 " debugger functions
 function! DBGRstart(...)
-   if s:fileName != ""
+   if s:dbgrIsRunning
       echo "\rthe debugger is already running"
       return
    endif
 
-   let s:incantation = s:Incantation(a:1)
+   try
+      let s:incantation = s:Incantation(a:1)
+   catch "can't debug file type"
+      return
+   endtry
 
    exec "silent :! " . s:incantation. ' &'
 
@@ -106,6 +111,7 @@ function! DBGRstart(...)
       call DBGRopenConsole()
    endif
 
+   let s:dbgrIsRunning = 1
    redraw!
    call s:HandleCmdResult("started the debugger")
 endfunction
@@ -256,7 +262,7 @@ function! DBGRcommand(...)
    endif
 endfunction
 function! DBGRrestart()
-   if s:fileName == ""
+   if ! s:dbgrIsRunning
       echo "\rthe debugger is not running"
       return
    endif
@@ -269,7 +275,7 @@ function! DBGRrestart()
    let s:programDone = 0
 endfunction
 function! DBGRquit()
-   if s:fileName == ""
+   if ! s:dbgrIsRunning
       echo "\rthe debugger is not running"
       return
    endif
@@ -294,6 +300,7 @@ function! DBGRquit()
    let s:programDone     = 0
    let s:sep             = "-"
 
+   let s:dbgrIsRunning = 0
    redraw! | echo "\rexited the debugger"
 endfunction
 
@@ -421,7 +428,7 @@ function! s:DbgrName(fileName)
       return "Ruby"
    else
       echo "\rthere is no debugger associated with this file type"
-      return "none"
+      throw "can't debug file type"
    endif
 endfunction
 

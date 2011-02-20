@@ -13,6 +13,7 @@ use strict;
 use warnings;
 use File::Basename;
 use UNIVERSAL;
+use POSIX ();
 
 # constants
 my $LINE_INFO      = "vimDebug:";
@@ -23,7 +24,7 @@ my $DBGR_READY     = "debugger ready";
 
 # global variables
 my ($sessionId, $debuggerName, @debuggerCommand, $debugger);
-my ($ctlTOvim, $ctlFROMvim, $dbgTOvim, $dbgFROMvim);
+my ($ctl_vddFIFOvim, $ctl_vimFIFOvdd, $dbg_vddFIFOvim);
 my $debug_option = 0;
 my $color_option = 0;
 
@@ -62,10 +63,9 @@ Communication with the daemon occurs via fifos located at
 sub init {
    $| = 1;
 
-   $ctlTOvim   = ".ctl.vddTOvim." . $sessionId; # control fifo; write to   VIM
-   $ctlFROMvim = ".ctl.vimTOvdd." . $sessionId; # control fifo; read  from VIM
-   $dbgTOvim   = ".dbg.vddTOvim." . $sessionId; # debug   fifo; write to   VIM
-   $dbgFROMvim = ".dbg.vimTOvdd." . $sessionId; # debug   fifo; read  from VIM
+   $ctl_vddFIFOvim = ".ctl_vddFIFOvim." . $sessionId;
+   $ctl_vimFIFOvdd = ".ctl_vimFIFOvdd." . $sessionId;
+   $dbg_vddFIFOvim = ".dbg_vddFIFOvim." . $sessionId;
 
    if ($color_option) {
       eval('require Term::ANSIColor;import Term::ANSIColor;') and
@@ -74,10 +74,9 @@ sub init {
 }
 
 sub main {
-   makeNamedPipe($ctlFROMvim); # control fifo
-   makeNamedPipe($ctlTOvim);
-   makeNamedPipe($dbgFROMvim); # debugger fifo
-   makeNamedPipe($dbgTOvim);
+   makeNamedPipe($ctl_vimFIFOvdd);
+   makeNamedPipe($ctl_vddFIFOvim);
+   makeNamedPipe($dbg_vddFIFOvim);
    startDebugger();
 
    # loop until request to exit
@@ -97,15 +96,13 @@ sub main {
 }
 
 sub END {
-   close $ctlFROMvim    if defined $ctlFROMvim;
-   close $ctlTOvim      if defined $ctlTOvim;
-   close $dbgFROMvim    if defined $dbgFROMvim;
-   close $dbgTOvim      if defined $dbgTOvim;
+   close $ctl_vimFIFOvdd if defined $ctl_vimFIFOvdd;
+   close $ctl_vddFIFOvim if defined $ctl_vddFIFOvim;
+   close $dbg_vddFIFOvim if defined $dbg_vddFIFOvim;
 
-   unlink $ctlFROMvim   if defined $ctlFROMvim;
-   unlink $ctlTOvim     if defined $ctlTOvim;
-   unlink $dbgFROMvim   if defined $dbgFROMvim;
-   unlink $dbgTOvim     if defined $dbgTOvim;
+   unlink $ctl_vimFIFOvdd if defined $ctl_vimFIFOvdd;
+   unlink $ctl_vddFIFOvim if defined $ctl_vddFIFOvim;
+   unlink $dbg_vddFIFOvim if defined $dbg_vddFIFOvim;
 
    exit;
 }
@@ -119,10 +116,7 @@ sub makeNamedPipe {
       exit();
    }
 
-   if(    system( 'mkfifo', $fifo )
-       && system( 'mknod',  $fifo, 'p' ) )   {
-      die "is mkfifo or mknod in your path?\n";
-   }
+   POSIX::mkfifo($fifo, 0700) or die "mkfifo $fifo failed: $!\n";
 }
 
 sub logger {
@@ -141,8 +135,9 @@ sub logger {
 
 # blocks until there is something to read
 sub readFromVim {
-   open(ctlFROMvim, "< $ctlFROMvim") or act('quit');
-   my $from = <ctlFROMvim>;
+   open my $ctl_hdl, "<", $ctl_vimFIFOvdd or act('quit');
+   my $from = <$ctl_hdl>;
+   close $ctl_hdl;
    logger("received '$from'") if $debug_option;
    return $from;
 }
@@ -153,14 +148,14 @@ sub sendToVim {
    my $debugOutput = shift;
 
    logger("sending  '$stuffToSend'") if $debug_option;
-   open(ctlTOvim, "> $ctlTOvim") or act('quit');
-   print ctlTOvim $stuffToSend;
-   close(ctlTOvim);
+   open my $ctl_hdl, ">", $ctl_vddFIFOvim or act('quit');
+   print {$ctl_hdl} $stuffToSend;
+   close $ctl_hdl;
 
    logger("sending  '$debugOutput'") if $debug_option;
-   open(dbgTOvim, "> $dbgTOvim") or act('quit');
-   print dbgTOvim $debugOutput;
-   close(dbgTOvim);
+   open my $dbg_hdl, ">", $dbg_vddFIFOvim or act('quit');
+   print {$dbg_hdl} $debugOutput;
+   close $dbg_hdl;
 }
 
 sub startDebugger {

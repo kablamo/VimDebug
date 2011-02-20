@@ -57,10 +57,9 @@ let s:DBGR_READY      = "debugger ready"
 " script variables
 let s:sessionId       = getpid()
 let s:dbgrIsRunning   = 0
-let s:ctlFROMvdd      = ".ctl.vddTOvim." . s:sessionId " control fifo to read  from vdd
-let s:ctlTOvdd        = ".ctl.vimTOvdd." . s:sessionId " control fifo to write to   vdd
-let s:dbgFROMvdd      = ".dbg.vddTOvim." . s:sessionId " debug out fifo to read  from vdd
-let s:dbgTOvdd        = ".dbg.vimTOvdd." . s:sessionId " debug out fifo to write to   vdd
+let s:ctl_vddFIFOvim  = ".ctl_vddFIFOvim." . s:sessionId
+let s:ctl_vimFIFOvdd  = ".ctl_vimFIFOvdd." . s:sessionId
+let s:dbg_vddFIFOvim  = ".dbg_vddFIFOvim." . s:sessionId
 let s:incantation     = ""
 let s:lineNumber      = 0
 let s:fileName        = ""
@@ -96,7 +95,7 @@ function! DBGRstart(...)
    echo "\rstarting the debugger..."
 
    " loop until vdd says the debugger is done loading
-   while !filewritable(s:ctlFROMvdd)
+   while !filewritable(s:ctl_vddFIFOvim)
       " this works in gvim but is misleading on the console
       " echo "\rwaiting for debugger to start (hit <C-c> to give up)..."
       continue
@@ -120,7 +119,7 @@ function! DBGRnext()
       return
    endif
    echo "\rnext..."
-   call system('echo "next" >> ' . s:ctlTOvdd) " send msg to vdd
+   call system('echo "next" >> ' . s:ctl_vimFIFOvdd)
    call s:HandleCmdResult()
 endfunction
 function! DBGRstep()
@@ -128,7 +127,7 @@ function! DBGRstep()
       return
    endif
    echo "\rstep..."
-   call system('echo "step" >> ' . s:ctlTOvdd) " send msg to vdd
+   call system('echo "step" >> ' . s:ctl_vimFIFOvdd)
    call s:HandleCmdResult()
 endfunction
 function! DBGRcont()
@@ -136,7 +135,7 @@ function! DBGRcont()
       return
    endif
    echo "\rcontinue..."
-   call system('echo "cont" >> ' . s:ctlTOvdd) " send msg to vdd
+   call system('echo "cont" >> ' . s:ctl_vimFIFOvdd)
    call s:HandleCmdResult()
 endfunction
 function! DBGRsetBreakPoint()
@@ -160,7 +159,7 @@ function! DBGRsetBreakPoint()
 
    " tell the debugger about the new break point
    "call system('echo "break:' . l:currLineNr . ':' . l:currFileName . '" >> ' . s:ctlTOvdd)
-   silent exe "redir >> " . s:ctlTOvdd . '| echon "break:' . l:currLineNr . ':' . l:currFileName . '" | redir END'
+   silent exe "redir >> " . s:ctl_vimFIFOvdd . '| echon "break:' . l:currLineNr . ':' . l:currFileName . '" | redir END'
 
 
    let s:breakPointArray = MvAddElement(s:breakPointArray, s:sep, l:id)
@@ -201,7 +200,7 @@ function! DBGRclearBreakPoint()
 
    " tell the debugger about the deleted break point
    "call system('echo "clear:' . l:currLineNr . ':' . l:currFileName . '" >> ' . s:ctlTOvdd)
-   silent exe "redir >> " . s:ctlTOvdd . '| echon "clear:' . l:currLineNr . ':' . l:currFileName . '" | redir END'
+   silent exe "redir >> " . s:ctl_vimFIFOvdd . '| echon "clear:' . l:currLineNr . ':' . l:currFileName . '" | redir END'
 
 
    let s:breakPointArray = MvRemoveElement(s:breakPointArray, s:sep, l:id)
@@ -230,7 +229,7 @@ function! DBGRclearAllBreakPoints()
    let l:currLineNr   = line(".")
    let l:id           = s:CreateId(l:bufNr, l:currLineNr)
 
-   silent exe "redir >> " . s:ctlTOvdd . '| echon "clearAll" | redir END'
+   silent exe "redir >> " . s:ctl_vimFIFOvdd . '| echon "clearAll" | redir END'
 
    " do this in case the last current line had a break point on it
    call s:UnplaceTheLastCurrentLineSign()                " unplace the old sign
@@ -247,7 +246,7 @@ function! DBGRprint(...)
       return
    endif
    if a:0 > 0
-      call system("echo 'printExpression:" . a:1 . "' >> " . s:ctlTOvdd)
+      call system("echo 'printExpression:" . a:1 . "' >> " . s:ctl_vimFIFOvdd)
       call s:HandleCmdResult()
    endif
 endfunction
@@ -257,7 +256,7 @@ function! DBGRcommand(...)
    endif
    echo ""
    if a:0 > 0
-      call system( "echo 'command:" . a:1 . "' >> " . s:ctlTOvdd )
+      call system( "echo 'command:" . a:1 . "' >> " . s:ctl_vimFIFOvdd )
       call s:HandleCmdResult()
    endif
 endfunction
@@ -266,7 +265,7 @@ function! DBGRrestart()
       echo "\rthe debugger is not running"
       return
    endif
-   call system( 'echo "restart" >> ' . s:ctlTOvdd )
+   call system( 'echo "restart" >> ' . s:ctl_vimFIFOvdd )
    " do after the system() call so that nongui vim doesn't show a blank screen
    echo "\rrestarting..."
    call s:UnplaceTheLastCurrentLineSign()
@@ -287,7 +286,7 @@ function! DBGRquit()
    call s:SetNoLineNumbers()
    call DBGRcloseConsole()
 
-   call system('echo "quit" >> ' . s:ctlTOvdd)
+   call system('echo "quit" >> ' . s:ctl_vimFIFOvdd)
 
    if has("autocmd")
      autocmd! VimLeave * call DBGRquit()
@@ -433,8 +432,8 @@ endfunction
 function! s:HandleCmdResult(...)
 
    " get command results from control fifo
-   let l:cmdResult = system('cat ' . s:ctlFROMvdd)
    " call confirm('cmdResult: ' . l:cmdResult, 'ok')
+   let l:cmdResult = system('cat ' . s:ctl_vddFIFOvim)
 
    if match(l:cmdResult, '^' . s:LINE_INFO . '\d\+:.*$') != -1
       let l:cmdResult = substitute(l:cmdResult, '^' . s:LINE_INFO, "", "")
@@ -479,7 +478,7 @@ function! s:HandleCmdResult(...)
    endif
 
    " get results from debug out fifo
-   let l:dbgOut = system('cat ' . s:dbgFROMvdd)
+   let l:dbgOut = system('cat ' . s:dbg_vddFIFOvim)
    call s:ConsolePrint(l:dbgOut)
 
    return

@@ -123,7 +123,7 @@ sub parseForFilePath {
    my $self   = shift or die;
    my $output = shift or die;
    my ($filePath, undef) = _getFileAndLine($output);
-   $self->filePath($filePath);
+   $self->filePath($filePath) if defined $filePath;
    return undef;
 }
 
@@ -131,14 +131,14 @@ sub parseForLineNumber {
    my $self   = shift or die;
    my $output = shift or die;
    my (undef, $lineNumber) = _getFileAndLine($output);
-   $self->lineNumber($lineNumber);
+   $self->lineNumber($lineNumber) if defined $lineNumber;
    return undef;
 }
 
 sub _getFileAndLine {
    # See .../t/VD_DI_Perl.t for test cases.
    my ($str) = shift;
-   $str =~ /
+   return $str =~ /
       ^ \w+ ::
       (?: \w+ :: )*
       (?: CODE \( 0x \w+ \) | \w+ )?
@@ -146,8 +146,7 @@ sub _getFileAndLine {
          (?: .* \x20 )?
          ( .+ ) : ( \d+ )
       \):
-   /xm;
-   return ($1, $2);
+   /xm ? ($1, $2) : (undef, undef);
 }
 
 

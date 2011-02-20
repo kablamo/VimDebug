@@ -100,15 +100,7 @@ sub main {
 }
 
 sub END {
-   close $ctl_vimFIFOvdd if defined $ctl_vimFIFOvdd;
-   close $ctl_vddFIFOvim if defined $ctl_vddFIFOvim;
-   close $dbg_vddFIFOvim if defined $dbg_vddFIFOvim;
-
-   unlink $ctl_vimFIFOvdd if defined $ctl_vimFIFOvdd;
-   unlink $ctl_vddFIFOvim if defined $ctl_vddFIFOvim;
-   unlink $dbg_vddFIFOvim if defined $dbg_vddFIFOvim;
-
-   exit;
+   unlink $_ for $ctl_vimFIFOvdd, $ctl_vddFIFOvim, $dbg_vddFIFOvim;
 }
 
 sub makeNamedPipe {

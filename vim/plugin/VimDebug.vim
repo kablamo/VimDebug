@@ -100,7 +100,6 @@ function! DBGRstart(...)
       " echo "\rwaiting for debugger to start (hit <C-c> to give up)..."
       continue
    endwhile
-  "let l:debuggerReady = system('cat ' . s:ctlFROMvdd)
 
    if has("autocmd")
      autocmd VimLeave * call DBGRquit()
@@ -157,8 +156,7 @@ function! DBGRsetBreakPoint()
    endif
 
 
-   " tell the debugger about the new break point
-   "call system('echo "break:' . l:currLineNr . ':' . l:currFileName . '" >> ' . s:ctlTOvdd)
+   " tell vdd about the new break point
    silent exe "redir >> " . s:ctl_vimFIFOvdd . '| echon "break:' . l:currLineNr . ':' . l:currFileName . '" | redir END'
 
 
@@ -172,10 +170,6 @@ function! DBGRsetBreakPoint()
    else
       exe "sign place " . l:id . " line=" . l:currLineNr . " name=breakPoint file=" . l:currFileName
    endif
-
-   "" block until the debugger is ready
-   "let l:debuggerReady = system('cat ' . s:ctlFROMvdd)
-   "redraw! | echo "\rbreakpoint set"
 
    call s:HandleCmdResult("breakpoint set")
 endfunction
@@ -198,8 +192,7 @@ function! DBGRclearBreakPoint()
    endif
 
 
-   " tell the debugger about the deleted break point
-   "call system('echo "clear:' . l:currLineNr . ':' . l:currFileName . '" >> ' . s:ctlTOvdd)
+   " tell vdd about the deleted break point
    silent exe "redir >> " . s:ctl_vimFIFOvdd . '| echon "clear:' . l:currLineNr . ':' . l:currFileName . '" | redir END'
 
 
@@ -210,10 +203,6 @@ function! DBGRclearBreakPoint()
    if(s:lineNumber == l:currLineNr)
       exe "sign place " . l:id . " line=" . l:currLineNr . " name=currentLine file=" . l:currFileName
    endif
-
-   "" block until the debugger is ready
-   "let l:debuggerReady = system('cat ' . s:ctlFROMvdd)
-   "redraw! | echo "\rbreakpoint disabled"
 
    call s:HandleCmdResult("breakpoint disabled")
 endfunction
@@ -234,10 +223,6 @@ function! DBGRclearAllBreakPoints()
    " do this in case the last current line had a break point on it
    call s:UnplaceTheLastCurrentLineSign()                " unplace the old sign
    call s:PlaceCurrentLineSign(s:lineNumber, s:fileName) " place the new sign
-
-   "" block until the debugger is ready
-   "let l:debuggerReady = system('cat ' . s:ctlFROMvdd)
-   "redraw! | echo "\rall breakpoints disabled"
 
    call s:HandleCmdResult("all breakpoints disabled")
 endfunction
@@ -431,8 +416,7 @@ endfunction
 
 function! s:HandleCmdResult(...)
 
-   " get command results from control fifo
-   " call confirm('cmdResult: ' . l:cmdResult, 'ok')
+   " get command results from vdd
    let l:cmdResult = system('cat ' . s:ctl_vddFIFOvim)
 
    if match(l:cmdResult, '^' . s:LINE_INFO . '\d\+:.*$') != -1
@@ -477,7 +461,7 @@ function! s:HandleCmdResult(...)
 
    endif
 
-   " get results from debug out fifo
+   " print debugger output obtained from vdd
    let l:dbgOut = system('cat ' . s:dbg_vddFIFOvim)
    call s:ConsolePrint(l:dbgOut)
 

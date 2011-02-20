@@ -48,16 +48,20 @@ sub getCommandLineOptions {
 }
 
 sub usage {
-   print "
-Usage: vdd SESSION_ID DEBUGGER COMMAND
+   print << 'EOT';
+Usage: vdd $session_id $debugger $command
 
 The vim debugger daemon uses the perl module
-VimDebug::DebuggerInterface::DEBUGGER to invoke a debugger using the COMMAND.
+VimDebug::DebuggerInterface::$debugger to invoke
+a debugger using the $command.
 
-Communication with the daemon occurs via fifos located at
-\".ctl.vddTOvim.SESSION_ID\", \".ctl.vimFROMvdd.SESSION_ID\",
-\".dbg.vddTOvim.SESSION_ID\", \".dbg.vimFROMvdd.SESSION_ID\".
-"; exit(0);
+Communication with the daemon occurs via fifos located at:
+
+   .ctl_vddFIFOvim.$session_id
+   .ctl_vimFIFOvdd.$session_id
+   .dbg_vddFIFOvim.$session_id
+EOT
+   exit;
 }
 
 sub init {

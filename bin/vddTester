@@ -27,7 +27,7 @@ main();
 
 
 sub getCommandLineOptions {
-   usage() unless(scalar(@ARGV) >= 4);
+   usage() unless(scalar(@ARGV) >= 2);
 
    $sessionId          = int(rand(99999));
    $debuggerName       = shift @ARGV or die;

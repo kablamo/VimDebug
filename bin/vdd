@@ -41,7 +41,7 @@ sub signalHandler {
 }
 
 sub getCommandLineOptions {
-   usage() unless(scalar(@ARGV) >= 3);
+   usage() unless(scalar(@ARGV) >= 2);
    $sessionId       = shift @ARGV; # session id
    $debuggerName    = shift @ARGV; # which debugger to use
    @debuggerCommand = @ARGV;       # debugger command

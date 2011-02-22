@@ -131,9 +131,9 @@ sub logger {
 
 # blocks until there is something to read
 sub readFromVim {
-   open my $ctl_hdl, "<", $ctl_vimFIFOvdd or act('quit');
-   my $from = <$ctl_hdl>;
-   close $ctl_hdl;
+   open(my $ctlHandle, "<", $ctl_vimFIFOvdd) or act('quit');
+   my $from = <$ctlHandle>;
+   close($ctlHandle);
    logger("received '$from'") if $debug_option;
    return $from;
 }
@@ -144,14 +144,14 @@ sub sendToVim {
    my $debugOutput = shift;
 
    logger("sending  '$stuffToSend'") if $debug_option;
-   open my $ctl_hdl, ">", $ctl_vddFIFOvim or act('quit');
-   print {$ctl_hdl} $stuffToSend;
-   close $ctl_hdl;
+   open(my $ctlHandle, ">", $ctl_vddFIFOvim) or act('quit');
+   print {$ctlHandle} $stuffToSend;
+   close($ctlHandle);
 
    logger("sending  '$debugOutput'") if $debug_option;
-   open my $dbg_hdl, ">", $dbg_vddFIFOvim or act('quit');
-   print {$dbg_hdl} $debugOutput;
-   close $dbg_hdl;
+   open(my $dbgHandle, ">", $dbg_vddFIFOvim) or act('quit');
+   print {$dbgHandle} $debugOutput;
+   close($dbgHandle);
 }
 
 sub startDebugger {

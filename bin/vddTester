@@ -133,18 +133,18 @@ sub readFromVDD {
 
    # read from control fifo
 print ">>vddTester opening control fifo to read<<\n";
-   open my $ctl_hdl, "<", $ctl_vddFIFOvim or die;
-   my @msg = <$ctl_hdl>;
+   open(my $ctlHandle, "<", $ctl_vddFIFOvim) or die;
+   my @msg = <$ctlHandle>;
    print color("blue"), "received '", @msg, "'", color("white"), "\n";
-   close $ctl_hdl;
+   close($ctlHandle);
 print ">>vddTester read from control fifo<<\n";
 
    # read from debug fifo
 print ">>vddTester opening debug fifo to read<<\n";
-   open my $dbh_hdl, "<", $dbg_vddFIFOvim or die;
-   @msg = <$dbh_hdl>;
+   open(my $dbgHandle, "<", $dbg_vddFIFOvim) or die;
+   @msg = <$dbgHandle>;
    print color("blue"), "received '", @msg, "'", color("white"), "\n";
-   close $dbh_hdl;
+   close($dbgHandle);
 print ">>vddTester read from debug fifo<<\n";
 }
 
@@ -154,9 +154,9 @@ sub sendToVDD {
    my $stuffToSend = (shift or $prevCommand);
 
    print color("blue"), "sending  '$stuffToSend'", color("white"), "\n";
-   open my $ctl_hdl, ">", $ctl_vimFIFOvdd or die;  # blocks until there is a reader
-   print {$ctl_hdl} $stuffToSend;
-   close $ctl_hdl;
+   open(my $ctlHandle, ">", $ctl_vimFIFOvdd) or die;  # blocks until there is a reader
+   print {$ctlHandle} $stuffToSend;
+   close($ctlHandle);
 
    $prevCommand = $stuffToSend;
 }

@@ -15,8 +15,8 @@ if (not defined File::Which::which('ruby')) {
 
 my $test = VimDebug::DebuggerInterface::Test->new(
    debuggerName    => 'Ruby',
-   debuggerCommand => [qw(ruby -rdebug t/ruby.t)],
-   filename        => 't/ruby.t',
+   debuggerCommand => [qw(ruby -rdebug t/ruby.rb)],
+   filename        => 't/ruby.rb',
 );
 
 Test::Class->runtests($test);

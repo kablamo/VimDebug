@@ -15,8 +15,8 @@ if (not defined File::Which::which('python')) {
 
 my $test = VimDebug::DebuggerInterface::Test->new(
    debuggerName    => 'Python',
-   debuggerCommand => [qw(pdb t/python.t)],
-   filename        => 't/python.t',
+   debuggerCommand => [qw(pdb t/python.py)],
+   filename        => 't/python.py',
 );
 
 Test::Class->runtests($test);

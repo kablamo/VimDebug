@@ -43,7 +43,7 @@ A test shell for the vim debugger daemon.  Invocation is weird because it
 doesn't want quotes around the DEBUGGER COMMAND.  This is so tab completion
 works.
 
-example: vddTester Perl perl -Ilib -d t/Perl.testCode
+example: vddTester Perl perl -Ilib -d t/perl.t
 
 "; exit(0);
 }

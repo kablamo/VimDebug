@@ -13,11 +13,12 @@ use strict;
 use warnings;
 use Cwd;
 use File::Basename;
+use POSIX ();
 use Term::ANSIColor;
 use Term::ReadLine;
 
 my ($sessionId, $sourcePath, $debuggerName, @debuggerCommand); 
-my ($ctlTOvdd, $ctlFROMvdd, $dbgTOvdd, $dbgFROMvdd); 
+my ($ctl_vddFIFOvim, $ctl_vimFIFOvdd, $dbg_vddFIFOvim);
 my ($term, $PID, $prevCommand);
 
 
@@ -68,15 +69,15 @@ sub init {
 
    getCommandLineOptions();
 
-   $ctlTOvdd   = ".ctl.vimTOvdd." . $sessionId; # control fifo; write to vdd
-   $ctlFROMvdd = ".ctl.vddTOvim." . $sessionId; # control fifo; read from vim
-   $dbgTOvdd   = ".dbg.vimTOvdd." . $sessionId; # debug   fifo; write to vdd
-   $dbgFROMvdd = ".dbg.vddTOvim." . $sessionId; # debug   fifo; read from vim
+   $ctl_vddFIFOvim = ".ctl_vddFIFOvim." . $sessionId; # control fifo; write to vdd
+   $ctl_vimFIFOvdd = ".ctl_vimFIFOvdd." . $sessionId; # control fifo; read from vim
+   $dbg_vddFIFOvim = ".dbg_vddFIFOvim." . $sessionId; # debug   fifo; write to vdd
 
-   unlink $ctlFROMvdd;
-   unlink $ctlTOvdd;
-   unlink $dbgFROMvdd;
-   unlink $dbgTOvdd;
+   unlink $_ for
+      $ctl_vddFIFOvim,
+      $ctl_vimFIFOvdd,
+      $dbg_vddFIFOvim
+   ;
 
    initializeReadLine();
 }
@@ -122,46 +123,40 @@ sub makeNamedPipe {
       exit();
    }
 
-   if(    system( 'mkfifo', $fifo )
-         && system( 'mknod',  $fifo, 'p' ) )   {
-      die "is mkfifo or mknod in your path?\n";
-   }
+   POSIX::mkfifo($fifo, 0700) or die "mkfifo $fifo failed: $!\n";
 }
 
 
 # blocks until there is something to read
 sub readFromVDD {
-   sleep 1 until -r $ctlFROMvdd;
+   sleep 1 until -r $ctl_vddFIFOvim;
 
    # read from control fifo
 print ">>vddTester opening control fifo to read<<\n";
-   open(ctlFROMvdd, "< $ctlFROMvdd") or die;
-   my @msg = <ctlFROMvdd>;
+   open my $ctl_hdl, "<", $ctl_vddFIFOvim or die;
+   my @msg = <$ctl_hdl>;
    print color("blue"), "received '", @msg, "'", color("white"), "\n";
-   close(ctlFROMvdd);
+   close $ctl_hdl;
 print ">>vddTester read from control fifo<<\n";
 
    # read from debug fifo
 print ">>vddTester opening debug fifo to read<<\n";
-   open(dbgFROMvdd, "< $dbgFROMvdd") or die;
-   @msg = <dbgFROMvdd>;
+   open my $dbh_hdl, "<", $dbg_vddFIFOvim or die;
+   @msg = <$dbh_hdl>;
    print color("blue"), "received '", @msg, "'", color("white"), "\n";
-   close(dbgFROMvdd);
+   close $dbh_hdl;
 print ">>vddTester read from debug fifo<<\n";
 }
 
 
 # blocks until someone reads
-# obviously this stuff isn't going to work on windows.  for windows we
-# should use gvim --remote stuff.  i don't want to use gvim on unix because
-# then you can't debug over a telnet session.
 sub sendToVDD {
    my $stuffToSend = (shift or $prevCommand);
 
    print color("blue"), "sending  '$stuffToSend'", color("white"), "\n";
-   open(ctlTOvdd, "> $ctlTOvdd") or die;  # blocks until there is a reader
-   print ctlTOvdd $stuffToSend;
-   close(ctlTOvdd);
+   open my $ctl_hdl, ">", $ctl_vimFIFOvdd or die;  # blocks until there is a reader
+   print {$ctl_hdl} $stuffToSend;
+   close $ctl_hdl;
 
    $prevCommand = $stuffToSend;
 }

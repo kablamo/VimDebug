@@ -49,7 +49,7 @@ sub getCommandLineOptions {
 
 sub usage {
    print << 'EOT';
-Usage: vdd $session_id $debugger $command
+Usage: vdd $sessionId $debugger $command
 
 The vim debugger daemon uses the perl module
 VimDebug::DebuggerInterface::$debugger to invoke
@@ -57,9 +57,9 @@ a debugger using the $command.
 
 Communication with the daemon occurs via fifos located at:
 
-   .ctl_vddFIFOvim.$session_id
-   .ctl_vimFIFOvdd.$session_id
-   .dbg_vddFIFOvim.$session_id
+   .ctl_vddFIFOvim.$sessionId
+   .ctl_vimFIFOvdd.$sessionId
+   .dbg_vddFIFOvim.$sessionId
 EOT
    exit;
 }

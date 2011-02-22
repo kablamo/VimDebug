@@ -69,9 +69,9 @@ sub init {
 
    getCommandLineOptions();
 
-   $ctl_vddFIFOvim = ".ctl_vddFIFOvim." . $sessionId; # control fifo; write to vdd
-   $ctl_vimFIFOvdd = ".ctl_vimFIFOvdd." . $sessionId; # control fifo; read from vim
-   $dbg_vddFIFOvim = ".dbg_vddFIFOvim." . $sessionId; # debug   fifo; write to vdd
+   $ctl_vddFIFOvim = ".ctl_vddFIFOvim." . $sessionId;
+   $ctl_vimFIFOvdd = ".ctl_vimFIFOvdd." . $sessionId;
+   $dbg_vddFIFOvim = ".dbg_vddFIFOvim." . $sessionId;
 
    unlink $_ for
       $ctl_vddFIFOvim,

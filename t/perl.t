@@ -15,8 +15,8 @@ if (not defined File::Which::which('perl')) {
 
 my $test = VimDebug::DebuggerInterface::Test->new(
    debuggerName    => 'Perl',
-   debuggerCommand => [qw(perl -Ilib -d t/Perl.testCode)],
-   filename        => 't/Perl.testCode',
+   debuggerCommand => [qw(perl -Ilib -d t/perl.pl)],
+   filename        => 't/perl.pl',
 );
 
 Test::Class->runtests($test);

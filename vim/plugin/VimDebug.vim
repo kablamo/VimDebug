@@ -5,16 +5,16 @@
 
 " key bindings
 map <F12>         :DBGRstart<CR>
-map <Leader><F12> :DBGRstart   
+map <Leader><F12> :DBGRstart<SPACE>
 map <F7>          :DBGRstep<CR>
 map <F8>          :DBGRnext<CR>
 map <F9>          :DBGRcont<CR>                   " continue
 map <Leader>b     :DBGRsetBreakPoint<CR>
 map <Leader>c     :DBGRclearBreakPoint<CR>
 map <Leader>ca    :DBGRclearAllBreakPoints<CR>
-map <Leader>v/    :DBGRprint 
+map <Leader>v/    :DBGRprint<SPACE>
 map <Leader>v     :DBGRprintExpand expand("<cWORD>")<CR> " value under cursor
-map <Leader>/     :DBGRcommand 
+map <Leader>/     :DBGRcommand<SPACE>
 map <F10>         :DBGRrestart<CR>
 map <F11>         :DBGRquit<CR>
 

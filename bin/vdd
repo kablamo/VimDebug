@@ -177,7 +177,7 @@ sub act {
       return 1;
    }
 
-   my $rv = eval '$debugger->' . $action . '(@options);';
+   $debugger->$action(@options);
    if ($action eq 'quit') {
       exit();
    }

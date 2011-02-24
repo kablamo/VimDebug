@@ -29,7 +29,7 @@ command! -nargs=0 DBGRclearAllBreakPoints call DBGRclearAllBreakPoints()
 command! -nargs=1 DBGRprintExpand         call DBGRprint(<args>)
 command! -nargs=1 DBGRcommand             call DBGRcommand("<args>")
 command! -nargs=0 DBGRrestart             call DBGRrestart()
-command! -nargs=0 DBGRquit                call DBGRquit()
+command! -nargs=0 DBGRquit                call DBGRquit(0)
 
 " colors
 hi currentLine term=reverse cterm=reverse gui=reverse
@@ -60,12 +60,14 @@ let s:dbgrIsRunning   = 0
 let s:ctl_vddFIFOvim  = ".ctl_vddFIFOvim." . s:sessionId
 let s:ctl_vimFIFOvdd  = ".ctl_vimFIFOvdd." . s:sessionId
 let s:dbg_vddFIFOvim  = ".dbg_vddFIFOvim." . s:sessionId
+let s:consoleInited   = 0
+let s:consoleBufNr    = -99
+let s:consoleFile     = "/tmp/vdd." . $USER . "." . s:sessionId . ".dbgr"
 let s:incantation     = ""
 let s:lineNumber      = 0
 let s:fileName        = ""
 let s:bufNr           = 0
 let s:programDone     = 0
-let s:consoleBufNr    = -99
 
 " note that these aren't really arrays.  its a string.  different values are
 " separated by s:sep.  manipulation of the 'array' is done with an array
@@ -75,12 +77,16 @@ let s:breakPointArray = ""                           " array
 let s:sep             = "-"                          " array separator
 
 
-
 " debugger functions
 function! DBGRstart(...)
    if s:dbgrIsRunning
+      call s:ConsoleSetFocus()
       echo "\rthe debugger is already running"
       return
+   endif
+
+   if has("autocmd")
+      autocmd VimLeavePre * call DBGRquit(1)
    endif
 
    try
@@ -89,7 +95,13 @@ function! DBGRstart(...)
       return
    endtry
 
-   exec "silent :! " . s:incantation. ' &'
+   call s:ConsoleInit()
+   exe "silent :! " . s:incantation . '> ' . s:consoleFile . ' 2>&1 &'
+   sleep 1
+   if getfsize(s:consoleFile) > 0
+      echo "There was an error. See " . s:consoleFile . "."
+      return
+   endif
 
    " do after system() so nongui vim doesn't show a blank screen
    echo "\rstarting the debugger..."
@@ -101,17 +113,13 @@ function! DBGRstart(...)
       continue
    endwhile
 
-   if has("autocmd")
-     autocmd VimLeave * call DBGRquit()
-   endif
-
    if g:DBGRshowConsole == 1
-      call DBGRopenConsole()
+      call s:ConsoleSetFocus()
    endif
 
-   let s:dbgrIsRunning = 1
    redraw!
    call s:HandleCmdResult("started the debugger")
+   let s:dbgrIsRunning = 1
 endfunction
 function! DBGRnext()
    if !s:Copacetic()
@@ -258,9 +266,11 @@ function! DBGRrestart()
    call s:HandleCmdResult("restarted")
    let s:programDone = 0
 endfunction
-function! DBGRquit()
+function! DBGRquit(silent)
    if ! s:dbgrIsRunning
-      echo "\rthe debugger is not running"
+      if ! a:silent
+         echo "\rthe debugger is not running"
+      endif
       return
    endif
 
@@ -269,13 +279,10 @@ function! DBGRquit()
    call s:UnplaceEmptySigns()
    call s:UnplaceTheLastCurrentLineSign()
    call s:SetNoLineNumbers()
-   call DBGRcloseConsole()
+   call s:ConsoleClose()
 
    call system('echo "quit" >> ' . s:ctl_vimFIFOvdd)
 
-   if has("autocmd")
-     autocmd! VimLeave * call DBGRquit()
-   endif
 
    " reinitialize script variables
    let s:lineNumber      = 0
@@ -286,6 +293,7 @@ function! DBGRquit()
 
    let s:dbgrIsRunning = 0
    redraw! | echo "\rexited the debugger"
+
 endfunction
 
 
@@ -393,7 +401,7 @@ function! s:Incantation(...)
     \ "vdd " . s:sessionId . " " . l:debugger . " " . s:AutoIncantation(l:debugger)
 
    return l:vddIncantation . (a:0 == 0 ? '' : (" " . join(a:000, " ")))
-endfunction 
+endfunction
 function! s:DbgrName(fileName)
    let l:fileExtension = fnamemodify(a:fileName, ':e')
 
@@ -433,14 +441,10 @@ function! s:HandleCmdResult(...)
       redraw! | echo "\rthe application being debugged terminated"
 
    elseif match(l:cmdResult, '^' . s:COMPILER_ERROR) != -1
-      " call confirm(substitute(l:cmdResult, '^' . s:COMPILER_ERROR, "", ""), "&Ok")
       call s:ConsolePrint(substitute(l:cmdResult, '^' . s:COMPILER_ERROR, "", ""))
-      call DBGRquit()
 
    elseif match(l:cmdResult, '^' . s:RUNTIME_ERROR) != -1
-      " call confirm(substitute(l:cmdResult, '^' . s:RUNTIME_ERROR, "", ""), "&Ok")
       call s:ConsolePrint(substitute(l:cmdResult, '^' . s:RUNTIME_ERROR, "", ""))
-      call DBGRquit()
 
    elseif l:cmdResult == s:DBGR_READY
       if a:0 > 0
@@ -452,12 +456,8 @@ function! s:HandleCmdResult(...)
       " messages i echo after returning.  grumble grumble.
       if match(l:cmdResult, "\n") != -1
          redraw!
-         " call confirm(l:cmdResult, "&Ok")
-         call s:ConsolePrint(l:cmdResult)
-      else
-         " echo l:cmdResult
-         call s:ConsolePrint(l:cmdResult)
       endif
+      call s:ConsolePrint(l:cmdResult)
 
    endif
 
@@ -558,6 +558,7 @@ function! s:PlaceCurrentLineSign(lineNumber, fileName)
    let s:bufNr = l:bufNr
 
 endfunction
+
 function! s:HandleProgramTermination()
    call s:UnplaceTheLastCurrentLineSign()
    let s:lineNumber  = 0
@@ -565,37 +566,58 @@ function! s:HandleProgramTermination()
    let s:programDone = 1
 endfunction
 
-
 " debugger console functions
-function! DBGRopenConsole()
-   new "debugger console"
-   let s:consoleBufNr = bufnr('%')
-   exe "resize " . g:DBGRconsoleHeight
-   exe "sign place 9999 line=1 name=empty buffer=" . s:consoleBufNr
-   call s:SetLineNumbers()
-   set buftype=nofile
-   wincmd p
-endfunction
-function! DBGRcloseConsole()
-   let l:consoleWinNr = bufwinnr(s:consoleBufNr)
-   if l:consoleWinNr == -1
+function! s:ConsoleInit()
+   if s:consoleInited
       return
    endif
-   exe l:consoleWinNr . "wincmd w"
-   q
+   new "debugger console"
+   let s:consoleBufNr = bufnr('%')
+   exe "silent w " . s:consoleFile
+   exe "sign place 9999 line=1 name=empty buffer=" . s:consoleBufNr
+   call s:SetLineNumbers()
+   hide
+   let s:consoleInited = 1
 endfunction
-function! s:ConsolePrint(msg)
+function! s:ConsoleSetFocus()
    let l:consoleWinNr = bufwinnr(s:consoleBufNr)
    if l:consoleWinNr == -1
-      "call confirm(a:msg, "&Ok")
-      call DBGRopenConsole()
-      let l:consoleWinNr = bufwinnr(s:consoleBufNr)
+      call s:ConsoleRefresh()
    endif
-   silent exe l:consoleWinNr . "wincmd w"
+   exe l:consoleWinNr . "wincmd w"
+endfunction
+function! s:ConsoleRefresh()
+   silent wincmd o
+   if bufnr("%") != s:consoleBufNr
+      exe "silent e #" . s:consoleBufNr
+   endif
+   silent exe g:DBGRconsoleHeight . "wincmd s"
+   normal G
+   wincmd t
+   exe "silent e #" . s:bufNr
+endfunction
+function! s:ConsolePrint(msg)
+   call s:ConsoleSetFocus()
    let l:oldValue = @x
    let @x = a:msg
    silent exe 'normal G$"xp'
    let @x = l:oldValue
    normal G
+   setl nomodified
    wincmd p
 endfunction
+function! s:ConsoleClose()
+   let l:consoleWinNr = bufwinnr(s:consoleBufNr)
+   if l:consoleWinNr == -1
+      try
+         exe ":e " . s:consoleBufNr
+      catch
+         return
+      endtry
+   else
+      exe l:consoleWinNr . "wincmd w"
+   endif
+   exe "bdelete! " . s:consoleBufNr
+   call delete(s:consoleFile)
+endfunction
+

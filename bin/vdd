@@ -107,9 +107,8 @@ sub makeNamedPipe {
    my $fifo = shift or die "gotta pass a fifo to this function";
 
    if (-p $fifo) {
-      print "vdd: $fifo already exists.  perhaps another instance of" .
-            " vimDebug is running?\nif not, just delete $fifo.\n";
-      exit();
+      die "vdd: $fifo already exists.  perhaps another instance of" .
+            " VimDebug is running?\nIf not, just delete $fifo.\n";
    }
 
    POSIX::mkfifo($fifo, 0700) or die "mkfifo $fifo failed: $!\n";

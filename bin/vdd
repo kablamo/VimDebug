@@ -14,6 +14,7 @@ use warnings;
 use File::Basename;
 use UNIVERSAL;
 use POSIX ();
+use Carp;
 
 # constants
 my $LINE_INFO      = "vimDebug:";
@@ -131,7 +132,7 @@ sub logger {
 
 # blocks until there is something to read
 sub readFromVim {
-   open(my $ctlHandle, "<", $ctl_vimFIFOvdd) or act('quit');
+   open(my $ctlHandle, "<", $ctl_vimFIFOvdd) or confess;
    my $from = <$ctlHandle>;
    close($ctlHandle);
    logger("received '$from'") if $debug_option;
@@ -144,12 +145,12 @@ sub sendToVim {
    my $debugOutput = shift;
 
    logger("sending  '$stuffToSend'") if $debug_option;
-   open(my $ctlHandle, ">", $ctl_vddFIFOvim) or act('quit');
+   open(my $ctlHandle, ">", $ctl_vddFIFOvim) or confess;
    print {$ctlHandle} $stuffToSend;
    close($ctlHandle);
 
    logger("sending  '$debugOutput'") if $debug_option;
-   open(my $dbgHandle, ">", $dbg_vddFIFOvim) or act('quit');
+   open(my $dbgHandle, ">", $dbg_vddFIFOvim) or confess;
    print {$dbgHandle} $debugOutput;
    close($dbgHandle);
 }

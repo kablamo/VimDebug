@@ -24,7 +24,7 @@ my  $finishedRegex      = qr/(\/perl5db.pl:)|(Use .* to quit or .* to restart)|(
 # callback functions implemented
 
 sub startDebugger {
-   my $self        = shift or die;
+   my $self        = shift or confess;
    my @incantation = @_;
 
    $ENV{"PERL5DB"}     = 'BEGIN {require "perl5db.pl";}';
@@ -36,27 +36,27 @@ sub startDebugger {
 }
 
 sub next {
-   my $self = shift or die;
+   my $self = shift or confess;
    $self->SUPER::_command("n");
    return undef;
 }
 
 sub step {
-   my $self = shift or die;
+   my $self = shift or confess;
    $self->SUPER::_command("s");
    return undef;
 }
 
 sub cont {
-   my $self = shift or die;
+   my $self = shift or confess;
    $self->SUPER::_command("c");
    return undef;
 }
 
 sub setBreakPoint {
-   my $self       = shift or die;
-   my $lineNumber = shift or die;
-   my $fileName   = shift or die;
+   my $self       = shift or confess;
+   my $lineNumber = shift or confess;
+   my $fileName   = shift or confess;
 
    $self->SUPER::_command("f $fileName");
    $self->SUPER::_command("b $lineNumber");
@@ -65,9 +65,9 @@ sub setBreakPoint {
 }
 
 sub clearBreakPoint {
-   my $self       = shift or die;
-   my $lineNumber = shift or die;
-   my $fileName   = shift or die;
+   my $self       = shift or confess;
+   my $lineNumber = shift or confess;
+   my $fileName   = shift or confess;
 
    $self->SUPER::_command("f $fileName");
    $self->SUPER::_command("B $lineNumber");
@@ -76,37 +76,37 @@ sub clearBreakPoint {
 }
 
 sub clearAllBreakPoints {
-   my $self = shift or die;
+   my $self = shift or confess;
    return $self->SUPER::_command("B *");
    return undef;
 }
 
 sub printExpression {
-   my $self       = shift or die;
-   my $expression = shift or die;
+   my $self       = shift or confess;
+   my $expression = shift or confess;
    return $self->SUPER::_command("x $expression");
 }
 
 sub command {
-   my $self = shift or die;
-   my $command = shift or die;
+   my $self = shift or confess;
+   my $command = shift or confess;
    return $self->SUPER::_command($command);
 }
  
 sub restart {
-   my $self = shift or die;
+   my $self = shift or confess;
    $self->SUPER::_command("R");
    return undef;
 }
 
 sub quit {
-   my $self = shift or die;
+   my $self = shift or confess;
    return $self->SUPER::_quit("q");
 }
 
 sub parseOutput {
-   my $self   = shift or die;
-   my $output = shift or die;
+   my $self   = shift or confess;
+   my $output = shift or confess;
 
    # take care of the problem case when we hit an eval() statement
    # example: main::function((eval 3)[debugTestCase.pl:5]:1):      my $foo = 1
@@ -120,16 +120,16 @@ sub parseOutput {
 }
 
 sub parseForFilePath {
-   my $self   = shift or die;
-   my $output = shift or die;
+   my $self   = shift or confess;
+   my $output = shift or confess;
    my ($filePath, undef) = _getFileAndLine($output);
    $self->filePath($filePath) if defined $filePath;
    return undef;
 }
 
 sub parseForLineNumber {
-   my $self   = shift or die;
-   my $output = shift or die;
+   my $self   = shift or confess;
+   my $output = shift or confess;
    my (undef, $lineNumber) = _getFileAndLine($output);
    $self->lineNumber($lineNumber) if defined $lineNumber;
    return undef;

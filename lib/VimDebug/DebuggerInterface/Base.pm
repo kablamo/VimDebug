@@ -122,13 +122,14 @@ sub _startDebugger {
    return undef;
 }
 
+
 =head2 _command($command)
 
 Returns a string
 =cut
 sub _command {
-   my $self = shift or die;
-   my $command = shift or die;
+   my $self = shift or confess;
+   my $command = shift or confess;
 
    # write
    $WRITE .= "$command\n";
@@ -143,7 +144,6 @@ sub _command {
    $output =~ s/$prompt//os;
    return $output;
 }
-
 =head2 _quit($command)
 
 Returns undef (this is subject to change)
@@ -166,7 +166,7 @@ $VimDebug::DebuggerInterface::Base::debuggerPrompt is found.
 Returns undef (this is subject to change)
 =cut
 sub getUntilPrompt   {
-   my $self   = shift or die;
+   my $self   = shift or confess;
    my $prompt = $self->dbgrPromptRegex;
    my $output = '';
 
@@ -206,7 +206,7 @@ text.
 Returns $output cleansed
 =cut
 sub output {
-   my $self = shift or die;
+   my $self = shift or confess;
    my $output = '';
 
    if (@_) {
@@ -228,8 +228,8 @@ attributes.
 Returns undef;
 =cut
 sub parseOutput {
-   my $self   = shift or die;
-   my $output = shift or die;
+   my $self   = shift or confess;
+   my $output = shift or confess;
 
    $self->parseForLineNumber($output);
    $self->parseForFilePath($output);
@@ -244,7 +244,7 @@ Parses $output and sets $self->lineNumber($number) if possible.
 Returns undef;
 =cut
 sub parseForLineNumber {
-   my $self = shift or die;
+   my $self = shift or confess;
    confess "developers should implement this method in their modules";
    return undef;
 }
@@ -256,7 +256,7 @@ Parses $output and sets $self->filePath($path) if possible.
 Returns undef
 =cut
 sub parseForFilePath {
-   my $self = shift or die;
+   my $self = shift or confess;
    confess "developers should implement this method in their modules";
    return undef;
 }

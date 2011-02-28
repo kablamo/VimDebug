@@ -1,3 +1,20 @@
+Thanks to everyone!
+
+
+
+See who is in the commit log:
+https://github.com/kablamo/VimDebug/commits/master
+
+and view the commit impact graph:
+https://github.com/kablamo/VimDebug/graphs/impact
+
+
+
+List of contributers:
+
+Luc StLouis (lucs)
+more than 18 different high quality patches.  a huge help.  thanks!
+
 Asis Hallab
 helped with testing and hunting down a newline display issue on OSX
 

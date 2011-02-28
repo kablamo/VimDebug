@@ -337,7 +337,7 @@ endfunction
 function! s:BufNrFromId(id)
    return a:id / 10000000
 endfunction
-function! s:CalculateLineNumberFromId(id)
+function! s:LineNrFromId(id)
    return a:id % 10000000
 endfunction
 function! s:AutoIncantation(...)

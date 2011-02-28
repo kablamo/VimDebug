@@ -66,13 +66,8 @@ let s:fileName        = ""
 let s:bufNr           = 0
 let s:programDone     = 0
 let s:consoleBufNr    = -99
-
-" note that these aren't really arrays.  its a string.  different values are
-" separated by s:sep.  manipulation of the 'array' is done with an array
-" library: http://vim.sourceforge.net/script.php?script_id=171
-let s:emptySignArray  = ""                           " array
-let s:breakPointArray = ""                           " array
-let s:sep             = "-"                          " array separator
+let s:emptySigns      = []
+let s:breakPoints     = []
 
 
 
@@ -142,30 +137,24 @@ function! DBGRsetBreakPoint()
       return
    endif
 
-
    let l:currFileName = bufname("%")
    let l:bufNr        = bufnr("%")
    let l:currLineNr   = line(".")
    let l:id           = s:CreateId(l:bufNr, l:currLineNr)
 
-
-   " check if a breakPoint sign is already placed
-   if MvContainsElement(s:breakPointArray, s:sep, l:id) == 1
+   if count(s:breakPoints, l:id) == 1
       redraw! | echo "\rbreakpoint already set"
       return
    endif
 
-
-   " tell vdd about the new break point
+   " tell vdd
    silent exe "redir >> " . s:ctl_vimFIFOvdd . '| echon "break:' . l:currLineNr . ':' . l:currFileName . '" | redir END'
 
-
-   let s:breakPointArray = MvAddElement(s:breakPointArray, s:sep, l:id)
+   call add(s:breakPoints, l:id)
 
    " check if a currentLine sign is already placed
    if (s:lineNumber == l:currLineNr)
       exe "sign unplace " . l:id
-
       exe "sign place " . l:id . " line=" . l:currLineNr . " name=both file=" . l:currFileName
    else
       exe "sign place " . l:id . " line=" . l:currLineNr . " name=breakPoint file=" . l:currFileName
@@ -178,28 +167,22 @@ function! DBGRclearBreakPoint()
       return
    endif
 
-
    let l:currFileName = bufname("%")
    let l:bufNr        = bufnr("%")
    let l:currLineNr   = line(".")
    let l:id           = s:CreateId(l:bufNr, l:currLineNr)
 
-
-   " check if a breakPoint sign has really been placed here
-   if MvContainsElement(s:breakPointArray, s:sep, l:id) == 0
+   if count(s:breakPoints, l:id) == 0 
       redraw! | echo "\rno breakpoint set here"
       return
    endif
 
-
-   " tell vdd about the deleted break point
+   " tell vdd
    silent exe "redir >> " . s:ctl_vimFIFOvdd . '| echon "clear:' . l:currLineNr . ':' . l:currFileName . '" | redir END'
 
-
-   let s:breakPointArray = MvRemoveElement(s:breakPointArray, s:sep, l:id)
+   call filter(s:breakPoints, 'v:val != l:id')
    exe "sign unplace " . l:id
 
-   " place a currentLine sign if this is the currentLine
    if(s:lineNumber == l:currLineNr)
       exe "sign place " . l:id . " line=" . l:currLineNr . " name=currentLine file=" . l:currFileName
    endif
@@ -282,7 +265,6 @@ function! DBGRquit()
    let s:fileName        = ""
    let s:bufNr           = 0
    let s:programDone     = 0
-   let s:sep             = "-"
 
    let s:dbgrIsRunning = 0
    redraw! | echo "\rexited the debugger"
@@ -305,20 +287,16 @@ function! s:Copacetic()
 endfunction
 function! s:PlaceEmptySign()
    let l:id       = s:CreateId(bufnr("%"), "1")
-   let l:fileName = bufname("%")
-   if !MvContainsElement(s:emptySignArray, s:sep, l:id) == 1
-      let s:emptySignArray = MvAddElement(s:emptySignArray, s:sep, l:id)
+   if count(s:emptySigns, l:id) == 0
+      let l:fileName = bufname("%")
+      call add(s:emptySigns, l:id)
       exe "sign place " . l:id . " line=1 name=empty file=" . l:fileName
    endif
 endfunction
 function! s:UnplaceEmptySigns()
-
    let l:oldBufNr = bufnr("%")
-   call MvIterCreate(s:emptySignArray, s:sep, "VimDebugIteratorE")
-
-   while MvIterHasNext("VimDebugIteratorE")
-      let l:id         = MvIterNext("VimDebugIteratorE")
-      let l:bufNr      = s:CalculateBufNrFromId(l:id)
+   for l:id in s:emptySigns
+      let l:bufNr = s:BufNrFromId(l:id)
       if bufexists(l:bufNr) != 0
          if bufnr("%") != l:bufNr
             exe "buffer " . l:bufNr
@@ -326,21 +304,13 @@ function! s:UnplaceEmptySigns()
          exe "sign unplace " . l:id
          exe "buffer " . l:oldBufNr
       endif
-   endwhile
-
-   call MvIterDestroy("VimDebugIteratorE")
-
-   let s:emptySignArray  = ""
-
+   endfor
+   let s:emptySigns = []
 endfunction
 function! s:UnplaceBreakPointSigns()
-
    let l:oldBufNr = bufnr("%")
-   call MvIterCreate(s:breakPointArray, s:sep, "VimDebugIteratorB")
-
-   while MvIterHasNext("VimDebugIteratorB")
-      let l:id         = MvIterNext("VimDebugIteratorB")
-      let l:bufNr      = s:CalculateBufNrFromId(l:id)
+   for l:id in s:breakPoints
+      let l:bufNr = s:BufNrFromId(l:id)
       if bufexists(l:bufNr) != 0
          if bufnr("%") != l:bufNr
             exe "buffer " . l:bufNr
@@ -348,12 +318,8 @@ function! s:UnplaceBreakPointSigns()
          exe "sign unplace " . l:id
          exe "buffer " . l:oldBufNr
       endif
-   endwhile
-
-   call MvIterDestroy("VimDebugIteratorB")
-
-   let s:breakPointArray = ""
-
+   endfor
+   let s:breakPoints = []
 endfunction
 function! s:SetLineNumbers()
    if g:DBGRlineNumbers == 1
@@ -368,7 +334,7 @@ endfunction
 function! s:CreateId(bufNr, lineNumber)
    return a:bufNr * 10000000 + a:lineNumber
 endfunction
-function! s:CalculateBufNrFromId(id)
+function! s:BufNrFromId(id)
    return a:id / 10000000
 endfunction
 function! s:CalculateLineNumberFromId(id)
@@ -531,32 +497,23 @@ function! s:JumpToLine(lineNumber, fileName)
 endfunction
 function! s:UnplaceTheLastCurrentLineSign()
    let l:lastId = s:CreateId(s:bufNr, s:lineNumber)
-
    exe 'sign unplace ' . l:lastId
-
-   " check if there was a break point at l:lastId
-   if MvContainsElement(s:breakPointArray, s:sep, l:lastId) == 1
+   if count(s:breakPoints, l:lastId) == 1
       exe "sign place " . l:lastId . " line=" . s:lineNumber . " name=breakPoint file=" . s:fileName
    endif
-
 endfunction
 function! s:PlaceCurrentLineSign(lineNumber, fileName)
-
-   " place the new currentline sign
    let l:bufNr = bufnr(a:fileName)
+   let s:bufNr = l:bufNr
    let l:id    = s:CreateId(l:bufNr, a:lineNumber)
 
-   if MvContainsElement(s:breakPointArray, s:sep, l:id) == 1
+   if count(s:breakPoints, l:id) == 1
       exe "sign place " . l:id .
         \ " line=" . a:lineNumber . " name=both file=" . a:fileName
    else
       exe "sign place " . l:id .
         \ " line=" . a:lineNumber . " name=currentLine file=" . a:fileName
    endif
-
-   " set script variable for next time
-   let s:bufNr = l:bufNr
-
 endfunction
 function! s:HandleProgramTermination()
    call s:UnplaceTheLastCurrentLineSign()

@@ -381,14 +381,11 @@ endfunction
 
 
 function! s:HandleCmdResult(...)
-
-   " get command results from vdd
    let l:cmdResult = system('cat ' . s:ctl_vddFIFOvim)
 
    if match(l:cmdResult, '^' . s:LINE_INFO . '\d\+:.*$') != -1
-      let l:cmdResult = substitute(l:cmdResult, '^' . s:LINE_INFO, "", "")
-      if a:0 == 0 || match(a:1, 'breakpoint') == -1
-         call s:CurrentLineMagic(l:cmdResult)
+      if a:0 == 0 || a:1 == 'breakpoint'
+         call s:CurrentLineMagic(substitute(l:cmdResult, '^' . s:LINE_INFO, "", ""))
       endif
       if a:0 > 0
          echo "\r" . a:1 . "                    "
@@ -399,12 +396,10 @@ function! s:HandleCmdResult(...)
       redraw! | echo "\rthe application being debugged terminated"
 
    elseif match(l:cmdResult, '^' . s:COMPILER_ERROR) != -1
-      " call confirm(substitute(l:cmdResult, '^' . s:COMPILER_ERROR, "", ""), "&Ok")
       call s:ConsolePrint(substitute(l:cmdResult, '^' . s:COMPILER_ERROR, "", ""))
       call DBGRquit()
 
    elseif match(l:cmdResult, '^' . s:RUNTIME_ERROR) != -1
-      " call confirm(substitute(l:cmdResult, '^' . s:RUNTIME_ERROR, "", ""), "&Ok")
       call s:ConsolePrint(substitute(l:cmdResult, '^' . s:RUNTIME_ERROR, "", ""))
       call DBGRquit()
 
@@ -418,18 +413,12 @@ function! s:HandleCmdResult(...)
       " messages i echo after returning.  grumble grumble.
       if match(l:cmdResult, "\n") != -1
          redraw!
-         " call confirm(l:cmdResult, "&Ok")
-         call s:ConsolePrint(l:cmdResult)
-      else
-         " echo l:cmdResult
-         call s:ConsolePrint(l:cmdResult)
       endif
+      call s:ConsolePrint(l:cmdResult)
 
    endif
 
-   " print debugger output obtained from vdd
-   let l:dbgOut = system('cat ' . s:dbg_vddFIFOvim)
-   call s:ConsolePrint(l:dbgOut)
+   call s:ConsolePrint(system('cat ' . s:dbg_vddFIFOvim))
 
    return
 endfunction

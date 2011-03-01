@@ -252,7 +252,6 @@ function! DBGRquit()
    call s:UnplaceEmptySigns()
    call s:UnplaceTheLastCurrentLineSign()
    call s:SetNoNumber()
-   call DBGRcloseConsole()
 
    call system('echo "quit" >> ' . s:ctl_vimFIFOvdd)
 
@@ -268,6 +267,9 @@ function! DBGRquit()
 
    let s:dbgrIsRunning = 0
    redraw! | echo "\rexited the debugger"
+
+   " must do this last
+   call DBGRcloseConsole()
 endfunction
 
 

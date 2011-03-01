@@ -251,7 +251,7 @@ function! DBGRquit()
    call s:UnplaceBreakPointSigns()
    call s:UnplaceEmptySigns()
    call s:UnplaceTheLastCurrentLineSign()
-   call s:SetNoLineNumbers()
+   call s:SetNoNumber()
    call DBGRcloseConsole()
 
    call system('echo "quit" >> ' . s:ctl_vimFIFOvdd)
@@ -286,7 +286,7 @@ function! s:Copacetic()
    return 1
 endfunction
 function! s:PlaceEmptySign()
-   let l:id       = s:CreateId(bufnr("%"), "1")
+   let l:id = s:CreateId(bufnr("%"), "1")
    if count(s:emptySigns, l:id) == 0
       let l:fileName = bufname("%")
       call add(s:emptySigns, l:id)
@@ -321,12 +321,12 @@ function! s:UnplaceBreakPointSigns()
    endfor
    let s:breakPoints = []
 endfunction
-function! s:SetLineNumbers()
+function! s:SetNumber()
    if g:DBGRlineNumbers == 1
       set number
    endif
 endfunction
-function! s:SetNoLineNumbers()
+function! s:SetNoNumber()
    if g:DBGRlineNumbers == 1
       set nonumber
    endif
@@ -422,35 +422,31 @@ function! s:HandleCmdResult(...)
 
    return
 endfunction
-" - gets lineNumber / fileName from the debugger
 " - jumps to the lineNumber in the file, fileName
 " - highlights the current line
-"
-" parameters
-"    lineInfo: a string with the format 'lineNumber:fileName'
-"
-" returns nothing
+" - returns nothing
 function! s:CurrentLineMagic(lineInfo)
 
+   " a:lineInfo is a string with the format 'lineNumber:fileName'
    let l:lineNumber = substitute(a:lineInfo, "\:.*$", "", "")
    let l:fileName   = substitute(a:lineInfo, "^\\d\\+\:", "", "")
    let l:fileName   = s:JumpToLine(l:lineNumber, l:fileName)
 
-   " if there haven't been any signs placed in this file yet, place one the
-   " user can't see on line 1 just to shift everything over.  otherwise, the
-   " code will shift left when the old currentline sign is unplaced and then
-   " shift right again when the new currentline sign is placed.  and thats
-   " really annoying for the user.
+   " if no signs placed in this file, place an invisible one on line 1.
+   " otherwise, the code will shift left when the old currentline sign is
+   " unplaced and then shift right again when the new currentline sign is
+   " placed.  and thats really annoying for the user.
    call s:PlaceEmptySign()
    call s:UnplaceTheLastCurrentLineSign()                " unplace the old sign
    call s:PlaceCurrentLineSign(l:lineNumber, l:fileName) " place the new sign
-   call s:SetLineNumbers()
+   call s:SetNumber()
    "z. " scroll page so that this line is in the middle
 
    " set script variables for next time
    let s:lineNumber = l:lineNumber
    let s:fileName   = l:fileName
 
+   return
 endfunction
 " the fileName may have been changed if we stepped into a library or some
 " other piece of code in an another file.  load the new file if thats
@@ -518,7 +514,7 @@ function! DBGRopenConsole()
    let s:consoleBufNr = bufnr('%')
    exe "resize " . g:DBGRconsoleHeight
    exe "sign place 9999 line=1 name=empty buffer=" . s:consoleBufNr
-   call s:SetLineNumbers()
+   call s:SetNumber()
    set buftype=nofile
    wincmd p
 endfunction

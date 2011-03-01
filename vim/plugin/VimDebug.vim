@@ -384,7 +384,7 @@ function! s:HandleCmdResult(...)
    let l:cmdResult = system('cat ' . s:ctl_vddFIFOvim)
 
    if match(l:cmdResult, '^' . s:LINE_INFO . '\d\+:.*$') != -1
-      if a:0 == 0 || a:1 == 'breakpoint'
+      if a:0 == 0 || match(a:1, 'breakpoint') == -1
          call s:CurrentLineMagic(substitute(l:cmdResult, '^' . s:LINE_INFO, "", ""))
       endif
       if a:0 > 0

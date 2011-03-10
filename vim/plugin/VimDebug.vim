@@ -82,6 +82,8 @@ function! DBGRstart(...)
       let s:incantation = s:Incantation(a:1)
    catch "can't debug file type"
       return
+   catch "vdd is missing"
+      return
    endtry
 
    exec "silent :! " . s:incantation. ' &'
@@ -354,6 +356,10 @@ function! s:AutoIncantation(...)
    endif
 endfunction
 function! s:Incantation(...)
+   if !executable('vdd')
+      echo "\rvdd is not in your PATH.  Something went wrong with your install."
+      throw "vdd is missing"
+   endif
    let s:bufNr          = bufnr("%")
    let s:fileName       = bufname("%")
    let l:debugger       = s:DbgrName(s:fileName)

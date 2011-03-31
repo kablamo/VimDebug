@@ -17,15 +17,15 @@ use POSIX ();
 use Carp;
 
 # constants
-my $LINE_INFO      = "vimDebug:";
-my $COMPILER_ERROR = "compiler error";
-my $RUNTIME_ERROR  = "runtime error";
-my $APP_EXITED     = "application exited";
+my $EOF            = "-vimdebug-";           # end of field
+my $COMPILER_ERROR = "compiler error";       # not used yet
+my $RUNTIME_ERROR  = "runtime error";        # not used yet
+my $APP_EXITED     = "application exited";   # not used yet
 my $DBGR_READY     = "debugger ready";
+my $BAD_CMD        = "bad command";
 
 # global variables
-my ($sessionId, $debuggerName, @debuggerCommand, $debugger);
-my ($ctl_vddFIFOvim, $ctl_vimFIFOvdd, $dbg_vddFIFOvim);
+my ($sessionId, $debuggerName, @debuggerCommand, $debugger, $fifo);
 my $debug_option = 0;
 my $color_option = 0;
 
@@ -68,9 +68,7 @@ EOT
 sub init {
    $| = 1;
 
-   $ctl_vddFIFOvim = ".ctl_vddFIFOvim." . $sessionId;
-   $ctl_vimFIFOvdd = ".ctl_vimFIFOvdd." . $sessionId;
-   $dbg_vddFIFOvim = ".dbg_vddFIFOvim." . $sessionId;
+   $fifo = ".vdd." . $sessionId;
 
    if ($color_option) {
       eval('require Term::ANSIColor;import Term::ANSIColor;') and
@@ -79,9 +77,7 @@ sub init {
 }
 
 sub main {
-   makeNamedPipe($ctl_vimFIFOvdd);
-   makeNamedPipe($ctl_vddFIFOvim);
-   makeNamedPipe($dbg_vddFIFOvim);
+   makeNamedPipe($fifo);
    startDebugger();
 
    # loop until request to exit
@@ -101,7 +97,7 @@ sub main {
 }
 
 sub END {
-   unlink $_ for $ctl_vimFIFOvdd, $ctl_vddFIFOvim, $dbg_vddFIFOvim;
+   unlink $fifo;
 }
 
 sub makeNamedPipe {
@@ -132,27 +128,21 @@ sub logger {
 
 # blocks until there is something to read
 sub readFromVim {
-   open(my $ctlHandle, "<", $ctl_vimFIFOvdd) or confess;
-   my $from = <$ctlHandle>;
-   close($ctlHandle);
-   logger("received '$from'") if $debug_option;
-   return $from;
+   open(my $fifoHandle, "<", $fifo) or confess;
+   my $data = <$fifoHandle>;
+   close($fifoHandle);
+   logger("received '$data'") if $debug_option;
+   return $data;
 }
 
 # blocks until someone reads
 sub sendToVim {
-   my $stuffToSend = shift;
-   my $debugOutput = shift;
+   my $data = shift;
 
-   logger("sending  '$stuffToSend'") if $debug_option;
-   open(my $ctlHandle, ">", $ctl_vddFIFOvim) or confess;
-   print {$ctlHandle} $stuffToSend;
-   close($ctlHandle);
-
-   logger("sending  '$debugOutput'") if $debug_option;
-   open(my $dbgHandle, ">", $dbg_vddFIFOvim) or confess;
-   print {$dbgHandle} $debugOutput;
-   close($dbgHandle);
+   logger("sending  '$data'") if $debug_option;
+   open(my $fifoHandle, ">", $fifo) or confess;
+   print {$fifoHandle} $data;
+   close($fifoHandle);
 }
 
 sub startDebugger {
@@ -174,7 +164,7 @@ sub act {
    my @options = @_;
 
    if (! UNIVERSAL::can($debugger, $action)) {
-      sendToVim("vdd: bad command", "\n");
+      sendToVim($BAD_CMD . $EOF . $EOF . $EOF . "\n" . $EOF);
       return 1;
    }
 
@@ -184,12 +174,14 @@ sub act {
    }
    elsif (defined $debugger->lineNumber and defined $debugger->filePath) {
       sendToVim(
-         $LINE_INFO . $debugger->lineNumber . ":" . $debugger->filePath, 
-         $debugger->output
+         $DBGR_READY           . $EOF .
+         $debugger->lineNumber . $EOF .
+         $debugger->filePath   . $EOF .
+         $debugger->output     . $EOF
       );
    }
    else {
-      sendToVim($DBGR_READY, $debugger->output);
+      sendToVim($DBGR_READY . $EOF . $EOF . $EOF . $debugger->output . $EOF);
    }
 
    return 1;

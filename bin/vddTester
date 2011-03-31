@@ -17,8 +17,7 @@ use POSIX ();
 use Term::ANSIColor;
 use Term::ReadLine;
 
-my ($sessionId, $sourcePath, $debuggerName, @debuggerCommand); 
-my ($ctl_vddFIFOvim, $ctl_vimFIFOvdd, $dbg_vddFIFOvim);
+my ($sessionId, $sourcePath, $debuggerName, @debuggerCommand, $fifo); 
 my ($term, $PID, $prevCommand);
 
 
@@ -43,7 +42,7 @@ A test shell for the vim debugger daemon.  Invocation is weird because it
 doesn't want quotes around the DEBUGGER COMMAND.  This is so tab completion
 works.
 
-example: vddTester Perl perl -Ilib -d t/perl.t
+example: vddTester Perl perl -Ilib -d t/perl.pl
 
 "; exit(0);
 }
@@ -66,19 +65,9 @@ sub initializeReadLine {
 
 sub init {
    $| = 1;
-
    getCommandLineOptions();
-
-   $ctl_vddFIFOvim = ".ctl_vddFIFOvim." . $sessionId;
-   $ctl_vimFIFOvdd = ".ctl_vimFIFOvdd." . $sessionId;
-   $dbg_vddFIFOvim = ".dbg_vddFIFOvim." . $sessionId;
-
-   unlink $_ for
-      $ctl_vddFIFOvim,
-      $ctl_vimFIFOvdd,
-      $dbg_vddFIFOvim
-   ;
-
+   $fifo = ".vdd." . $sessionId;
+   unlink $fifo;
    initializeReadLine();
 }
 
@@ -129,36 +118,28 @@ sub makeNamedPipe {
 
 # blocks until there is something to read
 sub readFromVDD {
-   sleep 1 until -r $ctl_vddFIFOvim;
+   sleep 1 until -r $fifo;
 
    # read from control fifo
 print ">>vddTester opening control fifo to read<<\n";
-   open(my $ctlHandle, "<", $ctl_vddFIFOvim) or die;
-   my @msg = <$ctlHandle>;
+   open(my $fifoHandle, "<", $fifo) or die;
+   my @msg = <$fifoHandle>;
    print color("blue"), "received '", @msg, "'", color("white"), "\n";
-   close($ctlHandle);
+   close($fifoHandle);
 print ">>vddTester read from control fifo<<\n";
-
-   # read from debug fifo
-print ">>vddTester opening debug fifo to read<<\n";
-   open(my $dbgHandle, "<", $dbg_vddFIFOvim) or die;
-   @msg = <$dbgHandle>;
-   print color("blue"), "received '", @msg, "'", color("white"), "\n";
-   close($dbgHandle);
-print ">>vddTester read from debug fifo<<\n";
 }
 
 
 # blocks until someone reads
 sub sendToVDD {
-   my $stuffToSend = (shift or $prevCommand);
+   my $data = (shift or $prevCommand);
 
-   print color("blue"), "sending  '$stuffToSend'", color("white"), "\n";
-   open(my $ctlHandle, ">", $ctl_vimFIFOvdd) or die;  # blocks until there is a reader
-   print {$ctlHandle} $stuffToSend;
-   close($ctlHandle);
+   print color("blue"), "sending  '$data'", color("white"), "\n";
+   open(my $fifoHandle, ">", $fifo) or die;  # blocks until there is a reader
+   print {$fifoHandle} $data;
+   close($fifoHandle);
 
-   $prevCommand = $stuffToSend;
+   $prevCommand = $data;
 }
 
 sub spawnProcess {

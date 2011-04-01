@@ -122,7 +122,6 @@ sub _startDebugger {
    return undef;
 }
 
-
 =head2 _command($command)
 
 Returns a string
@@ -144,6 +143,7 @@ sub _command {
    $output =~ s/$prompt//os;
    return $output;
 }
+
 =head2 _quit($command)
 
 Returns undef (this is subject to change)

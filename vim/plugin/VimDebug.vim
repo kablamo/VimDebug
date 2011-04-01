@@ -393,6 +393,8 @@ function! s:HandleCmdResult(...)
    let l:fileName   = l:cmdResult[2]
    let l:output     = l:cmdResult[3]
 
+   call s:ConsolePrint(l:output)
+
    if l:status == s:DBGR_READY
       if len(l:lineNumber) > 0
          call s:CurrentLineMagic(l:lineNumber, l:fileName)
@@ -406,8 +408,6 @@ function! s:HandleCmdResult(...)
       redraw! | echo "\rthe application being debugged terminated"
 
    endif
-
-   call s:ConsolePrint(l:output)
 
    return
 endfunction

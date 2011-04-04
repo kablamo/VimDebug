@@ -13,25 +13,24 @@ use strict;
 use warnings;
 use Cwd;
 use File::Basename;
+use IO::Socket;
 use POSIX ();
 use Term::ANSIColor;
 use Term::ReadLine;
 
-my ($sessionId, $sourcePath, $debuggerName, @debuggerCommand, $fifo); 
-my ($term, $PID, $prevCommand);
+# constants
+my $PROTO      = "tcp";
+my $HOST       = "localhost";
+my $PORT       = "6543";
+my $EOM_REGEX  = "\nvimdebug.eom\n"; # End Of Message Regular Expression
+my $EOM_LEN    = length($EOM_REGEX); # length of $EOM
+my $EOR_REGEX  = '\[vimdebug.eor\]'; # End Of Record Regular Expression
+
+my ($debuggerName, @debuggerCommand, $term, $remote); 
 
 
 init();
 main();
-
-
-sub getCommandLineOptions {
-   usage() unless(scalar(@ARGV) >= 2);
-
-   $sessionId          = int(rand(99999));
-   $debuggerName       = shift @ARGV or die;
-   @debuggerCommand    = @ARGV or die;
-}
 
 
 sub usage {
@@ -46,7 +45,6 @@ example: vddTester Perl perl -Ilib -d t/perl.pl
 
 "; exit(0);
 }
-
 
 sub initializeReadLine {
    $term = new Term::ReadLine('sanity');
@@ -64,85 +62,13 @@ sub initializeReadLine {
 }
 
 sub init {
-   $| = 1;
-   getCommandLineOptions();
-   $fifo = ".vdd." . $sessionId;
-   unlink $fifo;
+   usage() unless(scalar(@ARGV) >= 2);
+   $debuggerName    = shift @ARGV; # which debugger to use
+   @debuggerCommand = @ARGV;       # debugger command
    initializeReadLine();
 }
 
-
-
-sub main {
-   spawnProcess("vdd $sessionId $debuggerName @debuggerCommand");
-   readFromVDD();
-
-   # loop until request to exit
-   while(1) {
-      print color("green"), ":";
-      my $command = $term->readline("vdd:$debuggerName> ");
-         $command = "quit" unless defined $command;
-
-      for ($command)   {
-         /^n$/           and $command = "next";
-         /^s$/           and $command = "step";
-         /^c$/           and $command = "cont";
-         /^q$/           and $command = "quit";
-         /^r$/           and $command = "restart";
-         /^b (.+)$/      and $command = "break:$1:$sourcePath";
-         /^B (.+)$/      and $command = "clear:$1:$sourcePath";
-         /^l (.+)$/      and $command = "clearAll";
-         /^p (.+)$/      and $command = "printExpression:$1";
-         /^d (.+)$/      and $command = "command:$1";
-      }
-
-      sendToVDD($command);
-      exit if $command eq "quit";
-
-      readFromVDD();
-   }
-}
-
-sub makeNamedPipe {
-   my $fifo = shift or die "gotta pass a fifo to this function";
-
-   if (-p $fifo) {
-      print "vddTester: $fifo already exists.  perhaps another instance of" .
-            " vimDebug is running?\nif not, just delete $fifo.\n";
-      exit();
-   }
-
-   POSIX::mkfifo($fifo, 0700) or die "mkfifo $fifo failed: $!\n";
-}
-
-
-# blocks until there is something to read
-sub readFromVDD {
-   sleep 1 until -r $fifo;
-
-   # read from control fifo
-print ">>vddTester opening control fifo to read<<\n";
-   open(my $fifoHandle, "<", $fifo) or die;
-   my @msg = <$fifoHandle>;
-   print color("blue"), "received '", @msg, "'", color("white"), "\n";
-   close($fifoHandle);
-print ">>vddTester read from control fifo<<\n";
-}
-
-
-# blocks until someone reads
-sub sendToVDD {
-   my $data = (shift or $prevCommand);
-
-   print color("blue"), "sending  '$data'", color("white"), "\n";
-   open(my $fifoHandle, ">", $fifo) or die;  # blocks until there is a reader
-   print {$fifoHandle} $data;
-   close($fifoHandle);
-
-   $prevCommand = $data;
-}
-
-sub spawnProcess {
+sub spawn {
    my @incantation = @_ or die;
 
    die "cannot fork" unless(defined(my $PID = fork));
@@ -151,3 +77,69 @@ sub spawnProcess {
    }
 }
 
+sub cnnct {
+   foreach my $i (0..9) {
+      $remote = IO::Socket::INET->new(
+         Proto    => $PROTO,
+         PeerAddr => $HOST,
+         PeerPort => $PORT,
+      ) and last;
+      sleep 1;
+   }
+
+   die ("could not connect to port $PORT") if !defined $remote;
+
+   print color("white"), "connected to port $PORT\n";
+}
+
+sub snd {
+   my $data = shift;
+   print $remote $data . "\n";
+   if ($data eq "quit") {
+      close $remote;
+      exit();
+   }
+}
+
+sub rcv {
+   my $data = '';
+   ($data .= <$remote>) until substr($data, -1 * $EOM_LEN) eq $EOM_REGEX;
+   $data = substr($data, 0, -1 * $EOM_LEN);
+   my ($status, $line, $file, $output) = split($EOR_REGEX, $data);
+   print color("bright_green"), "status: $status\n";
+   print color("bright_green"), "line:   $line\n";
+   print color("bright_green"), "file:   $file\n";
+   print color("green"), $output, "\n";
+}
+
+sub main {
+   spawn("vdd $debuggerName @debuggerCommand");
+   cnnct();
+   rcv();
+
+   # loop until user asks to quit
+   while(1) {
+      my $command = $term->readline(color("white") . "vdd:$debuggerName> ");
+         $command = "quit" unless defined $command;
+
+      for ($command)   {
+         /^n$/           and $command = "next";
+         /^s$/           and $command = "step";
+         /^c$/           and $command = "cont";
+         /^q$/           and $command = "quit";
+         /^r$/           and $command = "restart";
+         /^b (.+)$/      and $command = "break:$1:sourcepath";
+         /^B (.+)$/      and $command = "clear:$1:sourcepath";
+         /^l (.+)$/      and $command = "clearAll";
+         /^p (.+)$/      and $command = "printExpression:$1";
+         /^d (.+)$/      and $command = "command:$1";
+      }
+
+      snd($command);
+      rcv();
+   }
+}
+
+sub END {
+   print color("white"), "\n";
+}

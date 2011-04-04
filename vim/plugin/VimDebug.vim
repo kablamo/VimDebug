@@ -46,18 +46,22 @@ sign define empty       linehl=empty
 let g:DBGRconsoleHeight   = 7
 let g:DBGRlineNumbers     = 1
 let g:DBGRshowConsole     = 1
+perl $DBGRsocket          = 0;
 
 " script constants
-let s:EOF             = "-vimdebug-"          " end of field
-let s:COMPILER_ERROR  = "compiler error"      " not in use yet
-let s:RUNTIME_ERROR   = "runtime error"       " not in use yet
-let s:APP_EXITED      = "application exited"  " not in use yet
+let s:EOR_REGEX       = '\[vimdebug.eor\]'   " End Of Record Regular Expression
+let s:EOM             = "\nvimdebug.eom\n"   " End Of Message
+let s:EOM_LEN         = len(s:EOM)
+let s:COMPILER_ERROR  = "compiler error"     " not in use yet
+let s:RUNTIME_ERROR   = "runtime error"      " not in use yet
+let s:APP_EXITED      = "application exited" " not in use yet
 let s:DBGR_READY      = "debugger ready"      
 
+let s:PORT            = 6543
+let s:HOST            = "localhost"
+
 " script variables
-let s:sessionId       = getpid()
 let s:dbgrIsRunning   = 0
-let s:fifo            = ".vdd." . s:sessionId
 let s:incantation     = ""
 let s:lineNumber      = 0
 let s:fileName        = ""
@@ -66,7 +70,7 @@ let s:programDone     = 0
 let s:consoleBufNr    = -99
 let s:emptySigns      = []
 let s:breakPoints     = []
-
+let s:return          = 0
 
 
 " debugger functions
@@ -89,12 +93,9 @@ function! DBGRstart(...)
    " do after system() so nongui vim doesn't show a blank screen
    echo "\rstarting the debugger..."
 
-   " loop until vdd says the debugger is done loading
-   while !filewritable(s:fifo)
-      " this works in gvim but is misleading on the console
-      " echo "\rwaiting for debugger to start (hit <C-c> to give up)..."
-      continue
-   endwhile
+   if !s:SocketConnect()
+      return
+   endif
 
    if has("autocmd")
      autocmd VimLeave * call DBGRquit()
@@ -113,7 +114,7 @@ function! DBGRnext()
       return
    endif
    echo "\rnext..."
-   call system('echo "next" >> ' . s:fifo)
+   call s:SocketWrite("next")
    call s:HandleCmdResult()
 endfunction
 function! DBGRstep()
@@ -121,7 +122,7 @@ function! DBGRstep()
       return
    endif
    echo "\rstep..."
-   call system('echo "step" >> ' . s:fifo)
+   call s:SocketWrite("step")
    call s:HandleCmdResult()
 endfunction
 function! DBGRcont()
@@ -129,7 +130,7 @@ function! DBGRcont()
       return
    endif
    echo "\rcontinue..."
-   call system('echo "cont" >> ' . s:fifo)
+   call s:SocketWrite("cont")
    call s:HandleCmdResult()
 endfunction
 function! DBGRsetBreakPoint()
@@ -148,7 +149,7 @@ function! DBGRsetBreakPoint()
    endif
 
    " tell vdd
-   silent exe "redir >> " . s:fifo . '| echon "break:' . l:currLineNr . ':' . l:currFileName . '" | redir END'
+   call s:SocketWrite("break:" . l:currLineNr . ':' . l:currFileName)
 
    call add(s:breakPoints, l:id)
 
@@ -178,7 +179,7 @@ function! DBGRclearBreakPoint()
    endif
 
    " tell vdd
-   silent exe "redir >> " . s:fifo . '| echon "clear:' . l:currLineNr . ':' . l:currFileName . '" | redir END'
+   call s:SocketWrite("clear:" . l:currLineNr . ':' . l:currFileName)
 
    call filter(s:breakPoints, 'v:val != l:id')
    exe "sign unplace " . l:id
@@ -201,7 +202,7 @@ function! DBGRclearAllBreakPoints()
    let l:currLineNr   = line(".")
    let l:id           = s:CreateId(l:bufNr, l:currLineNr)
 
-   silent exe "redir >> " . s:fifo . '| echon "clearAll" | redir END'
+   call s:SocketWrite("clearAll")
 
    " do this in case the last current line had a break point on it
    call s:UnplaceTheLastCurrentLineSign()                " unplace the old sign
@@ -214,7 +215,7 @@ function! DBGRprint(...)
       return
    endif
    if a:0 > 0
-      call system("echo 'printExpression:" . a:1 . "' >> " . s:fifo)
+      call s:SocketWrite("printExpression:" . a:1)
       call s:HandleCmdResult()
    endif
 endfunction
@@ -224,7 +225,7 @@ function! DBGRcommand(...)
    endif
    echo ""
    if a:0 > 0
-      call system("echo 'command:" . a:1 . "' >> " . s:fifo)
+      call s:SocketWrite(a:1)
       call s:HandleCmdResult()
    endif
 endfunction
@@ -233,7 +234,7 @@ function! DBGRrestart()
       echo "\rthe debugger is not running"
       return
    endif
-   call system('echo "restart" >> ' . s:fifo)
+   call s:SocketWrite("restart")
    " do after the system() call so that nongui vim doesn't show a blank screen
    echo "\rrestarting..."
    call s:UnplaceTheLastCurrentLineSign()
@@ -253,7 +254,7 @@ function! DBGRquit()
    call s:UnplaceTheLastCurrentLineSign()
    call s:SetNoNumber()
 
-   call system('echo "quit" >> ' . s:fifo)
+   call s:SocketWrite("quit")
 
    if has("autocmd")
      autocmd! VimLeave * call DBGRquit()
@@ -362,7 +363,7 @@ function! s:Incantation(...)
    let s:fileName       = bufname("%")
    let l:debugger       = s:DbgrName(s:fileName)
    let l:vddIncantation =
-    \ "vdd " . s:sessionId . " " . l:debugger . " " . s:AutoIncantation(l:debugger)
+    \ "vdd " . l:debugger . " " . s:AutoIncantation(l:debugger)
 
    return l:vddIncantation . (a:0 == 0 ? '' : (" " . join(a:000, " ")))
 endfunction 
@@ -387,7 +388,7 @@ endfunction
 
 
 function! s:HandleCmdResult(...)
-   let l:cmdResult  = split(system('cat ' . s:fifo), s:EOF)
+   let l:cmdResult  = split(s:SocketRead(), s:EOR_REGEX)
    let l:status     = l:cmdResult[0]
    let l:lineNumber = l:cmdResult[1]
    let l:fileName   = l:cmdResult[2]
@@ -528,4 +529,39 @@ function! s:ConsolePrint(msg)
    let @x = l:oldValue
    normal G
    wincmd p
+endfunction
+
+" socket functions
+function! s:SocketConnect()
+   perl << EOF
+      use IO::Socket;
+      foreach my $i (0..9) {
+         $DBGRsocket = IO::Socket::INET->new(
+            Proto    => "tcp",
+            PeerAddr => "localhost",
+            PeerPort => "6543",
+         );
+         if (defined $DBGRsocket) {
+            VIM::DoCommand("return 1");
+            return;
+         }
+         sleep 1;
+      }
+      VIM::Msg("cannot connect to port 6543 at localhost");
+      VIM::DoCommand("return 0");
+EOF
+endfunction
+function! s:SocketRead()
+   perl << EOF
+      my $EOM     = VIM::Eval('s:EOM');
+      my $EOM_LEN = VIM::Eval('s:EOM_LEN');
+      my $data = '';
+      $data .= <$DBGRsocket> until substr($data, -1 * $EOM_LEN) eq $EOM;
+      $data = substr($data, 0, -1 * $EOM_LEN); # chop EOM
+      $data =~ s|'|''|g; # escape '
+      VIM::DoCommand("return '" . $data . "'");
+EOF
+endfunction
+function! s:SocketWrite(data)
+   perl print $DBGRsocket VIM::Eval('a:data') . "\n";
 endfunction

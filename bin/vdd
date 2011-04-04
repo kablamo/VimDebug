@@ -10,27 +10,33 @@
 use strict;
 use warnings;
 use File::Basename;
+use IO::Socket;
 use UNIVERSAL;
 use POSIX ();
 use Carp;
 
-# constants
-my $EOF            = "-vimdebug-";           # end of field
+# protocol constants
+my $EOR            = "[vimdebug.eor]";       # end of field
+my $EOM            = "\nvimdebug.eom\n";     # end of field
 my $COMPILER_ERROR = "compiler error";       # not used yet
 my $RUNTIME_ERROR  = "runtime error";        # not used yet
 my $APP_EXITED     = "application exited";   # not used yet
 my $DBGR_READY     = "debugger ready";
 my $BAD_CMD        = "bad command";
 
+# connection constants
+my $PORT           = "6543";
+my $LISTEN         = 1;      # maybe someday I can use SOMAXCONN
+my $PROTO          = "tcp";
+
 # global variables
-my ($sessionId, $debuggerName, @debuggerCommand, $debugger, $fifo);
-my $debug_option = 0;
-my $color_option = 0;
+my ($debuggerName, @debuggerCommand, $debugger, $client, $server);
+my $debug_option = 1;
+my $color_option = 1;
 
 
-
+$| = 1;
 $SIG{INT} = \&signalHandler;
-getCommandLineOptions();
 init();
 main();
 
@@ -39,108 +45,23 @@ sub signalHandler {
    exit;
 }
 
-sub getCommandLineOptions {
-   usage() unless(scalar(@ARGV) >= 2);
-   $sessionId       = shift @ARGV; # session id
-   $debuggerName    = shift @ARGV; # which debugger to use
-   @debuggerCommand = @ARGV;       # debugger command
-}
-
 sub usage {
-   print << 'EOT';
-Usage: vdd $sessionId $debugger $command
+   print <<"EOT";
+Usage: vdd \$debugger \$command
 
 The vim debugger daemon uses the perl module
-VimDebug::DebuggerInterface::$debugger to invoke
-a debugger using the $command.
+VimDebug::DebuggerInterface::\$debugger to invoke
+a debugger using the \$command.
 
-Communication with the daemon occurs via fifos located at:
-
-   .ctl_vddFIFOvim.$sessionId
-   .ctl_vimFIFOvdd.$sessionId
-   .dbg_vddFIFOvim.$sessionId
+Communication with the daemon occurs on port $PORT
 EOT
    exit;
 }
 
 sub init {
-   $| = 1;
-
-   $fifo = ".vdd." . $sessionId;
-
-   if ($color_option) {
-      eval('require Term::ANSIColor;import Term::ANSIColor;') and
-         warn "fancy color printing disabled.  couldn't find Term::ANSIColor\n";
-   }
-}
-
-sub main {
-   makeNamedPipe($fifo);
-   startDebugger();
-
-   # loop until request to exit
-   while (1) {
-      my $command = readFromVim();     # blocks until there is something to read
-
-      for ($command) {   # this works like a switch statement
-         /^break:(\d+):(.+)$/o     && act('setBreakPoint',   $1, $2) && last;
-         /^clear:(\d+):(.+)$/o     && act('clearBreakPoint', $1, $2) && last;
-         /^clearAll$/o             && act('clearAllBreakPoints')     && last;
-         /^printExpression:(.+)$/o && act('printExpression', $1)     && last;
-         /^command:(.+)$/o         && act('command', $1)             && last;
-         /^(\w+)$/                 && act($1)                        && last;
-         sendToVim("vdd: bad command");                                 last;
-      }
-   }
-}
-
-sub END {
-   unlink $fifo;
-}
-
-sub makeNamedPipe {
-   my $fifo = shift or die "gotta pass a fifo to this function";
-
-   if (-p $fifo) {
-      print "vdd: $fifo already exists.  perhaps another instance of" .
-            " vimDebug is running?\nif not, just delete $fifo.\n";
-      exit();
-   }
-
-   POSIX::mkfifo($fifo, 0700) or die "mkfifo $fifo failed: $!\n";
-}
-
-sub logger {
-   my $printMe = shift or die;
-   my $color   = (shift or color("blue"));
-
-   $color_option ?
-      print $color, $printMe, color("white"), "\n"
-    : print "[" . $printMe . "]\n";
-}
-
-
-
-### debugger related subroutines ###############################################
-
-
-# blocks until there is something to read
-sub readFromVim {
-   open(my $fifoHandle, "<", $fifo) or confess;
-   my $data = <$fifoHandle>;
-   close($fifoHandle);
-   logger("received '$data'") if $debug_option;
-   return $data;
-}
-
-# blocks until someone reads
-sub sendToVim {
-   my $data = shift;
-
-   logger("sending  '$data'") if $debug_option;
-   open(my $fifoHandle, ">", $fifo) or confess;
-   print {$fifoHandle} $data;
-   close($fifoHandle);
+   usage() unless(scalar(@ARGV) >= 2);
+   $debuggerName    = shift @ARGV; # which debugger to use
+   @debuggerCommand = @ARGV;       # debugger command
 }
 
 sub startDebugger {
@@ -157,12 +78,16 @@ sub startDebugger {
    act("startDebugger", @debuggerCommand);
 }
 
+sub badCommand {
+   print $client $BAD_CMD . $EOR . $EOR . $EOR . $EOM;
+}
+
 sub act {
    my $action  = shift or die;
    my @options = @_;
 
    if (! UNIVERSAL::can($debugger, $action)) {
-      sendToVim($BAD_CMD . $EOF . $EOF . $EOF . "\n" . $EOF);
+      badCommand();
       return 1;
    }
 
@@ -171,17 +96,46 @@ sub act {
       exit();
    }
    elsif (defined $debugger->lineNumber and defined $debugger->filePath) {
-      sendToVim(
-         $DBGR_READY           . $EOF .
-         $debugger->lineNumber . $EOF .
-         $debugger->filePath   . $EOF .
-         $debugger->output     . $EOF
-      );
+      print $client 
+         $DBGR_READY           . $EOR .
+         $debugger->lineNumber . $EOR .
+         $debugger->filePath   . $EOR .
+         $debugger->output     . $EOM;
    }
    else {
-      sendToVim($DBGR_READY . $EOF . $EOF . $EOF . $debugger->output . $EOF);
+      print $client $DBGR_READY . $EOR . $EOR . $EOR . $debugger->output . $EOM;
    }
 
    return 1;
+}
+
+sub main {
+   my $server = IO::Socket::INET->new( 
+      Proto     => $PROTO,
+      LocalPort => $PORT,
+      Listen    => $LISTEN,
+      Reuse     => 1,
+   ) or die "can't setup server on port $PORT";
+
+   while ($client = $server->accept()) {
+      startDebugger();
+      $client->autoflush(1);
+      while (<$client>) { # blocks until there is something to read
+         next unless /\S/;       # blank line
+         if    (/^break:(\d+):(.+)$/)     { act('setBreakPoint',   $1, $2) }
+         elsif (/^clear:(\d+):(.+)$/)     { act('clearBreakPoint', $1, $2) }
+         elsif (/^clearAll$/)             { act('clearAllBreakPoints')     }
+         elsif (/^printExpression:(.+)$/) { act('printExpression', $1)     }
+         elsif (/^command:(.+)$/)         { act('command', $1)             }
+         elsif (/^(\w+)$/)                { act($1)                        }
+         else                             { badCommand()                   }
+      }
+      close $client;
+   }
+}
+
+sub END {
+   close $client if defined $client;
+   close $server if defined $server;
 }
 

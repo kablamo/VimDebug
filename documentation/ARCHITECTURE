@@ -7,26 +7,25 @@ Vim to the VimDebug daemon to the debugger and vice versa:
      |      Running Vim instance      |
      |  (./vim/plugin/VimDebug.vim)   |
      +--------------------------------+
-          |           |           |
-          ^           v           ^
-          |           |           |             Fifos for communicating
-   .ctl_vddFIFOvim    |    .dbg_vddFIFOvim      between the running Vim
-          |           |           |             instance and our VimDebug
-          |    .ctl_vimFIFOvdd    |             daemon.
-          |           |           |
-          ^           v           ^
-          |           |           |
+                      |
+                      ^
+                      |
+                      |
+                      |
+                  tcp socket
+                  port 6543
+                      | 
+                      v 
+                      |
         +---------------------------+
         |      VimDebug daemon      |
         |      (./bin/vdd.pl)       |
         +---------------------------+
-           |                     |
-           ^                     v
-           |                     |
-                 $VimDebug::
-             DebuggerInterface::          The VimDebug daemon gains access
-                    Base::                to the debugger via the
-          READ                 WRITE      VimDebug::DebuggerInterface API.
+        |         VimDebug::        |
+        |    DebuggerInterface::    |   
+        |           Base            |   
+        +---------------------------+
+          READ                 WRITE    
            |                     |
            ^                     v
            |                     |
@@ -59,10 +58,4 @@ The VimDebug daemon (vdd) calls these functions at the right time.
 For example, when Vim issues a step command to vdd, vdd will call
 $debugger->step(), where $debugger is for example an instance of
 VimDebug::DebuggerInterface::Perl.
-
-## Some notes on the fifos
-
-.ctl_vddFIFOvim
-.dbg_vddFIFOvim
-.ctl_vimFIFOvdd
 

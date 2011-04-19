@@ -1,5 +1,8 @@
 TODO
 
+This document is deprecated and will be replaced with
+https://github.com/kablamo/VimDebug/issues
+
 - test and fix edge cases: perl not found, ruby not found, compiler error, etc.
 - behavior if buffer was edited?
 - when a runtime error or compile time error occurs, jump to the bad line

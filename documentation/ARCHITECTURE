@@ -1,45 +1,40 @@
-# Some notes on the VimDebug architecture
 
-This is how the streams are set up, and how commands are passed from
-Vim to the VimDebug daemon to the debugger and vice versa:
-
-     +--------------------------------+
-     |      Running Vim instance      |
-     |  (./vim/plugin/VimDebug.vim)   |
-     +--------------------------------+
+      +----------------------------------+
+      | Vim                              |
+      +----------------------------------+
+      | VimDebug plugin                  |
+      | (./vim/plugin/VimDebug.vim)      |
+      +----------------------------------+
                       |
                       ^
-                      |
-                      |
                       |
                   tcp socket
                   port 6543
                       | 
                       v 
                       |
-        +---------------------------+
-        |      VimDebug daemon      |
-        |      (./bin/vdd.pl)       |
-        +---------------------------+
-        |         VimDebug::        |
-        |    DebuggerInterface::    |   
-        |           Base            |   
-        +---------------------------+
-          READ                 WRITE    
-           |                     |
-           ^                     v
-           |                     |
-         STDOUT                STDIN
-        +---------------------------+
-        |  Forked debugger process. |
-        |  One of:                  |
-        |      perl -d              |
-        |      python -d            |
-        |      ruby -rdebug         |
-        |      gdb                  |
-        |      jdb                  |
-        |      ...                  |
-        +---------------------------+
+      +----------------------------------+
+      | VimDebug daemon                  |
+      | (./bin/vdd.pl)                   |
+      +----------------------------------+
+      | Perl libraries                   |
+      | (VimDebug::DebuggerInterface::*) |
+      +----------------------------------+
+           READ                 WRITE    
+            |                     |
+            ^                     v
+            |                     |
+          STDOUT                STDIN
+      +----------------------------------+
+      |  Forked debugger process.        |
+      |  One of:                         |
+      |      perl -d                     |
+      |      python -d                   |
+      |      ruby -rdebug                |
+      |      gdb                         |
+      |      jdb                         |
+      |      ...                         |
+      +----------------------------------+
 
 All debugger interfaces should inherit from:
 

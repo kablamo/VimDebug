@@ -1,0 +1,66 @@
+*VimDebug.txt*      Vim debugger integration
+
+
+            VIM REFERENCE MANUAL    by Eric Johnson
+
+*VimDebug* *VimDebug.vim*
+
+1. VimDebug Intro                   |VimDebug-intro|
+2. Requirements                     |VimDebug-req|
+3. Installation                     |VimDebug-install|
+4. Keybindings                      |VimDebug-keys|
+
+The functionality mentioned here is a plugin, see |add-plugin|.
+This plugin is only available if 'compatible' is not set and vim has
+been compiled with '+signs'.
+
+{Vi does not have any of this}
+
+==============================================================================
+1. VimDebug Intro                   *VimDebug-intro*
+
+VimDebug integrates your language's debugger with Vim. Currently there
+is support for Perl, Python, and Ruby. Please note that this code is
+very much in beta and is still missing some important capabilities.
+
+==============================================================================
+2. Requirements                     *VimDebug-req*
+
+VimDebug requires the following to function:
+
+- Perl 5.6.0+
+- A small number of Perl modules
+- Vim with +signs compiled in
+
+==============================================================================
+3. Installation                     *VimDebug-install*
+
+VimDebug requires the following Perl modules:
+
+- IO:: Pty
+- IPC::Run
+
+Consult available documentation for how to install these, or view the
+current information on github: https://github.com/kablamo/VimDebug
+
+==============================================================================
+4. Keybindings                      *VimDebug-keys*
+
+These are the default key bindings. To change them edit VimDebug.vim
+
+<F12>      Start the debugger
+<Leader>s/ Start the debugger.  Prompts for command line arguments.
+<F10>      Restart debugger. Break points are ALWAYS saved (for all dbgrs).
+<F11>      Exit the debugger
+
+<F6>       Next
+<F7>       Step
+<F8>       Continue
+
+<Leader>b  Set break point on the current line
+<Leader>c  Clear break point on the current line
+
+<Leader>v  Print the value of the variable under the cursor
+<Leader>v/ Print the value of an expression thats entered
+
+<Leader>/  Type a command for the debugger to execute and echo the result

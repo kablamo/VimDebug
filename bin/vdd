@@ -9,133 +9,16 @@
 
 use strict;
 use warnings;
-use File::Basename;
-use IO::Socket;
-use UNIVERSAL;
-use POSIX ();
-use Carp;
+use VimDebug::Daemon;
 
-# protocol constants
-my $EOR            = "[vimdebug.eor]";       # end of field
-my $EOM            = "\nvimdebug.eom\n";     # end of field
-my $COMPILER_ERROR = "compiler error";       # not used yet
-my $RUNTIME_ERROR  = "runtime error";        # not used yet
-my $APP_EXITED     = "application exited";   # not used yet
-my $DBGR_READY     = "debugger ready";
-my $BAD_CMD        = "bad command";
-
-# connection constants
-my $PORT           = "6543";
-my $LISTEN         = 1;      # maybe someday I can use SOMAXCONN
-my $PROTO          = "tcp";
-
-# global variables
-my ($debuggerName, @debuggerCommand, $debugger, $client, $server);
-my $debug_option = 1;
-my $color_option = 1;
-
-
-$| = 1;
 $SIG{INT} = \&signalHandler;
-init();
-main();
 
+VimDebug::Daemon->start(
+   language  => shift @ARGV,
+   command   => \@ARGV,
+);
 
+# die when children die
 sub signalHandler {
    exit;
 }
-
-sub usage {
-   print <<"EOT";
-Usage: vdd \$debugger \$command
-
-The vim debugger daemon uses the perl module
-VimDebug::DebuggerInterface::\$debugger to invoke
-a debugger using the \$command.
-
-Communication with the daemon occurs on port $PORT
-EOT
-   exit;
-}
-
-sub init {
-   usage() unless(scalar(@ARGV) >= 2);
-   $debuggerName    = shift @ARGV; # which debugger to use
-   @debuggerCommand = @ARGV;       # debugger command
-}
-
-sub startDebugger {
-
-   # load module
-   my $moduleName = 'VimDebug/DebuggerInterface/' . $debuggerName . '.pm';
-   require $moduleName ;
-
-   # create debugger object
-   $debuggerName = 'VimDebug::DebuggerInterface::' . $debuggerName;
-   $debugger = eval $debuggerName . "->new();";
-   die "no such module exists: $debuggerName" unless defined $debugger;
-
-   act("startDebugger", @debuggerCommand);
-}
-
-sub badCommand {
-   print $client $BAD_CMD . $EOR . $EOR . $EOR . $EOM;
-}
-
-sub act {
-   my $action  = shift or die;
-   my @options = @_;
-
-   if (! UNIVERSAL::can($debugger, $action)) {
-      badCommand();
-      return 1;
-   }
-
-   $debugger->$action(@options);
-   if ($action eq 'quit') {
-      exit();
-   }
-   elsif (defined $debugger->lineNumber and defined $debugger->filePath) {
-      print $client 
-         $DBGR_READY           . $EOR .
-         $debugger->lineNumber . $EOR .
-         $debugger->filePath   . $EOR .
-         $debugger->output     . $EOM;
-   }
-   else {
-      print $client $DBGR_READY . $EOR . $EOR . $EOR . $debugger->output . $EOM;
-   }
-
-   return 1;
-}
-
-sub main {
-   my $server = IO::Socket::INET->new( 
-      Proto     => $PROTO,
-      LocalPort => $PORT,
-      Listen    => $LISTEN,
-      Reuse     => 1,
-   ) or die "can't setup server on port $PORT";
-
-   while ($client = $server->accept()) {
-      startDebugger();
-      $client->autoflush(1);
-      while (<$client>) { # blocks until there is something to read
-         next unless /\S/;       # blank line
-         if    (/^break:(\d+):(.+)$/)     { act('setBreakPoint',   $1, $2) }
-         elsif (/^clear:(\d+):(.+)$/)     { act('clearBreakPoint', $1, $2) }
-         elsif (/^clearAll$/)             { act('clearAllBreakPoints')     }
-         elsif (/^printExpression:(.+)$/) { act('printExpression', $1)     }
-         elsif (/^command:(.+)$/)         { act('command', $1)             }
-         elsif (/^(\w+)$/)                { act($1)                        }
-         else                             { badCommand()                   }
-      }
-      close $client;
-   }
-}
-
-sub END {
-   close $client if defined $client;
-   close $server if defined $server;
-}
-

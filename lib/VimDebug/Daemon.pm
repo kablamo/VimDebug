@@ -101,7 +101,7 @@ sub spawnDebugger {
 
 =cut
 sub ClientConnected {
-   reportBack($_[HEAP]{client});
+   respond($_[HEAP]{client});
    return undef;
 }
 
@@ -124,12 +124,12 @@ sub ClientInput {
       $o = $BAD_CMD . $EOR . $EOR . $EOR . $EOM;
    }
 
-   reportBack($_[HEAP]{client});
+   respond($_[HEAP]{client});
 
    return undef;
 }
 
-sub reportBack {
+sub respond {
    my $client = shift or die;
    my $o;
    if (defined $dbgr->lineNumber and defined $dbgr->filePath) {

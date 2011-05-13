@@ -26,7 +26,7 @@ use POE qw(Component::Server::TCP);
 
 # protocol constants
 my $EOR            = "[vimdebug.eor]";       # end of field
-my $EOM            = "\nvimdebug.eom\n";     # end of field
+my $EOM            = "\r\nvimdebug.eom";     # end of field
 my $COMPILER_ERROR = "compiler error";       # not used yet
 my $RUNTIME_ERROR  = "runtime error";        # not used yet
 my $APP_EXITED     = "application exited";   # not used yet
@@ -35,6 +35,7 @@ my $BAD_CMD        = "bad command";
 
 # connection constants
 my $PORT           = "6543";
+my $DONE_FILE      = ".vdd.done";
 
 # globals
 $VimDebug::Daemon::VERSION = "0.39";
@@ -100,8 +101,8 @@ sub spawnDebugger {
 
 =cut
 sub ClientConnected {
-   print "got a connection from $_[HEAP]{remote_ip}\n";
-   $_[HEAP]{client}->put("ni3 hao3");
+   reportBack($_[HEAP]{client});
+   return undef;
 }
 
 =head2 ClientInput()
@@ -110,8 +111,6 @@ sub ClientConnected {
 sub ClientInput {
    my $cmd = $_[ARG0];
    my $o; # output
-
-   say $cmd;
 
    if    ($cmd =~ /^break:(\d+):(.+)$/    ) {$o = $dbgr->setBreakPoint($1, $2)  }
    elsif ($cmd =~ /^clear:(\d+):(.+)$/    ) {$o = $dbgr->clearBreakPoint($1, $2)}
@@ -125,6 +124,14 @@ sub ClientInput {
       $o = $BAD_CMD . $EOR . $EOR . $EOR . $EOM;
    }
 
+   reportBack($_[HEAP]{client});
+
+   return undef;
+}
+
+sub reportBack {
+   my $client = shift or die;
+   my $o;
    if (defined $dbgr->lineNumber and defined $dbgr->filePath) {
       $o = $DBGR_READY       . $EOR .
            $dbgr->lineNumber . $EOR .
@@ -135,9 +142,14 @@ sub ClientInput {
       $o = $DBGR_READY . $EOR . $EOR . $EOR . $dbgr->output . $EOM;
    }
 
-   $_[HEAP]{client}->put($o);
+   touch();
+   $client->put($o);
+}
 
-   return undef;
+sub touch {
+   open(FILE, ">", $DONE_FILE);
+   print FILE "\n";
+   close(FILE);
 }
 
 1;

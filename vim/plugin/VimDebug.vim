@@ -50,7 +50,7 @@ perl $DBGRsocket          = 0;
 
 " script constants
 let s:EOR_REGEX       = '\[vimdebug.eor\]'   " End Of Record Regular Expression
-let s:EOM             = "\nvimdebug.eom\n"   " End Of Message
+let s:EOM             = "\r\nvimdebug.eom\r\n"       " End Of Message
 let s:EOM_LEN         = len(s:EOM)
 let s:COMPILER_ERROR  = "compiler error"     " not in use yet
 let s:RUNTIME_ERROR   = "runtime error"      " not in use yet
@@ -59,6 +59,7 @@ let s:DBGR_READY      = "debugger ready"
 
 let s:PORT            = 6543
 let s:HOST            = "localhost"
+let s:DONE_FILE       = ".vdd.done"
 
 " script variables
 let s:dbgrIsRunning   = 0
@@ -401,14 +402,17 @@ function! s:HandleCmdResult(...)
          call s:CurrentLineMagic(l:lineNumber, l:fileName)
       endif
       if a:0 > 0
-         echo "\r" . a:1 . "                    "
+"         echo "\r" . a:1 . "                    "
       endif
 
    elseif l:status == s:APP_EXITED
       call s:HandleProgramTermination()
       redraw! | echo "\rthe application being debugged terminated"
 
+   else
+      echo "error:001.  something bad happened.  please report this to vimdebug at iijo dot org"
    endif
+
 
    return
 endfunction
@@ -552,6 +556,19 @@ function! s:SocketConnect()
 EOF
 endfunction
 function! s:SocketRead()
+   try 
+      " very inefficient but non blocking loop.
+      " debugger signals completion by touching the file
+      " while the debugger thinks, the user can cancel their operation
+      while filereadable(s:DONE_FILE) != 1
+      endwhile
+      call delete(s:DONE_FILE)
+   catch /Vim:Interrupt/
+      echo "cancelled"
+      " connect to debugger and cancel somehow
+      return
+   endtry
+   
    perl << EOF
       my $EOM     = VIM::Eval('s:EOM');
       my $EOM_LEN = VIM::Eval('s:EOM_LEN');

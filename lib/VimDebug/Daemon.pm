@@ -75,9 +75,6 @@ Communication with the daemon occurs on port $PORT
 ";
 }
 
-=head2 spawnDebugger()
-
-=cut
 sub spawnDebugger {
    my %params = @_ or confess;
 
@@ -97,17 +94,11 @@ sub spawnDebugger {
    return undef;
 }
 
-=head2 ClientConnected()
-
-=cut
 sub ClientConnected {
    respond($_[HEAP]{client});
    return undef;
 }
 
-=head2 ClientInput()
-
-=cut
 sub ClientInput {
    my $cmd = $_[ARG0];
    my $o; # output

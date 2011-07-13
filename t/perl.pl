@@ -13,6 +13,10 @@ my $b = 2;
 my $c = $a + $b;
 my $d = 7;
 
+# while (1) {
+#    sleep 1;
+# }
+
 foo();
 
 my $monkey  = "i want bananas";

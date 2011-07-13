@@ -46,7 +46,8 @@ sign define empty       linehl=empty
 let g:DBGRconsoleHeight   = 7
 let g:DBGRlineNumbers     = 1
 let g:DBGRshowConsole     = 1
-perl $DBGRsocket          = 0;
+perl $DBGRsocket1         = 0;
+perl $DBGRsocket2         = 0;
 
 " script constants
 let s:EOR_REGEX       = '\[vimdebug.eor\]'   " End Of Record Regular Expression
@@ -95,6 +96,9 @@ function! DBGRstart(...)
    echo "\rstarting the debugger..."
 
    if !s:SocketConnect()
+      return
+   endif
+   if !s:SocketConnectAgain()
       return
    endif
 
@@ -389,7 +393,12 @@ endfunction
 
 
 function! s:HandleCmdResult(...)
-   let l:cmdResult  = split(s:SocketRead(), s:EOR_REGEX)
+   let l:data       = s:SocketRead()
+   if l:data == ''
+      return
+   endif
+
+   let l:cmdResult  = split(l:data, s:EOR_REGEX)
    let l:status     = l:cmdResult[0]
    let l:lineNumber = l:cmdResult[1]
    let l:fileName   = l:cmdResult[2]
@@ -540,12 +549,12 @@ function! s:SocketConnect()
    perl << EOF
       use IO::Socket;
       foreach my $i (0..9) {
-         $DBGRsocket = IO::Socket::INET->new(
+         $DBGRsocket1 = IO::Socket::INET->new(
             Proto    => "tcp",
             PeerAddr => "localhost",
             PeerPort => "6543",
          );
-         if (defined $DBGRsocket) {
+         if (defined $DBGRsocket1) {
             VIM::DoCommand("return 1");
             return;
          }
@@ -557,28 +566,53 @@ EOF
 endfunction
 function! s:SocketRead()
    try 
-      " very inefficient but non blocking loop.
+      " yeah this is a very inefficient but non blocking loop.
       " debugger signals completion by touching the file
       " while the debugger thinks, the user can cancel their operation
       while filereadable(s:DONE_FILE) != 1
+echo "waiting"
       endwhile
+echo "delete now"
       call delete(s:DONE_FILE)
    catch /Vim:Interrupt/
       echo "cancelled"
-      " connect to debugger and cancel somehow
-      return
+      call s:SocketWrite2('command:stop')
    endtry
    
    perl << EOF
       my $EOM     = VIM::Eval('s:EOM');
       my $EOM_LEN = VIM::Eval('s:EOM_LEN');
       my $data = '';
-      $data .= <$DBGRsocket> until substr($data, -1 * $EOM_LEN) eq $EOM;
+      $data .= <$DBGRsocket1> until substr($data, -1 * $EOM_LEN) eq $EOM;
       $data = substr($data, 0, -1 * $EOM_LEN); # chop EOM
       $data =~ s|'|''|g; # escape '
       VIM::DoCommand("return '" . $data . "'");
 EOF
 endfunction
 function! s:SocketWrite(data)
-   perl print $DBGRsocket VIM::Eval('a:data') . "\n";
+   perl print $DBGRsocket1 VIM::Eval('a:data') . "\n";
+endfunction
+" TODO: figure out how to and pass perl vars into vim functions so we don't
+" have duplicate code
+function! s:SocketConnectAgain()
+   perl << EOF
+      use IO::Socket;
+      foreach my $i (0..9) {
+         $DBGRsocket2 = IO::Socket::INET->new(
+            Proto    => "tcp",
+            PeerAddr => "localhost",
+            PeerPort => "6543",
+         );
+         if (defined $DBGRsocket2) {
+            VIM::DoCommand("return 1");
+            return;
+         }
+         sleep 1;
+      }
+      VIM::Msg("cannot connect to port 6543 at localhost");
+      VIM::DoCommand("return 0");
+EOF
+endfunction
+function! s:SocketWrite2(data)
+   perl print $DBGRsocket2 VIM::Eval('a:data') . "\n";
 endfunction

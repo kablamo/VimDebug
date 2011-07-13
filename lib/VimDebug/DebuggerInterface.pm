@@ -53,7 +53,8 @@ $VimDebug::DebuggerInterface::VERSION = "0.39";
 
 sub new {
    my $class = shift;
-   my $self = {};
+   my %stash = @_;
+   my $self = {stash => \%stash };
    bless $self, $class;
    return $self;
 }

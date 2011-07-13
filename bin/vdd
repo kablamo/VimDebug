@@ -13,10 +13,7 @@ use VimDebug::Daemon;
 
 $SIG{INT} = \&signalHandler;
 
-VimDebug::Daemon->start(
-   language  => shift @ARGV,
-   command   => \@ARGV,
-);
+VimDebug::Daemon->new->run;
 
 # die when children die
 sub signalHandler {

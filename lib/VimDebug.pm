@@ -113,7 +113,7 @@ print ".";
    eval { $self->dbgr->pump_nb() };
 print ":";
    my $out = $READ;
-print "|";
+print "|\n";
 
 #   if ($@ =~ /process ended prematurely/ and length($READ) != 0) {
 #       print "::read(): weird: $out\n" if $self->debug;
@@ -129,29 +129,29 @@ print "|";
        die $@;
    }
 
+   $self->out($out);
+print $self->out;
+
    if ($self->stop) {
        print "::read(): stopping\n" if $self->debug;
        $WRITE .= "";
        $self->timer->reset();
-       $self->dbgr->pump() until $READ =~ /$dbgrPromptRegex/;
+       $self->dbgr->pump() until ($READ =~ /$dbgrPromptRegex/    || 
+                                  $READ =~ /$compilerErrorRegex/ || 
+                                  $READ =~ /$runtimeErrorRegex/  || 
+                                  $READ =~ /$appExitedRegex/); 
    }
 
-   if    ($out eq $self->original)       { return 0                       }
-   elsif ($out =~ /$dbgrPromptRegex/)    { $self->status($DBGR_READY)     }
-   elsif ($out =~ /$compilerErrorRegex/) { $self->status($COMPILER_ERROR) }
-   elsif ($out =~ /$runtimeErrorRegex/)  { $self->status($RUNTIME_ERROR)  }
-   elsif ($out =~ /$appExitedRegex/)     { $self->status($APP_EXITED)     }
-   else                                  { return 0                       }
+   if    ($self->out =~ /$dbgrPromptRegex/)    { print "z1z\n"; $self->status($DBGR_READY)     }
+   elsif ($self->out =~ /$compilerErrorRegex/) { print "z2z\n"; $self->status($COMPILER_ERROR) }
+   elsif ($self->out =~ /$runtimeErrorRegex/)  { print "z3z\n"; $self->status($RUNTIME_ERROR)  }
+   elsif ($self->out =~ /$appExitedRegex/)     { print "z4z\n"; $self->status($APP_EXITED)     }
+   else                                        { print "z5z\n"; return 0                       }
 
-   print "::read(): out: [$out]\n" if $self->debug;
+   print "::read(): out: [" . $self->out . "]\n" if $self->debug;
    $self->original($out);
-print "original done\n";
-   $self->out($out);
-print "out done\n";
    $self->parseOutput($out);
-print "parseout done\n";
 
-print "done";
    return 1;
 }
 
@@ -169,11 +169,8 @@ sub out {
    if (@_) {
       $out = shift;
 
-      # remove the old output that keeps accumulating
-      $self->oldOut( $self->oldOut . $self->{out} );
-      my $oldOutLen = length $self->oldOut;
-      $out = substr($out, $oldOutLen) 
-         if $oldOutLen > 0;
+      my $originalLen = length $self->original;
+      $out = substr($out, $originalLen);
         
       # vim is not displaying newline characters correctly for some reason.
       # this localizes the newlines.

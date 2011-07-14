@@ -20,7 +20,7 @@ sub start {
 sub dbgrPromptRegex    { '  DB<+\d+>+ $'                    }
 sub compilerErrorRegex { 'aborted due to compilation error' }
 sub runtimeErrorRegex  { ' at .* line \d+'                  }
-sub appExitedRegex     { qr/(\/perl5db.pl:)|(Use .* to quit or .* to restart)|(\' to quit or \`R\' to restart)/ }
+sub appExitedRegex     { qr/((\/perl5db.pl:)|(Use .* to quit or .* to restart)|(\' to quit or \`R\' to restart)).*  DB<+\d+>+ / }
 
 sub parseOutput {
    my $self   = shift or confess;

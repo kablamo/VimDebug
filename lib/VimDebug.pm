@@ -108,18 +108,10 @@ sub read {
    my $runtimeErrorRegex  = $self->runtimeErrorRegex;
    my $appExitedRegex     = $self->appExitedRegex;
 
-print ".";
    $self->timer->reset();
    eval { $self->dbgr->pump_nb() };
-print ":";
    my $out = $READ;
-print "|\n";
 
-#   if ($@ =~ /process ended prematurely/ and length($READ) != 0) {
-#       print "::read(): weird: $out\n" if $self->debug;
-#       undef $@;
-#       return 0;
-#   }
    if ($@ =~ /process ended prematurely/) {
        print "::read(): process ended prematurely\n" if $self->debug;
        undef $@;
@@ -130,7 +122,6 @@ print "|\n";
    }
 
    $self->out($out);
-print $self->out;
 
    if ($self->stop) {
        print "::read(): stopping\n" if $self->debug;
@@ -142,13 +133,12 @@ print $self->out;
                                   $READ =~ /$appExitedRegex/); 
    }
 
-   if    ($self->out =~ /$dbgrPromptRegex/)    { print "z1z\n"; $self->status($DBGR_READY)     }
-   elsif ($self->out =~ /$compilerErrorRegex/) { print "z2z\n"; $self->status($COMPILER_ERROR) }
-   elsif ($self->out =~ /$runtimeErrorRegex/)  { print "z3z\n"; $self->status($RUNTIME_ERROR)  }
-   elsif ($self->out =~ /$appExitedRegex/)     { print "z4z\n"; $self->status($APP_EXITED)     }
-   else                                        { print "z5z\n"; return 0                       }
+   if    ($self->out =~ /$dbgrPromptRegex/)    { $self->status($DBGR_READY)     }
+   elsif ($self->out =~ /$compilerErrorRegex/) { $self->status($COMPILER_ERROR) }
+   elsif ($self->out =~ /$runtimeErrorRegex/)  { $self->status($RUNTIME_ERROR)  }
+   elsif ($self->out =~ /$appExitedRegex/)     { $self->status($APP_EXITED)     }
+   else                                        { return 0                       }
 
-   print "::read(): out: [" . $self->out . "]\n" if $self->debug;
    $self->original($out);
    $self->parseOutput($out);
 

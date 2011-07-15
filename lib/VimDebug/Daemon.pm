@@ -188,6 +188,7 @@ say "::::::write";
       if ($in eq 'quit') {
          $v->dbgr->finish();
          $_[KERNEL]->yield("shutdown");
+         return;
       }
       $_[KERNEL]->yield("Read" => @_[ARG0..$#_]);
    }

@@ -17,10 +17,11 @@ sub start {
 }
 
 # used to parse debugger 
-sub dbgrPromptRegex    { '  DB<+\d+>+ $'                    }
-sub compilerErrorRegex { 'aborted due to compilation error' }
-sub runtimeErrorRegex  { ' at .* line \d+'                  }
-sub appExitedRegex     { qr/((\/perl5db.pl:)|(Use .* to quit or .* to restart)|(\' to quit or \`R\' to restart)).*  DB<+\d+>+ / }
+our $dpr = '.*  DB<+\d+>+ '; # debugger prompt regex
+sub dbgrPromptRegex    { qr/$dpr/ }
+sub compilerErrorRegex { qr/aborted due to compilation error${dpr}/ }
+sub runtimeErrorRegex  { qr/ at .* line \d+${dpr}/ }
+sub appExitedRegex     { qr/((\/perl5db.pl:)|(Use .* to quit or .* to restart)|(\' to quit or \`R\' to restart))${dpr}/ }
 
 sub parseOutput {
    my $self   = shift or confess;

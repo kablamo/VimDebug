@@ -2,6 +2,10 @@
 " email: vimDebug at iijo dot org
 " http://iijo.org
 
+if !has('perl')
+    finish
+endif
+
 
 " key bindings
 map <F12>         :DBGRstart<CR>

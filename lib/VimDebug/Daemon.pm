@@ -49,7 +49,7 @@ use POE qw(Component::Server::TCP);
 __PACKAGE__->mk_accessors( qw(vimdebug translatedInput) );
 
 
-# contants
+# constants
 $VimDebug::Daemon::VERSION = "0.39";
 $| = 1;
 
@@ -90,8 +90,8 @@ sub run {
 }
 
 sub clientConnected {
-say ":::::::clientConnected";
-   $_[HEAP]{client}->put($_[SESSION]->ID);
+say ">>>>>clientConnected";
+   $_[HEAP]{client}->put($_[SESSION]->ID . $EOM );
 }
 
 sub clientInput {
@@ -101,14 +101,14 @@ sub clientInput {
 sub in {
    my $self  = $_[OBJECT];
    my $input = $_[ARG0];
-say ":::::::in";
+say ">>>>>in";
 
    # first connection from vim: spawn the debugger
    #               spawn:sessionId:language:command
    if ($input =~ /^spawn:(.+):(.+):(.+)$/) {
       $self->vimdebug->{$1} = spawn( $2, $3 );
       $_[KERNEL]->yield("Read" => @_[ARG0..$#_]);
-say ":::::::first connection";
+say ">>>>>first connection";
       return;
    }
 
@@ -119,11 +119,12 @@ say ":::::::first connection";
       if (defined $self->vimdebug->{$sessionId}) {
          $self->vimdebug->{$sessionId}->{stop} = 1;
          $_[KERNEL]->yield("shutdown");
-say ":::::::another connection";
+say ">>>>>another connection";
          return;
       }
       die "ERROR 003.  Email vimdebug at iijo dot org.";
    }
+say ">>>>>input received: $input";
 
    # input from current session.  
    $_[KERNEL]->yield("Translate" => @_[ARG0..$#_]);
@@ -153,7 +154,7 @@ sub translate {
    my $self = $_[OBJECT];
    my $v    = $self->vimdebug->{$_[SESSION]->ID};
    my $in   = $_[ARG0];
-say ":::::::::translate: $in";
+say ">>>>>translate: $in";
    my $cmds;
 
    # translate protocol $in to native debugger @cmds
@@ -167,13 +168,13 @@ say ":::::::::translate: $in";
 #   elsif ($in =~ /^(\w+)$/           ) {$cmds = $v->$1()                   }
    else  { die "ERROR 002.  Please email vimdebug at iijo dot org.\n"      }
 
-print Dumper $cmds;
+#print Dumper $cmds;
    $v->translatedInput($cmds);
    $_[KERNEL]->yield("Write", @_[ARG0..$#_]);
 }
 
 sub write {
-say "::::::write";
+#say ">>>>>>write";
    my $self = $_[OBJECT];
    my $in   = $_[ARG0];
    my $v    = $self->vimdebug->{$_[SESSION]->ID};

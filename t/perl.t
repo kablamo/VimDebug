@@ -2,22 +2,102 @@
 
 use strict;
 
-use File::Which;
-use lib 'lib';
-use VimDebug::DebuggerInterface::Test;
-use VimDebug::DebuggerInterface::Perl;
+use lib qw(lib t/lib);
+use VimDebug::Client;
+use VimDebug::Daemon;
 use Test::More;
 
+$SIG{INT} = \&signalHandler;
+sub signalHandler { exit } # die when children die
 
-if (not defined File::Which::which('perl')) {
-   return;
+my $pid = fork;
+if (!$pid) {
+    # child process
+    VimDebug::Daemon->new->run;
+    return;
 }
 
-my $test = VimDebug::DebuggerInterface::Test->new(
-   debuggerName    => 'Perl',
-   debuggerCommand => [qw(perl -Ilib -d t/perl.pl)],
-   filename        => 't/perl.pl',
-);
+# parent
+my $r; # response
+my $firstLine;
+my $testFile = 't/perl.pl';
+my $client = VimDebug::Client->new({
+    language => 'Perl',
+    command  => "perl -Ilib -d $testFile",
+});
 
-Test::Class->runtests($test);
+{
+    note( "core debugger functions" );
 
+    $r = $client->connect;
+    $firstLine = $r->line;
+    ok($firstLine, "connected: line number");
+    is($r->file, $testFile, "connected: file");
+
+    $r = $client->next;
+    is($r->line, $firstLine + 1, "next: line number");
+    is($r->file, $testFile, "next: file");
+
+    $r = $client->step;
+    is($r->line, $firstLine + 2, "step: line number");
+    is($r->file, $testFile, "step: file");
+
+    $r = $client->print('$a');
+    is($r->line, $firstLine + 2, "print: line number");
+    is($r->file, $testFile, "print: line number");
+    is($r->output, 4, "print: value");
+
+    continueToTheEnd();
+    restart();
+}
+
+{
+    note( "breakpoint tests" );
+
+    ok $client->break(
+        line => 7,
+        file => $testFile,
+    ), "set breakpoint 0";
+
+    $r = $client->continue;
+    is($r->line, 7, "continue to breakpoint: line number");
+    is($r->file, $testFile, "continue to breakpoint: file");
+
+    continueToTheEnd();
+    restart();
+
+    ok $client->clear(
+        line => 7,
+        file => $testFile,
+    ), "clear breakpoint";
+
+    continueToTheEnd();
+    restart();
+
+    ok $client->break(
+        line => 7,
+        file => $testFile,
+    ), "set breakpoint 1";
+
+    ok $client->break(
+        line => 8,
+        file => $testFile,
+    ), "set breakpoint 1";
+
+    ok $client->clearAll, "clear breakpoint";
+
+    continueToTheEnd();
+    restart();
+}
+
+sub continueToTheEnd {
+    $r = $client->continue;
+    is($r->line, 99, "continue: line number");
+    is($r->file, $testFile, "continue: file");
+}
+
+sub restart {
+    $r = $client->restart;
+    is($r->line, $firstLine, "restart: line number");
+    is($r->file, $testFile, "restart: file");
+}

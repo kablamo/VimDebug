@@ -56,10 +56,10 @@ sub parseOutput {
 sub next                { return [ 'n'                  ] }
 sub step                { return [ 's'                  ] }
 sub cont                { return [ 'c'                  ] }
-sub setBreakPoint       { return [ "f $_[2]", "b $_[1]" ] }
-sub clearBreakPoint     { return [ "f $_[2]", "B $_[1]" ] }
-sub clearAllBreakPoints { return [ "B *"                ] }
-sub printExpression     { return [ "x $_[1]"            ] }
+sub break               { return [ "f $_[2]", "b $_[1]" ] }
+sub clear               { return [ "f $_[2]", "B $_[1]" ] }
+sub clearAll            { return [ "B *"                ] }
+sub print               { return [ "x $_[1]"            ] }
 sub command             { return [ $_[1]                ] }
 sub restart             { return [ "R"                  ] }
 sub quit                { return [ "q"                  ] }

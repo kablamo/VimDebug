@@ -158,15 +158,19 @@ say ">>>>>translate: $in";
    my $cmds;
 
    # translate protocol $in to native debugger @cmds
-   if    ($in =~ /^break:(\d+):(.+)$/) {$cmds = $v->setBreakPoint($1, $2)  }
-   elsif ($in =~ /^clear:(\d+):(.+)$/) {$cmds = $v->clearBreakPoint($1, $2)}
-   elsif ($in =~ /^clearAll$/        ) {$cmds = $v->clearAllBreakPoints()  }
-   elsif ($in =~ /^print:(.+)$/      ) {$cmds = $v->printExpression($1)    }
-   elsif ($in =~ /^command:(.+)$/    ) {$cmds = $v->command($1)            }
-   elsif ($in =~ /^quit$/            ) {$cmds = $v->quit($1);              }
-   elsif ($in =~ /^(\w+):(.+)$/      ) {$cmds = $v->$1($2)                 }
-#   elsif ($in =~ /^(\w+)$/           ) {$cmds = $v->$1()                   }
-   else  { die "ERROR 002.  Please email vimdebug at iijo dot org.\n"      }
+      if ($in =~ /^next$/            ) { $cmds = $v->next           }
+   elsif ($in =~ /^step$/            ) { $cmds = $v->step           }
+   elsif ($in =~ /^cont$/            ) { $cmds = $v->cont           }
+   elsif ($in =~ /^break:(\d+):(.+)$/) { $cmds = $v->break($1, $2)  }
+   elsif ($in =~ /^clear:(\d+):(.+)$/) { $cmds = $v->clear($1, $2)  }
+   elsif ($in =~ /^clearAll$/        ) { $cmds = $v->clearAll       }
+   elsif ($in =~ /^print:(.+)$/      ) { $cmds = $v->print($1)      }
+   elsif ($in =~ /^command:(.+)$/    ) { $cmds = $v->command($1)    }
+   elsif ($in =~ /^restart$/         ) { $cmds = $v->restart        }
+   elsif ($in =~ /^quit$/            ) { $cmds = $v->quit($1)       }
+#  elsif ($in =~ /^(\w+):(.+)$/      ) { $cmds = $v->$1($2)         }
+#  elsif ($in =~ /^(\w+)$/           ) { $cmds = $v->$1()           }
+   else { die "ERROR 002.  Please email vimdebug at iijo dot org.\n" }
 
 #print Dumper $cmds;
    $v->translatedInput($cmds);

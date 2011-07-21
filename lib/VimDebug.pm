@@ -133,14 +133,14 @@ sub read {
                                   $READ =~ /$appExitedRegex/); 
    }
 
-   if    ($self->out =~ /$dbgrPromptRegex/)    { $self->status($DBGR_READY)     }
-   elsif ($self->out =~ /$compilerErrorRegex/) { $self->status($COMPILER_ERROR) }
-   elsif ($self->out =~ /$runtimeErrorRegex/)  { $self->status($RUNTIME_ERROR)  }
-   elsif ($self->out =~ /$appExitedRegex/)     { $self->status($APP_EXITED)     }
-   else                                        { return 0                       }
+   if    ($self->out =~ $dbgrPromptRegex)    { $self->status($DBGR_READY)     }
+   elsif ($self->out =~ $compilerErrorRegex) { $self->status($COMPILER_ERROR) }
+   elsif ($self->out =~ $runtimeErrorRegex)  { $self->status($RUNTIME_ERROR)  }
+   elsif ($self->out =~ $appExitedRegex)     { $self->status($APP_EXITED)     }
+   else                                      { return 0                       }
 
    $self->original($out);
-   $self->parseOutput($out);
+   $self->parseOutput($self->out);
 
    return 1;
 }

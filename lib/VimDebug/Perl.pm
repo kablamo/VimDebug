@@ -9,12 +9,9 @@ use warnings;
 use parent qw(VimDebug);
 use Carp;
 
-sub start {
-   my $self = shift or die;
-   $ENV{"PERL5DB"}     = 'BEGIN {require "perl5db.pl";}';
-   $ENV{"PERLDB_OPTS"} = "ornaments=''";
-   return $self->SUPER::start(@_);
-}
+$ENV{"PERL5DB"}     = 'BEGIN {require "perl5db.pl";}';
+$ENV{"PERLDB_OPTS"} = "ornaments=''";
+
 
 # used to parse debugger 
 our $dpr = '.*  DB<+\d+>+ '; # debugger prompt regex
@@ -47,8 +44,8 @@ sub parseOutput {
          ( .+ ) : ( \d+ )
       \):
    /xm;
-   $self->filePath($1);
-   $self->lineNumber($2);
+   $self->filePath($1)   if defined $1;
+   $self->lineNumber($2) if defined $2;
 
    return undef;
 }

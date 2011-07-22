@@ -105,9 +105,9 @@ sub in {
 say ">>>>>in";
 
    # first connection from vim: spawn the debugger
-   #               spawn:sessionId:language:command
-   if ($input =~ /^spawn:(.+):(.+):(.+)$/) {
-      $self->vimdebug->{$1} = spawn( $2, $3 );
+   #               start:sessionId:language:command
+   if ($input =~ /^start:(.+):(.+):(.+)$/) {
+      $self->vimdebug->{$1} = start( $2, $3 );
       $_[KERNEL]->yield("Read" => @_[ARG0..$#_]);
 say ">>>>>first connection";
       return;
@@ -130,7 +130,7 @@ say ">>>>>another connection";
    $_[KERNEL]->yield("Translate" => @_[ARG0..$#_]);
 }
 
-sub spawn {
+sub start {
    my $language = shift or die;
    my $command  = shift or die;
 

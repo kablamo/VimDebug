@@ -52,6 +52,7 @@ __PACKAGE__->mk_accessors( qw(vimdebug translatedInput) );
 # constants
 $VimDebug::Daemon::VERSION = "0.39";
 $| = 1;
+my $ALIAS = 'VimDebugDaemon';
 
 # protocol constants
 my $EOR            = "[vimdebug.eor]";       # end of field
@@ -72,6 +73,7 @@ sub run {
    $self->vimdebug({});
 
    POE::Component::Server::TCP->new(
+      Alias           => $ALIAS,
       Port            => $PORT,
       ClientConnected => \&clientConnected,
       ClientInput     => \&clientInput,
@@ -90,7 +92,6 @@ sub run {
 }
 
 sub clientConnected {
-say ">>>>>clientConnected";
    $_[HEAP]{client}->put($_[SESSION]->ID . $EOM );
 }
 
@@ -118,13 +119,12 @@ say ">>>>>first connection";
       my $sessionId = $1;
       if (defined $self->vimdebug->{$sessionId}) {
          $self->vimdebug->{$sessionId}->{stop} = 1;
-         $_[KERNEL]->yield("shutdown");
 say ">>>>>another connection";
+         $_[KERNEL]->post($ALIAS => 'shutdown');
          return;
       }
       die "ERROR 003.  Email vimdebug at iijo dot org.";
    }
-say ">>>>>input received: $input";
 
    # input from current session.  
    $_[KERNEL]->yield("Translate" => @_[ARG0..$#_]);
@@ -154,7 +154,6 @@ sub translate {
    my $self = $_[OBJECT];
    my $v    = $self->vimdebug->{$_[SESSION]->ID};
    my $in   = $_[ARG0];
-say ">>>>>translate: $in";
    my $cmds;
 
    # translate protocol $in to native debugger @cmds
@@ -172,13 +171,11 @@ say ">>>>>translate: $in";
 #  elsif ($in =~ /^(\w+)$/           ) { $cmds = $v->$1()           }
    else { die "ERROR 002.  Please email vimdebug at iijo dot org.\n" }
 
-#print Dumper $cmds;
    $v->translatedInput($cmds);
    $_[KERNEL]->yield("Write", @_[ARG0..$#_]);
 }
 
 sub write {
-#say ">>>>>>write";
    my $self = $_[OBJECT];
    my $in   = $_[ARG0];
    my $v    = $self->vimdebug->{$_[SESSION]->ID};
@@ -190,9 +187,11 @@ sub write {
    else {
       my $c = pop @$cmds;
       $v->write($c);
+
+      chomp($in);
       if ($in eq 'quit') {
          $v->dbgr->finish();
-         $_[KERNEL]->yield("shutdown");
+         $_[KERNEL]->post($ALIAS => "shutdown");
          return;
       }
       $_[KERNEL]->yield("Read" => @_[ARG0..$#_]);

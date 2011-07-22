@@ -22,7 +22,7 @@ use Data::Dumper::Concise;
 use Net::Telnet;
 use VimDebug::Client::Response;
 
-__PACKAGE__->mk_accessors( qw(language dbgrCmd telnet) );
+__PACKAGE__->mk_accessors( qw(language dbgrCmd telnet sessionId) );
 
 
 # constants
@@ -65,14 +65,31 @@ sub connect {
 
     my ($sessionId, $sadfasdf) = $telnet->waitfor($EOM_REGEX);
 
+    $self->sessionId($sessionId);
+
+    return;
+}
+
+sub start {
+    my $self = shift or die;
+
+    $self->connect;
+    
     my $cmd = sprintf( 
-        'spawn:%s:%s:%s', 
-        $sessionId, 
+        'start:%s:%s:%s', 
+        $self->sessionId, 
         $self->language,
         $self->dbgrCmd,
     );
-    my @response= $self->telnet->cmd( $cmd );
+    my @response= $self->telnet->cmd($cmd);
 
+    return $self->buildResponse(@response);
+}
+
+sub stop {
+    my $self = shift or die;
+    $self->connect;
+    my @response= $self->telnet->cmd("stop:" . $self->sessionId);
     return $self->buildResponse(@response);
 }
 

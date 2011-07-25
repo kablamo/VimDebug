@@ -92,7 +92,7 @@ sub run {
 }
 
 sub clientConnected {
-   $_[HEAP]{client}->put($_[SESSION]->ID . $EOM );
+   $_[HEAP]{client}->put($_[SESSION]->ID . $EOR . $EOM );
 }
 
 sub clientInput {

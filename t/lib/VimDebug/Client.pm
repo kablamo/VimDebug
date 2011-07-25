@@ -31,6 +31,7 @@ $| = 1;
 
 # protocol constants
 my $EOR            = "[vimdebug.eor]";       # end of record
+my $EOR_EOM        = '/\[vimdebug.eor\]\nvimdebug.eom\n/';
 my $EOR_LENGTH     = length($EOR);
 my $EOM            = "\r\nvimdebug.eom\n";   # end of message
 my $EOM_REGEX      = '/\nvimdebug.eom\n/';
@@ -63,7 +64,7 @@ sub connect {
         last;
     }
 
-    my ($sessionId, $sadfasdf) = $telnet->waitfor($EOM_REGEX);
+    my ($sessionId, $sadfasdf) = $telnet->waitfor($EOR_EOM);
 
     $self->sessionId($sessionId);
 
@@ -89,8 +90,8 @@ sub start {
 sub stop {
     my $self = shift or die;
     $self->connect;
-    my @response= $self->telnet->cmd("stop:" . $self->sessionId);
-    return $self->buildResponse(@response);
+    $self->telnet->print("stop:" . $self->sessionId);
+    return;
 }
 
 sub jfdi {

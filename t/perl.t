@@ -28,9 +28,9 @@ my $client = VimDebug::Client->new({
 });
 
 {
-    note( "core debugger functions" );
+    note("core debugger functions");
 
-    $r = $client->connect;
+    $r = $client->start;
     $firstLine = $r->line;
     ok($firstLine, "connected: line number");
     is($r->file, $testFile, "connected: file");
@@ -53,7 +53,7 @@ my $client = VimDebug::Client->new({
 }
 
 {
-    note( "breakpoint tests" );
+    note("breakpoint tests");
 
     ok $client->break(7, $testFile), "set breakpoint 0";
 

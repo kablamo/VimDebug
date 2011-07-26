@@ -58,6 +58,7 @@ my $ALIAS = 'VimDebugDaemon';
 my $EOR            = "[vimdebug.eor]";       # end of field
 my $EOM            = "\r\nvimdebug.eom";     # end of field
 my $BAD_CMD        = "bad command";
+my $CONNECT        = "CONNECT";
 
 # connection constants
 my $PORT      = "6543";
@@ -92,7 +93,9 @@ sub run {
 }
 
 sub clientConnected {
-   $_[HEAP]{client}->put($_[SESSION]->ID . $EOR . $EOM );
+   $_[HEAP]{client}->put(
+      $CONNECT . $EOR . $EOR . $EOR . $_[SESSION]->ID . $EOM 
+   );
 }
 
 sub clientInput {

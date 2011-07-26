@@ -121,17 +121,19 @@ sub read {
        die $@;
    }
 
-   $self->out($out);
-
    if ($self->stop) {
        print "::read(): stopping\n" if $self->debug;
-       $WRITE .= "";
+       $self->dbgr->signal("INT");
        $self->timer->reset();
        $self->dbgr->pump() until ($READ =~ /$dbgrPromptRegex/    || 
                                   $READ =~ /$compilerErrorRegex/ || 
                                   $READ =~ /$runtimeErrorRegex/  || 
                                   $READ =~ /$appExitedRegex/); 
+       $out = $READ;
    }
+
+   $self->out($out);
+print $self->out . "\n";
 
    if    ($self->out =~ $dbgrPromptRegex)    { $self->status($DBGR_READY)     }
    elsif ($self->out =~ $compilerErrorRegex) { $self->status($COMPILER_ERROR) }

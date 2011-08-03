@@ -1,4 +1,5 @@
 # ABSTRACT: VimDebug Client
+
 =head1 SYNOPSIS
 
    use VimDebug::Client;
@@ -30,11 +31,14 @@ $VimDebug::Client::VERSION = "0.00";
 $| = 1;
 
 # protocol constants
-my $EOR            = "[vimdebug.eor]";       # end of record
+my $EOR            = '[vimdebug.eor]';       # end of record
+my $EOR_REGEX      = qr/\[vimdebug.eor\]/;
 my $EOR_LENGTH     = length($EOR);
 my $EOM            = "\r\nvimdebug.eom\n";   # end of message
 my $EOM_REGEX      = '/\nvimdebug.eom\n/';
 my $BAD_CMD        = "bad command";
+my $CONNECT        = "CONNECT";
+my $DISCONNECT     = "DISCONNECT";
 
 # connection constants
 my $DONE_FILE = ".vdd.done";
@@ -50,6 +54,7 @@ sub connect {
         Ors        => "\n", # output record separator -- not a regex
         Telnetmode => 0,
         Port       => 6543,
+        Dump_Log   => 'foo',
     );
     $self->telnet($telnet);
 
@@ -63,10 +68,10 @@ sub connect {
         last;
     }
 
-    my @response = $telnet->waitfor($EOM_REGEX);
-    my $responseObj = $self->buildResponse(@response);
+    my ($output, $eom) = $telnet->waitfor($EOM_REGEX);
+    my @parts = split($EOR_REGEX, $output);
 
-    $self->sessionId($responseObj->output);
+    $self->sessionId($parts[-1]);
 
     return;
 }
@@ -75,7 +80,7 @@ sub start {
     my $self = shift or die;
 
     $self->connect;
-    
+
     my $cmd = sprintf( 
         'start:%s:%s:%s', 
         $self->sessionId, 
@@ -90,13 +95,13 @@ sub start {
 sub stop {
     my $self = shift or die;
     $self->connect;
-    $self->telnet->print("stop:" . $self->sessionId);
+    $self->telnet->cmd("stop:" . ($self->sessionId - 1));
     return;
 }
 
 sub jfdi {
     my ($self, $cmd) = @_;
-    my @response= $self->telnet->cmd( $cmd );
+    my @response = $self->telnet->cmd( $cmd );
     return $self->buildResponse(@response);
 }
 
@@ -126,7 +131,7 @@ sub command  { my ($self, $s)     = @_; return $self->jfdi("command:$s")  }
 sub restart  { my ($self)         = @_; return $self->jfdi("restart")     }
 sub quit     { 
     my ($self) = @_; 
-    $self->telnet->print( "quit" );
+    $self->telnet->cmd("quit");
     return 1;
 }
 

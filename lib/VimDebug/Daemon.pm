@@ -1,4 +1,5 @@
 # ABSTRACT: VimDebug Daemon 
+
 =head1 SYNOPSIS
 
    use VimDebug::Daemon;
@@ -35,6 +36,7 @@ ClientInput
                      Out
 
 =cut
+
 package VimDebug::Daemon;
 
 use strict;
@@ -59,10 +61,14 @@ my $EOR            = "[vimdebug.eor]";       # end of field
 my $EOM            = "\r\nvimdebug.eom";     # end of field
 my $BAD_CMD        = "bad command";
 my $CONNECT        = "CONNECT";
+my $DISCONNECT     = "DISCONNECT";
 
 # connection constants
 my $PORT      = "6543";
 my $DONE_FILE = ".vdd.done";
+
+# global var
+my $shutdown = 0;
 
 
 =head2 run
@@ -74,11 +80,13 @@ sub run {
    $self->vimdebug({});
 
    POE::Component::Server::TCP->new(
-      Alias           => $ALIAS,
-      Port            => $PORT,
-      ClientConnected => \&clientConnected,
-      ClientInput     => \&clientInput,
-      ObjectStates    => [
+      Alias              => $ALIAS,
+      Port               => $PORT,
+      ClientConnected    => \&clientConnected,
+      ClientDisconnected => \&clientDisconnected,
+      ClientInput        => \&clientInput,
+      ClientError        => \&clientError,
+      ObjectStates       => [
          $self => {
             In           => 'in',
             Translate    => 'translate',
@@ -96,6 +104,18 @@ sub clientConnected {
    $_[HEAP]{client}->put(
       $CONNECT . $EOR . $EOR . $EOR . $_[SESSION]->ID . $EOM 
    );
+#   $_[SESSION]->option(trace => 1, debug => 1);
+}
+
+sub clientDisconnected {
+    if ( $shutdown ) {
+        $shutdown = 0;
+        exit;
+    }
+}
+
+sub clientError {
+    warn "ClientError: " . $_[SESSION]->ID . "\n";
 }
 
 sub clientInput {
@@ -105,14 +125,12 @@ sub clientInput {
 sub in {
    my $self  = $_[OBJECT];
    my $input = $_[ARG0];
-say ">>>>>in";
 
    # first connection from vim: spawn the debugger
    #               start:sessionId:language:command
    if ($input =~ /^start:(.+):(.+):(.+)$/) {
       $self->vimdebug->{$1} = start( $2, $3 );
       $_[KERNEL]->yield("Read" => @_[ARG0..$#_]);
-say ">>>>>first connection";
       return;
    }
 
@@ -121,9 +139,9 @@ say ">>>>>first connection";
    if ($input =~ /^stop:(.+)$/) {
       my $sessionId = $1;
       if (defined $self->vimdebug->{$sessionId}) {
-         $self->vimdebug->{$sessionId}->{stop} = 1;
-say ">>>>>another connection";
-         $_[KERNEL]->post($ALIAS => 'shutdown');
+         $self->vimdebug->{$sessionId}->stop(1);
+         $_[HEAP]{client}->event(FlushedEvent => "shutdown");
+         $_[HEAP]{client}->put($DISCONNECT . $EOR . $EOR . $EOR . $EOM);
          return;
       }
       die "ERROR 003.  Email vimdebug at iijo dot org.";
@@ -193,8 +211,9 @@ sub write {
 
       chomp($in);
       if ($in eq 'quit') {
-         $v->dbgr->finish();
-         $_[KERNEL]->post($ALIAS => "shutdown");
+         $shutdown = 1;
+         $_[HEAP]{client}->event(FlushedEvent => "shutdown");
+         $_[HEAP]{client}->put($DISCONNECT . $EOR . $EOR . $EOR . $EOM);
          return;
       }
       $_[KERNEL]->yield("Read" => @_[ARG0..$#_]);

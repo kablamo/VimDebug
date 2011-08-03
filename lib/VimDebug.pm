@@ -57,7 +57,7 @@ my $APP_EXITED     = "application exited";
 my $DBGR_READY     = "debugger ready";
 
 __PACKAGE__->mk_accessors(
-    qw(dbgrCmd timer dbgr stop lineNumber filePath translatedInput READ WRITE
+    qw(dbgrCmd timer dbgr stop shutdown lineNumber filePath translatedInput READ WRITE
        debug original status oldOut)
 );
 
@@ -70,7 +70,7 @@ sub start {
    $self->out('');
    $self->oldOut('');
    $self->translatedInput([]);
-   $self->debug(1);
+   $self->debug(0);
    $self->timer(IPC::Run::timeout(10, exception => 'timed out'));
 
    # spawn debugger process
@@ -133,7 +133,6 @@ sub read {
    }
 
    $self->out($out);
-print $self->out . "\n";
 
    if    ($self->out =~ $dbgrPromptRegex)    { $self->status($DBGR_READY)     }
    elsif ($self->out =~ $compilerErrorRegex) { $self->status($COMPILER_ERROR) }

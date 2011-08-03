@@ -30,9 +30,7 @@ if (!$pid2) { # child process
         dbgrCmd  => "perl -Ilib -d $testFile",
     });
 
-warn "ok ok oko ko kok ok okok o kok ok ";
     $r = $client2->stop;
-    sleep 2;
     exit;
 }
 
@@ -42,7 +40,6 @@ my $client1 = VimDebug::Client->new({
 });
 
 $r = $client1->start;
-print STDERR "0.1 YOoooooooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO";
 $firstLine = $r->line;
 ok($firstLine, "connected: line number");
 is($r->file, $testFile, "connected: file");
@@ -50,6 +47,9 @@ is($r->file, $testFile, "connected: file");
 $r = $client1->cont;
 ok($r->line, "continue: line number");
 ok($r->file, "continue: file");
+
+$r = $client1->next;
+is($r->file, $testFile, "next: file");
 
 $r = $client1->restart;
 is($r->line, $firstLine, "continue: line number");

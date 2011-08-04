@@ -104,6 +104,7 @@ sub clientConnected {
    $_[HEAP]{client}->put(
       $CONNECT . $EOR . $EOR . $EOR . $_[SESSION]->ID . $EOM 
    );
+   touch();
 #   $_[SESSION]->option(trace => 1, debug => 1);
 }
 
@@ -142,6 +143,7 @@ sub in {
          $self->vimdebug->{$sessionId}->stop(1);
          $_[HEAP]{client}->event(FlushedEvent => "shutdown");
          $_[HEAP]{client}->put($DISCONNECT . $EOR . $EOR . $EOR . $EOM);
+         $self->touch;
          return;
       }
       die "ERROR 003.  Email vimdebug at iijo dot org.";
@@ -245,12 +247,11 @@ sub out {
       $out = $v->status . $EOR . $EOR . $EOR . $v->out . $EOM;
    }
 
-   $self->touch();
    $_[HEAP]{client}->put($out);
+   $self->touch;
 }
 
 sub touch {
-   my $self = shift or die;
    open(FILE, ">", $DONE_FILE);
    print FILE "\n";
    close(FILE);

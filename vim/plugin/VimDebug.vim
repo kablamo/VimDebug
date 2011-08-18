@@ -96,13 +96,8 @@ function! DBGRstart(...)
    " do after system() so nongui vim doesn't show a blank screen
    echo "\rstarting the debugger..."
 
-   " TODO throw exceptions if you can't connect
-   if !s:SocketConnect()
-      return
-   endif
-   if !s:SocketConnect2()
-      return
-   endif
+   call s:SocketConnect()
+   call s:SocketConnect2()
 
    if has("autocmd")
       autocmd VimLeave * call DBGRquit()
@@ -568,14 +563,12 @@ function! s:SocketConnect()
             PeerAddr => "localhost",
             PeerPort => "6543",
          );
-         if (defined $DBGRsocket1) {
-            VIM::DoCommand("return 1");
-            return;
-         }
+         return if defined $DBGRsocket1;
          sleep 1;
       }
-      VIM::Msg("cannot connect to port 6543 at localhost");
-      VIM::DoCommand("return 0");
+      my $msg = "cannot connect to port 6543 at localhost";
+      VIM::Msg($msg);
+      VIM::DoCommand("throw '${msg}'");
 EOF
 endfunction
 function! s:SocketRead()
@@ -615,14 +608,12 @@ function! s:SocketConnect2()
             PeerAddr => "localhost",
             PeerPort => "6543",
          );
-         if (defined $DBGRsocket2) {
-            VIM::DoCommand("return 1");
-            return;
-         }
+         return if defined $DBGRsocket2;
          sleep 1;
       }
-      VIM::Msg("cannot connect to port 6543 at localhost");
-      VIM::DoCommand("return 0");
+      my $msg = "cannot connect to port 6543 at localhost";
+      VIM::Msg($msg);
+      VIM::DoCommand("throw '${msg}'");
 EOF
 endfunction
 function! s:SocketWrite2(data)

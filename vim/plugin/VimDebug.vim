@@ -89,22 +89,16 @@ function! DBGRstart(...)
       echo "\rthe debugger is already running"
       return
    endif
-
    let s:incantation = s:Incantation()
    call s:StartVdd()
-
    " do after system() so nongui vim doesn't show a blank screen
    echo "\rstarting the debugger..."
-
    call s:SocketConnect()
    call s:SocketConnect2()
-
    if has("autocmd")
       autocmd VimLeave * call DBGRquit()
    endif
-
    call DBGRopenConsole()
-
    let s:dbgrIsRunning = 1
    redraw!
    call s:HandleCmdResult("connected to VimDebug daemon")

@@ -211,7 +211,7 @@ function! DBGRprint(...)
       return
    endif
    if a:0 > 0
-      call s:SocketWrite("printExpression:" . a:1)
+      call s:SocketWrite("print:" . a:1)
       call s:HandleCmdResult()
    endif
 endfunction

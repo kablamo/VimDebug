@@ -92,11 +92,6 @@ function! DBGRstart(...)
 
    let s:incantation = s:Incantation()
    call s:StartVdd()
-echo "--- " . s:incantation
-echo "--- " . s:sessionId
-echo "--- " . s:debugger
-echo "--- " . s:lineNumber
-echo "--- " . s:fileName
 
    " do after system() so nongui vim doesn't show a blank screen
    echo "\rstarting the debugger..."

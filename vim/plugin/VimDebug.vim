@@ -103,9 +103,7 @@ function! DBGRstart(...)
       autocmd VimLeave * call DBGRquit()
    endif
 
-   if g:DBGRshowConsole == 1
-      call DBGRopenConsole()
-   endif
+   call DBGRopenConsole()
 
    let s:dbgrIsRunning = 1
    redraw!
@@ -508,6 +506,9 @@ endfunction
 
 " debugger console functions
 function! DBGRopenConsole()
+   if g:DBGRshowConsole == 0
+      return 0
+   endif
    new "debugger console"
    let s:consoleBufNr = bufnr('%')
    exe "resize " . g:DBGRconsoleHeight
@@ -517,6 +518,9 @@ function! DBGRopenConsole()
    wincmd p
 endfunction
 function! DBGRcloseConsole()
+   if g:DBGRshowConsole == 0
+      return 0
+   endif
    let l:consoleWinNr = bufwinnr(s:consoleBufNr)
    if l:consoleWinNr == -1
       return
@@ -525,6 +529,9 @@ function! DBGRcloseConsole()
    q
 endfunction
 function! s:ConsolePrint(msg)
+   if g:DBGRshowConsole == 0
+      return 0
+   endif
    let l:consoleWinNr = bufwinnr(s:consoleBufNr)
    if l:consoleWinNr == -1
       "call confirm(a:msg, "&Ok")

@@ -80,6 +80,7 @@ let s:consoleBufNr    = -99
 let s:emptySigns      = []
 let s:breakPoints     = []
 let s:return          = 0
+let s:sessionId       = -1
 
 
 " debugger functions
@@ -89,20 +90,18 @@ function! DBGRstart(...)
       return
    endif
 
-   if !executable('vdd')
-      echo "\rvdd is not in your PATH.  Something went wrong with your install."
-      return
-   endif
-
-   let s:bufNr    = bufnr("%")
-   let s:fileName = bufname("%")
-   let s:debugger = s:DbgrName() " TODO try and catch this
-
-   exec "silent :! vdd &"
+   let s:incantation = s:Incantation()
+   call s:StartVdd()
+echo "--- " . s:incantation
+echo "--- " . s:sessionId
+echo "--- " . s:debugger
+echo "--- " . s:lineNumber
+echo "--- " . s:fileName
 
    " do after system() so nongui vim doesn't show a blank screen
    echo "\rstarting the debugger..."
 
+   " TODO throw exceptions if you can't connect
    if !s:SocketConnect()
       return
    endif
@@ -111,7 +110,7 @@ function! DBGRstart(...)
    endif
 
    if has("autocmd")
-     autocmd VimLeave * call DBGRquit()
+      autocmd VimLeave * call DBGRquit()
    endif
 
    if g:DBGRshowConsole == 1
@@ -120,6 +119,8 @@ function! DBGRstart(...)
 
    let s:dbgrIsRunning = 1
    redraw!
+   call s:HandleCmdResult("connected to VimDebug daemon")
+   call s:Handshake()
    call s:HandleCmdResult("started the debugger")
 endfunction
 function! DBGRnext()
@@ -368,16 +369,12 @@ function! s:AutoIncantation(...)
    endif
 endfunction
 function! s:Incantation(...)
-   if !executable('vdd')
-      echo "\rvdd is not in your PATH.  Something went wrong with your install."
-      throw "vdd is missing"
-   endif
-   let s:bufNr          = bufnr("%")
-   let s:fileName       = bufname("%")
-   let l:debugger       = s:DbgrName(s:fileName)
-   let l:vddIncantation = "vdd"
-
-   return l:vddIncantation . (a:0 == 0 ? '' : (" " . join(a:000, " ")))
+   let s:bufNr       = bufnr("%")
+   let s:fileName    = bufname("%")
+   let s:debugger    = s:DbgrName()
+   let s:incantation = s:AutoIncantation(s:debugger) . 
+      \ (a:0 == 0 ? '' : (" " . join(a:000, " ")))
+   return s:incantation
 endfunction 
 function! s:DbgrName()
    let l:fileExtension = fnamemodify(s:fileName, ':e')
@@ -413,7 +410,7 @@ function! s:HandleCmdResult(...)
 
    call s:ConsolePrint(l:output)
 
-   if l:status == s:DBGR_READY || l:status == s:CONNECT
+   if l:status == s:DBGR_READY
       if len(l:lineNumber) > 0
          call s:CurrentLineMagic(l:lineNumber, l:fileName)
       endif
@@ -425,7 +422,8 @@ function! s:HandleCmdResult(...)
       call s:HandleProgramTermination()
       redraw! | echo "\rthe application being debugged terminated"
 
-   elseif l:status
+   elseif l:status == s:CONNECT
+      let s:sessionId = l:output
 
    else
       echo "error:001.  something bad happened.  please report this to vimdebug at iijo dot org"
@@ -554,7 +552,17 @@ endfunction
 
 " socket functions
 function! s:StartVdd()
+   if !executable('vdd')
+      echo "\rvdd is not in your PATH.  Something went wrong with your install."
+      throw "\rvdd is not in your PATH.  Something went wrong with your install."
+   endif
    exec "silent :! vdd &"
+endfunction
+function! s:Handshake()
+    let l:msg  = "start:" . s:sessionId .
+               \      ":" . s:debugger  .
+               \      ":" . s:incantation
+    call s:SocketWrite(l:msg)
 endfunction
 function! s:SocketConnect()
    perl << EOF
@@ -581,9 +589,7 @@ function! s:SocketRead()
       " vdd signals that its done sending a msg when it touches the file.
       " while VimDebug thinks, the user can cancel their operation.
       while filereadable(s:DONE_FILE) != 1
-echo "waiting"
       endwhile
-echo "delete now"
       call delete(s:DONE_FILE)
    catch /Vim:Interrupt/
       echo "cancelled"

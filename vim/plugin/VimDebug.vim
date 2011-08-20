@@ -399,6 +399,9 @@ function! s:HandleCmdResult(...)
    elseif l:status == s:CONNECT
       let s:sessionId = l:value
 
+   elseif l:status == s:DISCONNECT
+      echo "disconnected"
+
    else
       echo "error:001.  something bad happened.  please report this to vimdebug at iijo dot org"
    endif
@@ -574,7 +577,7 @@ function! s:SocketRead()
       call delete(s:DONE_FILE)
    catch /Vim:Interrupt/
       echo "cancelled"
-      call s:SocketWrite2('command:stop')
+      call s:SocketWrite2('stop:' . s:sessionId)
    endtry
    
    perl << EOF

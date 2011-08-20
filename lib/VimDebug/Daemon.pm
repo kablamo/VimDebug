@@ -214,7 +214,7 @@ sub write {
 
       chomp($in);
       if ($in eq 'quit') {
-         $v->dbgr->finish;
+         $v->dbgr->finish; # makes sure the child process exits
          $shutdown = 1;
          $_[HEAP]{client}->event(FlushedEvent => "shutdown");
          $_[HEAP]{client}->put($DISCONNECT . $EOR . $EOR . $EOR . $EOR . $EOM);

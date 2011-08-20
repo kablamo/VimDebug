@@ -341,13 +341,13 @@ function! s:LineNrFromId(id)
 endfunction
 function! s:AutoIncantation(...)
    if     a:1 == "Perl"
-      return "perl -Ilib -d '" . s:fileName . "'"
+      return "perl -Ilib -d " . s:fileName
    elseif a:1 == "Gdb"
-      return "gdb '" . s:fileName . "' -f"
+      return "gdb " . s:fileName . " -f"
    elseif a:1 == "Python"
-      return "pdb '" . s:fileName . "'"
+      return "pdb " . s:fileName
    elseif a:1 == "Ruby"
-      return "ruby -rdebug '" . s:fileName . "'"
+      return "ruby -rdebug " . s:fileName
    endif
 endfunction
 function! s:Incantation(...)

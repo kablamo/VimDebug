@@ -6,6 +6,7 @@
         status => 'debuggerReady',
         line   => 1,
         file   => 't/perl.pl',
+        value  => 'some value',
         output => 'some output',
     );
 
@@ -25,7 +26,7 @@ use base qw(Class::Accessor::Fast);
 
 use Data::Dumper::Concise;
 
-__PACKAGE__->mk_accessors( qw(status line file output) );
+__PACKAGE__->mk_accessors( qw(status line file output value) );
 
 
 # constants

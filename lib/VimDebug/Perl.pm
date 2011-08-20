@@ -44,6 +44,11 @@ sub parseOutput {
    $self->filePath($1)   if defined $1;
    $self->lineNumber($2) if defined $2;
 
+   $output =~ /
+      ^x .*\n(.*)
+   /xm;
+   $self->value($1)  if defined $1;
+
    return undef;
 }
 

@@ -46,7 +46,7 @@ my $client = VimDebug::Client->new({
     $r = $client->print('$a');
     is($r->line, $firstLine + 2, "print: line number");
     is($r->file, $testFile, "print: line number");
-#    is($r->output, 4, "print: value");
+    is($r->value, '0  1', "print: value");
 
     continueToTheEnd();
     restart();

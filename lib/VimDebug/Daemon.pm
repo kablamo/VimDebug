@@ -102,10 +102,10 @@ sub run {
 
 sub clientConnected {
    $_[HEAP]{client}->put(
-      $CONNECT . $EOR . $EOR . $EOR . $_[SESSION]->ID . $EOM 
+      $CONNECT . $EOR . $EOR . $EOR . $_[SESSION]->ID . $EOR . $EOM 
    );
    touch();
-#   $_[SESSION]->option(trace => 1, debug => 1);
+   # $_[SESSION]->option(trace => 1, debug => 1);
 }
 
 sub clientDisconnected {
@@ -142,7 +142,7 @@ sub in {
       if (defined $self->vimdebug->{$sessionId}) {
          $self->vimdebug->{$sessionId}->stop(1);
          $_[HEAP]{client}->event(FlushedEvent => "shutdown");
-         $_[HEAP]{client}->put($DISCONNECT . $EOR . $EOR . $EOR . $EOM);
+         $_[HEAP]{client}->put($DISCONNECT . $EOR . $EOR . $EOR . $EOR . $EOM);
          $self->touch;
          return;
       }
@@ -215,7 +215,7 @@ sub write {
       if ($in eq 'quit') {
          $shutdown = 1;
          $_[HEAP]{client}->event(FlushedEvent => "shutdown");
-         $_[HEAP]{client}->put($DISCONNECT . $EOR . $EOR . $EOR . $EOM);
+         $_[HEAP]{client}->put($DISCONNECT . $EOR . $EOR . $EOR . $EOR . $EOM);
          return;
       }
       $_[KERNEL]->yield("Read" => @_[ARG0..$#_]);
@@ -241,10 +241,11 @@ sub out {
       $out = $v->status     . $EOR .
              $v->lineNumber . $EOR .
              $v->filePath   . $EOR .
+             $v->value      . $EOR .
              $v->out        . $EOM;
    }
    else {
-      $out = $v->status . $EOR . $EOR . $EOR . $v->out . $EOM;
+      $out = $v->status . $EOR . $EOR . $EOR . $EOR . $v->out . $EOM;
    }
 
    $_[HEAP]{client}->put($out);

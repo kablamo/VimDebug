@@ -379,20 +379,11 @@ endfunction
 
 
 function! s:HandleCmdResult(...)
-   let l:data = s:SocketRead()
-   if l:data == ''
-      return
-   endif
-
-   let l:cmdResult  = split(l:data, s:EOR_REGEX)
-   let l:status     = l:cmdResult[0]
-   let l:lineNumber = l:cmdResult[1]
-   let l:fileName   = l:cmdResult[2]
-   let l:output     = l:cmdResult[3]
-
-   call s:ConsolePrint(l:output)
+   let l:cmdResult  = split(s:SocketRead(), s:EOR_REGEX, 1)
+   let [l:status, l:lineNumber, l:fileName, l:value, l:output] = l:cmdResult
 
    if l:status == s:DBGR_READY
+      call s:ConsolePrint(l:output)
       if len(l:lineNumber) > 0
          call s:CurrentLineMagic(l:lineNumber, l:fileName)
       endif
@@ -401,11 +392,12 @@ function! s:HandleCmdResult(...)
       endif
 
    elseif l:status == s:APP_EXITED
+      call s:ConsolePrint(l:output)
       call s:HandleProgramTermination()
       redraw! | echo "\rthe application being debugged terminated"
 
    elseif l:status == s:CONNECT
-      let s:sessionId = l:output
+      let s:sessionId = l:value
 
    else
       echo "error:001.  something bad happened.  please report this to vimdebug at iijo dot org"
@@ -589,6 +581,7 @@ function! s:SocketRead()
       my $EOM     = VIM::Eval('s:EOM');
       my $EOM_LEN = VIM::Eval('s:EOM_LEN');
       my $data = '';
+      $data .= <$DBGRsocket1> until substr($data, -1 * $EOM_LEN) eq $EOM;
       $data .= <$DBGRsocket1> until substr($data, -1 * $EOM_LEN) eq $EOM;
       $data = substr($data, 0, -1 * $EOM_LEN); # chop EOM
       $data =~ s|'|''|g; # escape single quotes

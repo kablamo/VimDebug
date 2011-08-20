@@ -57,7 +57,7 @@ my $APP_EXITED     = "application exited";
 my $DBGR_READY     = "debugger ready";
 
 __PACKAGE__->mk_accessors(
-    qw(dbgrCmd timer dbgr stop shutdown lineNumber filePath translatedInput READ WRITE
+    qw(dbgrCmd timer dbgr stop shutdown lineNumber filePath value translatedInput READ WRITE
        debug original status oldOut)
 );
 
@@ -68,6 +68,7 @@ sub start {
    # initialize some variables
    $self->original('');
    $self->out('');
+   $self->value('');
    $self->oldOut('');
    $self->translatedInput([]);
    $self->debug(0);

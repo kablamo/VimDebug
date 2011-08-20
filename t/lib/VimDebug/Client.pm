@@ -114,7 +114,8 @@ sub buildResponse {
         status => $response[0],
         line   => $response[1],
         file   => $response[2],
-        output => $response[3],
+        value  => $response[3],
+        output => $response[4],
     });
 
     return $response;

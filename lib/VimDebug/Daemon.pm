@@ -98,6 +98,7 @@ sub run {
    );
 
    POE::Kernel->run;
+   wait();
 }
 
 sub clientConnected {
@@ -213,6 +214,7 @@ sub write {
 
       chomp($in);
       if ($in eq 'quit') {
+         $v->dbgr->finish;
          $shutdown = 1;
          $_[HEAP]{client}->event(FlushedEvent => "shutdown");
          $_[HEAP]{client}->put($DISCONNECT . $EOR . $EOR . $EOR . $EOR . $EOM);

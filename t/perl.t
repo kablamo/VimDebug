@@ -79,6 +79,15 @@ my $client = VimDebug::Client->new({
     restart();
 }
 
+$r = $client->command("n");
+is($r->line, $firstLine + 1, "command:n: line number");
+is($r->file, $testFile, "command:n: file");
+
+$r = $client->command('x $a');
+is($r->line, $firstLine + 1, 'command:x $a: line number');
+is($r->file, $testFile, 'command:x $a: file');
+is($r->value, '0  1', 'command:x $a: value');
+
 ok $client->quit, "quit";
 
 done_testing;

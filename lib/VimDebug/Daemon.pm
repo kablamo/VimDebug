@@ -45,7 +45,6 @@ use feature qw(say);
 use base qw(Class::Accessor::Fast);
 
 use Carp;
-use Data::Dumper::Concise;
 use POE qw(Component::Server::TCP);
 
 __PACKAGE__->mk_accessors( qw(vimdebug translatedInput) );

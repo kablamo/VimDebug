@@ -42,7 +42,6 @@ use Class::Accessor::Fast;
 use base qw(Class::Accessor::Fast);
 
 use Carp;
-use Data::Dumper::Concise;
 use IO::Pty;
 use IPC::Run;
 

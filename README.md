@@ -1,7 +1,7 @@
 # VIMDEBUG
 
 VimDebug integrates your language's debugger with Vim.  Currently there is
-support for Perl, Python, and Ruby.  Please note that this code very much in
+support for Perl.  Please note that this code very much in
 beta and is still missing some important capabilities.
 
 
@@ -31,8 +31,7 @@ is the simplest way to get it:
 
 Then just type:
 
-    sudo cpanm IO::Pty
-    sudo cpanm IPC::Run
+    sudo cpanm IO::Pty IPC::Run POE Class::Accessor::Fast
 
 For more help with installing Perl modules, see the [cpanm documentation][1]
 

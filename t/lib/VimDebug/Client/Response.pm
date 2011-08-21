@@ -24,8 +24,6 @@ use warnings;
 use feature qw(say);
 use base qw(Class::Accessor::Fast);
 
-use Data::Dumper::Concise;
-
 __PACKAGE__->mk_accessors( qw(status line file output value) );
 
 

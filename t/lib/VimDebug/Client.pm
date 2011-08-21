@@ -19,7 +19,6 @@ use warnings;
 use feature qw(say);
 use base qw(Class::Accessor::Fast);
 
-use Data::Dumper::Concise;
 use Net::Telnet;
 use VimDebug::Client::Response;
 

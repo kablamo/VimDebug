@@ -221,7 +221,7 @@ function! DBGRcommand(...)
    endif
    echo ""
    if a:0 > 0
-      call s:SocketWrite(a:1)
+      call s:SocketWrite('command:' . a:1)
       call s:HandleCmdResult()
    endif
 endfunction

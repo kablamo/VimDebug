@@ -8,7 +8,6 @@ https://github.com/kablamo/VimDebug/issues
 - when a runtime error or compile time error occurs, jump to the bad line
 - add an optional stack frame window?
 - add watchpoints
-- switch from IPC::Run to IPC::Cmd?
 
 greater os support
 - windows support

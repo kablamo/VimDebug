@@ -88,6 +88,7 @@ sub start {
 sub write {
    my $self = shift or confess;
    my $c    = shift or confess;
+   $self->value('');
    $self->stop(0);
    $WRITE .= "$c\n";
    return;

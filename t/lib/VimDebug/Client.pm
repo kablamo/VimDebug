@@ -53,7 +53,6 @@ sub connect {
         Ors        => "\n", # output record separator -- not a regex
         Telnetmode => 0,
         Port       => 6543,
-        Dump_Log   => 'foo',
     );
     $self->telnet($telnet);
 

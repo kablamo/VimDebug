@@ -1,15 +1,14 @@
-VimDebug is now on github: https://github.com/kablamo/VimDebug
+VimDebug is on github: https://github.com/kablamo/VimDebug
 
 
 If you just want to add support for your debugger, its easy.  Really.  Here's
 how in just 3 steps:
 
 STEP 1: Read the ARCHITECTURE document (its short and easy)
-        perldoc VimDebug::DebuggerInterface
-        perldoc VimDebug::DebuggerInterface::Base
-        perldoc VimDebug::DebuggerInterface::Python
+        perldoc VimDebug
+        perldoc VimDebug::Perl
 
-STEP 2: Create lib/VimDebug/DebuggerInterface/DebuggerName.pm (not hard)
+STEP 2: Create lib/VimDebug/DebuggerName.pm (not hard)
 
 STEP 3: Look at DBGRgetDebuggerName() in vimDebug.vim.  If necessary, add code
         like:
@@ -19,3 +18,11 @@ STEP 3: Look at DBGRgetDebuggerName() in vimDebug.vim.  If necessary, add code
               return l:debugger
 
         l:debugger should match the name of your Perl module in step 2.  
+
+
+
+Another option is to write your own version of vdd in your language
+(ruby/python/etc) and ensure it understands the network protocol used by
+VimDebug.vim.  Also note that you will need to use something event based to do
+this.  Think about how you will handle infinite loops.  This approach is
+probably going to take you longer I'm thinking.

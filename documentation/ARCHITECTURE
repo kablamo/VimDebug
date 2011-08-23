@@ -3,7 +3,7 @@
       | Vim                              |
       +----------------------------------+
       | VimDebug plugin                  |
-      | (./vim/plugin/VimDebug.vim)      |
+      | ($HOME/vim/plugin/VimDebug.vim)  |
       +----------------------------------+
                       |
                       ^
@@ -15,10 +15,10 @@
                       |
       +----------------------------------+
       | VimDebug daemon                  |
-      | (./bin/vdd.pl)                   |
+      | (./bin/vdd)                      |
       +----------------------------------+
       | Perl libraries                   |
-      | (VimDebug::DebuggerInterface::*) |
+      | (VimDebug::*) |
       +----------------------------------+
            READ                 WRITE    
             |                     |
@@ -36,21 +36,18 @@
       |      ...                         |
       +----------------------------------+
 
-All debugger interfaces should inherit from:
-
-   VimDebug::DebuggerInterface
+All debugger interfaces should inherit from VimDebug
 
 So we have for example:
 
-   VimDebug::DebuggerInterface::Perl
-   VimDebug::DebuggerInterface::Ruby
+   VimDebug::Perl
+   VimDebug::Ruby
    ...
 
-These override callback functions like step(), _next(), etc., from
-VimDebug::DebuggerInterface.
+These methods should implement callback functions like step(), _next(), etc.
 
 The VimDebug daemon (vdd) calls these functions at the right time.
 For example, when Vim issues a step command to vdd, vdd will call
 $debugger->step(), where $debugger is for example an instance of
-VimDebug::DebuggerInterface::Perl.
+VimDebug::Perl.
 

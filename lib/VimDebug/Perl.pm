@@ -21,33 +21,30 @@ sub parseOutput {
    my $self   = shift or confess;
    my $output = shift or confess;
 
-   # take care of the problem case when we hit an eval() statement
-   # example: main::function((eval 3)[debugTestCase.pl:5]:1):      my $foo = 1
-   # this will turn that example debugger output into:
-   #          main::function(debugTestCase.pl:5):      my $foo = 1
-   if ($output =~  /\w*::(\w*)\(+eval\s+\d+\)+\[(.*):(\d+)\]:\d+\):/om) {
-       $output =~ s/\w*::(\w*)\(+eval\s+\d+\)+\[(.*):(\d+)\]:\d+\):/::$1($2:$3):/m;
+   {
+      # See .../t/VD_DI_Perl.t for test cases.
+      my $filePath;
+      my $lineNumber;
+      $output =~ /
+         ^ \w+ ::
+         (?: \w+ :: )*
+         (?: CODE \( 0x \w+ \) | \w+ )?
+         \(
+            (?: .* \x20 )?
+            ( .+ ) : ( \d+ )
+         \):
+      /xm;
+      $self->filePath($1)   if defined $1;
+      $self->lineNumber($2) if defined $2;
    }
 
-   # See .../t/VD_DI_Perl.t for test cases.
-   my $filePath;
-   my $lineNumber;
-   $output =~ /
-      ^ \w+ ::
-      (?: \w+ :: )*
-      (?: CODE \( 0x \w+ \) | \w+ )?
-      \(
-         (?: .* \x20 )?
-         ( .+ ) : ( \d+ )
-      \):
-   /xm;
-   $self->filePath($1)   if defined $1;
-   $self->lineNumber($2) if defined $2;
-
-   $output =~ /
-      ^x .*\n(.*)
-   /xm;
-   $self->value($1)  if defined $1;
+   {
+      if ($output =~ /^x .*\n/m) {
+         $output =~ s/^x .*\n//m; # remove first line
+         $output =~ s/\n.*$//m; # remove last line
+         $self->value($output);
+      }
+   }
 
    return undef;
 }

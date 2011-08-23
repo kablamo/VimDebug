@@ -82,6 +82,7 @@ my $client = VimDebug::Client->new({
 $r = $client->command("n");
 is($r->line, $firstLine + 1, "command:n: line number");
 is($r->file, $testFile, "command:n: file");
+is($r->value, '', 'command:n: value');
 
 $r = $client->command('x $a');
 is($r->line, $firstLine + 1, 'command:x $a: line number');

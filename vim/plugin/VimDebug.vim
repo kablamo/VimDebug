@@ -94,7 +94,6 @@ function! DBGRstart(...)
    " do after system() so nongui vim doesn't show a blank screen
    echo "\rstarting the debugger..."
    call s:SocketConnect()
-   call s:SocketConnect2()
    if has("autocmd")
       autocmd VimLeave * call DBGRquit()
    endif
@@ -104,6 +103,8 @@ function! DBGRstart(...)
    call s:HandleCmdResult("connected to VimDebug daemon")
    call s:Handshake()
    call s:HandleCmdResult("started the debugger")
+   call s:SocketConnect2()
+   call s:HandleCmdResult2()
 endfunction
 function! DBGRnext()
    if !s:Copacetic()
@@ -572,12 +573,14 @@ function! s:SocketRead()
       " yeah this is a very inefficient but non blocking loop.
       " vdd signals that its done sending a msg when it touches the file.
       " while VimDebug thinks, the user can cancel their operation.
-      while filereadable(s:DONE_FILE) != 1
+      while !filereadable(s:DONE_FILE)
       endwhile
-      call delete(s:DONE_FILE)
    catch /Vim:Interrupt/
-      echo "cancelled"
-      call s:SocketWrite2('stop:' . s:sessionId)
+      echom "action cancelled"
+      call s:SocketWrite2('stop:' . s:sessionId)  " disconnect
+      call s:HandleCmdResult2()                   " handle disconnect
+      call s:SocketConnect2()                     " reconnect
+      call s:HandleCmdResult2()                   " handle reconnect
    endtry
    
    perl << EOF
@@ -587,8 +590,9 @@ function! s:SocketRead()
       $data .= <$DBGRsocket1> until substr($data, -1 * $EOM_LEN) eq $EOM;
       $data .= <$DBGRsocket1> until substr($data, -1 * $EOM_LEN) eq $EOM;
       $data = substr($data, 0, -1 * $EOM_LEN); # chop EOM
-      $data =~ s|'|''|g; # escape single quotes
-      VIM::DoCommand("return '" . $data . "'");
+      $data =~ s|'|''|g; # escape single quotes '
+      VIM::DoCommand("call delete(s:DONE_FILE)");
+      VIM::DoCommand("return '" . $data . "'"); 
 EOF
 endfunction
 function! s:SocketWrite(data)
@@ -613,6 +617,31 @@ function! s:SocketConnect2()
       VIM::DoCommand("throw '${msg}'");
 EOF
 endfunction
+function! s:SocketRead2()
+   try 
+      " yeah this is a very inefficient but non blocking loop.
+      " vdd signals that its done sending a msg when it touches the file.
+      " while VimDebug thinks, the user can cancel their operation.
+      while !filereadable(s:DONE_FILE)
+      endwhile
+   endtry
+   
+   perl << EOF
+      my $EOM     = VIM::Eval('s:EOM');
+      my $EOM_LEN = VIM::Eval('s:EOM_LEN');
+      my $data = '';
+      $data .= <$DBGRsocket2> until substr($data, -1 * $EOM_LEN) eq $EOM;
+      $data .= <$DBGRsocket2> until substr($data, -1 * $EOM_LEN) eq $EOM;
+      $data = substr($data, 0, -1 * $EOM_LEN); # chop EOM
+      $data =~ s|'|''|g; # escape single quotes '
+      VIM::DoCommand("call delete(s:DONE_FILE)");
+      VIM::DoCommand("return '" . $data . "'"); 
+EOF
+endfunction
 function! s:SocketWrite2(data)
    perl print $DBGRsocket2 VIM::Eval('a:data') . "\n";
+endfunction
+function! s:HandleCmdResult2(...)
+    let l:foo = s:SocketRead2()
+    return
 endfunction

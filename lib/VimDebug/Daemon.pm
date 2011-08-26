@@ -53,7 +53,6 @@ __PACKAGE__->mk_accessors( qw(vimdebug translatedInput) );
 # constants
 $VimDebug::Daemon::VERSION = "0.39";
 $| = 1;
-my $ALIAS = 'VimDebugDaemon';
 
 # protocol constants
 my $EOR            = "[vimdebug.eor]";       # end of field
@@ -79,7 +78,6 @@ sub run {
    $self->vimdebug({});
 
    POE::Component::Server::TCP->new(
-      Alias              => $ALIAS,
       Port               => $PORT,
       ClientConnected    => \&clientConnected,
       ClientDisconnected => \&clientDisconnected,

@@ -1,18 +1,18 @@
-# ABSTRACT: VimDebug Client
+# ABSTRACT: Vim::Debug Client
 
 =head1 SYNOPSIS
 
-   use VimDebug::Client;
-   VimDebug::Client->connect();
+   use Vim::Debug::Client;
+   Vim::Debug::Client->connect();
 
 =head1 DESCRIPTION
 
-This module implements a VimDebug client.  The client communicates with the
-VimDebug::Daemon.  Its probably only useful for testing.
+This module implements a Vim::Debug client.  The client communicates with the
+Vim::Debug::Daemon.  Its probably only useful for testing.
 
 =cut
 
-package VimDebug::Client;
+package Vim::Debug::Client;
 
 use strict;
 use warnings;
@@ -20,13 +20,13 @@ use feature qw(say);
 use base qw(Class::Accessor::Fast);
 
 use Net::Telnet;
-use VimDebug::Client::Response;
+use Vim::Debug::Client::Response;
 
 __PACKAGE__->mk_accessors( qw(language dbgrCmd telnet sessionId) );
 
 
 # constants
-$VimDebug::Client::VERSION = "0.00";
+$Vim::Debug::Client::VERSION = "0.00";
 $| = 1;
 
 # protocol constants
@@ -108,7 +108,7 @@ sub buildResponse {
 
     @response = map { substr($_, 0, -$EOR_LENGTH) } @response;
 
-    my $response = VimDebug::Client::Response->new({
+    my $response = Vim::Debug::Client::Response->new({
         status => $response[0],
         line   => $response[1],
         file   => $response[2],

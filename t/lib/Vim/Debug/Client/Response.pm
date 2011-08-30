@@ -1,8 +1,8 @@
-# ABSTRACT: VimDebug Client Response
+# ABSTRACT: Vim::Debug Client Response
 =head1 SYNOPSIS
 
-    use VimDebug::Client::Response;
-    VimDebug::Client::Response->new(
+    use Vim::Debug::Client::Response;
+    Vim::Debug::Client::Response->new(
         status => 'debuggerReady',
         line   => 1,
         file   => 't/perl.pl',
@@ -12,12 +12,12 @@
 
 =head1 DESCRIPTION
 
-This module implements a VimDebug client response.  The client communicates with the
-VimDebug::Daemon.  This response is parsed and this object is created.
+This module implements a Vim::Debug client response.  The client communicates with the
+Vim::Debug::Daemon.  This response is parsed and this object is created.
 
 =cut
 
-package VimDebug::Client::Response;
+package Vim::Debug::Client::Response;
 
 use strict;
 use warnings;
@@ -28,7 +28,7 @@ __PACKAGE__->mk_accessors( qw(status line file output value) );
 
 
 # constants
-$VimDebug::Client::Response::VERSION = "0.00";
+$Vim::Debug::Client::Response::VERSION = "0.00";
 
 
 1;

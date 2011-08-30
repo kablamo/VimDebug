@@ -156,7 +156,7 @@ sub start {
    my $command  = shift or die;
 
    # load module
-   my $moduleName = "Vim::Debug/${language}.pm";
+   my $moduleName = "Vim/Debug/${language}.pm";
    require $moduleName;
 
    # create debugger object

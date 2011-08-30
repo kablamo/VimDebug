@@ -1,12 +1,12 @@
-# ABSTRACT: A base class for VimDebug modules
+# ABSTRACT: A base class for Vim::Debug modules
 
 =head1 SYNOPSIS
 
-   package VimDebug;
+   package Vim::Debug;
 
    use strict;
    use warnings;
-   use base qw(VimDebug);
+   use base qw(Vim::Debug);
 
    sub start {
       my $self = shift or confess;
@@ -34,7 +34,7 @@ their language.
 
 =cut
 
-package VimDebug;
+package Vim::Debug;
 
 use strict;
 use warnings;

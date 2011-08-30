@@ -1,13 +1,13 @@
-# ABSTRACT: VimDebug Daemon 
+# ABSTRACT: Vim::Debug Daemon 
 
 =head1 SYNOPSIS
 
-   use VimDebug::Daemon;
-   VimDebug::Daemon->start();
+   use Vim::Debug::Daemon;
+   Vim::Debug::Daemon->start();
 
 =head1 DESCRIPTION
 
-This module implements a VimDebug daemon.  The daemon manages communication
+This module implements a Vim::Debug daemon.  The daemon manages communication
 between one or more clients and their debuggers.  A debugger is spawned for
 each client.
 
@@ -37,7 +37,7 @@ ClientInput
 
 =cut
 
-package VimDebug::Daemon;
+package Vim::Debug::Daemon;
 
 use strict;
 use warnings;
@@ -51,7 +51,7 @@ __PACKAGE__->mk_accessors( qw(vimdebug translatedInput) );
 
 
 # constants
-$VimDebug::Daemon::VERSION = "0.39";
+$Vim::Debug::Daemon::VERSION = "0.39";
 $| = 1;
 
 # protocol constants
@@ -156,11 +156,11 @@ sub start {
    my $command  = shift or die;
 
    # load module
-   my $moduleName = "VimDebug/${language}.pm";
+   my $moduleName = "Vim::Debug/${language}.pm";
    require $moduleName;
 
    # create debugger object
-   my $debuggerName = 'VimDebug::' . ${language};
+   my $debuggerName = 'Vim::Debug::' . ${language};
    my $v = eval $debuggerName . "->new();";
    die "no such module exists: $debuggerName: $@" unless defined $v;
 

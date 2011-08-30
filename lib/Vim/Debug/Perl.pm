@@ -1,9 +1,9 @@
-# ABSTRACT: VimDebug Perl interface.
-package VimDebug::Perl;
+# ABSTRACT: Vim::Debug Perl interface.
+package Vim::Debug::Perl;
 
 use strict;
 use warnings;
-use parent qw(VimDebug);
+use parent qw(Vim::Debug);
 use Carp;
 
 $ENV{"PERL5DB"}     = 'BEGIN {require "perl5db.pl";}';

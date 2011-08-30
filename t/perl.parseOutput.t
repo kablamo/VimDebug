@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use Test::More;
-use VimDebug::Perl;
+use Vim::Debug::Perl;
 
 my @tests = (
    {
@@ -51,7 +51,7 @@ my @tests = (
    },
 );
 
-my $v = VimDebug::Perl->new();
+my $v = Vim::Debug::Perl->new();
 
 foreach my $t (@tests) {
     $v->parseOutput($t->{string});

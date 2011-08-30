@@ -3,8 +3,8 @@
 use strict;
 
 use lib qw(lib t/lib);
-use VimDebug::Client;
-use VimDebug::Daemon;
+use Vim::Debug::Client;
+use Vim::Debug::Daemon;
 use Test::More;
 $|=1;
 
@@ -17,7 +17,7 @@ my $firstLine;
 
 my $pid1 = fork;
 if (!$pid1) { # child process
-    VimDebug::Daemon->new->run;
+    Vim::Debug::Daemon->new->run;
     exit;
 }
 
@@ -25,7 +25,7 @@ my $pid2 = fork;
 if (!$pid2) { # child process
 
     sleep 3;
-    my $client2 = VimDebug::Client->new({
+    my $client2 = Vim::Debug::Client->new({
         language => 'Perl',
         dbgrCmd  => "perl -Ilib -d $testFile",
     });
@@ -34,7 +34,7 @@ if (!$pid2) { # child process
     exit;
 }
 
-my $client1 = VimDebug::Client->new({
+my $client1 = Vim::Debug::Client->new({
     language => 'Perl',
     dbgrCmd  => "perl -Ilib -d $testFile",
 });

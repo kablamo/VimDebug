@@ -3,8 +3,8 @@
 use strict;
 
 use lib qw(lib t/lib);
-use VimDebug::Client;
-use VimDebug::Daemon;
+use Vim::Debug::Client;
+use Vim::Debug::Daemon;
 use Test::More;
 
 $SIG{INT} = \&signalHandler;
@@ -13,7 +13,7 @@ sub signalHandler { exit } # die when children die
 my $pid = fork;
 if (!$pid) {
     # child process
-    VimDebug::Daemon->new->run;
+    Vim::Debug::Daemon->new->run;
     exit;
 }
 
@@ -22,7 +22,7 @@ my $r; # response
 my $firstLine;
 my $lastLine;
 my $testFile = 't/perl.pl';
-my $client = VimDebug::Client->new({
+my $client = Vim::Debug::Client->new({
     language => 'Perl',
     dbgrCmd  => "perl -Ilib -d $testFile",
 });

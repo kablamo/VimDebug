@@ -5,10 +5,10 @@ If you just want to add support for your debugger, its easy.  Really.  Here's
 how in just 3 steps:
 
 STEP 1: Read the ARCHITECTURE document (its short and easy)
-        perldoc VimDebug
-        perldoc VimDebug::Perl
+        perldoc Vim::Debug
+        perldoc Vim::Debug::Perl
 
-STEP 2: Create lib/VimDebug/DebuggerName.pm (not hard)
+STEP 2: Create lib/Vim/Debug/DebuggerName.pm (not hard)
 
 STEP 3: Look at DBGRgetDebuggerName() in vimDebug.vim.  If necessary, add code
         like:

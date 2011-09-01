@@ -1,4 +1,4 @@
-# ABSTRACT: Vim::Debug Perl interface.
+# ABSTRACT: Perl debugger interface.
 package Vim::Debug::Perl;
 
 use strict;

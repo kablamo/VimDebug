@@ -1,12 +1,18 @@
-# ABSTRACT: V
+# ABSTRACT: Perl wrapper around a command line debugger
 
 =head1 SYNOPSIS
+
+If you are new to the Vim::Debug project please read the Vim::Manual first.
 
     package Vim::Debug;
 
     my $debugger = Vim::Debug->new;
     $debugger->start;
-    $debugger->write('n'); # next
+    $debugger->write('s'); # step
+    sleep(1) until $debugger->read;
+    print $debugger->lineNumber;
+    print $debugger->fileName;
+    print $debugger->output;
     $debugger->write('q'); # quit
    
 
@@ -15,8 +21,10 @@
 The Vim::Debug project integrates the Perl debugger with Vim, allowing
 developers to visually step through their code and examine variables.  
 
-Please note that this code is in beta and these underlying libraries will be
-changing radically in the near future.
+If you are new to the Vim::Debug project please read the Vim::Manual first.
+
+Please note that this code is in beta and these libraries will be changing
+radically in the near future.
 
 =head1 PREREQUISITES
 

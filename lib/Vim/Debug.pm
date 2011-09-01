@@ -2,7 +2,7 @@
 
 =head1 SYNOPSIS
 
-If you are new to the Vim::Debug project please read the Vim::Manual first.
+If you are new to the Vim::Debug project please read the L<Vim::Debug::Manual> first.
 
     package Vim::Debug;
 
@@ -21,7 +21,7 @@ If you are new to the Vim::Debug project please read the Vim::Manual first.
 The Vim::Debug project integrates the Perl debugger with Vim, allowing
 developers to visually step through their code and examine variables.  
 
-If you are new to the Vim::Debug project please read the Vim::Manual first.
+If you are new to the Vim::Debug project please read the L<Vim::Debug::Manual> first.
 
 Please note that this code is in beta and these libraries will be changing
 radically in the near future.

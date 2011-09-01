@@ -1,7 +1,7 @@
 # VIMDEBUG
 
-VimDebug integrates your language's debugger with Vim.  Currently there is
-support for Perl.  Please note that this code is in beta.
+VimDebug integrates the Perl debugger with Vim.  Please note that this code is
+in beta.
 
 
 ### Requirements

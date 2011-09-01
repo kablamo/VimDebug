@@ -32,7 +32,7 @@ Vim compiled with +signs and +perl.
 Replace $VIMHOME with your vim configuration directory.  (/home/username/.vim on unix.)
 
 
-### VimDebug key bindings
+head1 KEY BINDINGS
 
 These are the default key bindings.  To change them, edit VimDebug.vim:
 
@@ -52,5 +52,10 @@ These are the default key bindings.  To change them, edit VimDebug.vim:
     <Leader>v/ Print the value of an expression thats entered
 
     <Leader>/  Type a command for the debugger to execute and echo the result
+
+
+head1 DEVELOPERS
+
+Fork it on github: http://github.com/kablamo/VimDebug
 
 =cut

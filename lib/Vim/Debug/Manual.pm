@@ -1,4 +1,6 @@
-# Abstract: What is Vim::Debug and how do I use it?
+=head1 NAME
+
+What is Vim::Debug and how do I use it?
  
 =head1 DESCRIPTION
 

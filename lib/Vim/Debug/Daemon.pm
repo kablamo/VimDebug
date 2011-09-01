@@ -1,39 +1,92 @@
-# ABSTRACT: Vim::Debug Daemon 
+# ABSTRACT: Handle communication between a debugger and clients
 
 =head1 SYNOPSIS
 
    use Vim::Debug::Daemon;
-   Vim::Debug::Daemon->start();
+   Vim::Debug::Daemon->run();
+
 
 =head1 DESCRIPTION
 
 This module implements a Vim::Debug daemon.  The daemon manages communication
-between one or more clients and their debuggers.  A debugger is spawned for
-each client.
+between one or more clients and their debuggers.  Clients will usually be an
+editor like Vim.  A debugger is spawned for each client.  
 
-=head1 PROTOCOL
+Internally this is implemented with POE and does non blocking reads for
+debugger output.
 
-TODO: finish this
 
-bob connects to server
-server: 'sessionId'
-bob:    'create:sessionId:language:command'
-server: 'fileName:lineNumber'
-...
+=head1 COMMUNICATION PROTOCOL
+
+All messages passed between the client (vim) and the daemon (vdd) consist of a
+set of fields followed by an End Of Message string.  Each field is seperated
+from the next by an End Of Record string.
+
+All messages to the client have the following format:
+
+    Debugger status
+    End Of Record
+    Line Number
+    End Of Record
+    File Name
+    End Of Record
+    Value
+    End Of Record
+    Debugger output
+    End Of Message
+
+All messages to the server have the following format:
+
+    Action (eg step, next, break, ...)
+    End Of Record
+    Parameter 1
+    End Of Record
+    Parameter 2
+    End Of Record
+    ..
+    Parameter n 
+    End Of Message
+
+After every message, the daemon also touches a file.  Which is kind of crazy.
+
+
+=head2 Connecting
+
+When you connect to the Vim::Debug Daemon (vdd), it will send you a message
+that looks like this:
+
+    $CONNECT . $EOR . $EOR . $EOR . $SESSION_ID . $EOR . $EOM 
+
+You should respond with a message that looks like
+
+    'create' . $EOR . $SESSION_ID . $EOR . $LANGUAGE $EOR $DBGR_COMMAND $EOM
+
+=head2 Disconnecting
+
+To disconnect send a 'quit' message.
+
+    'quit' . $EOM
+
+The server will respond with:
+
+    $DISCONNECT . $EOR . $EOR . $EOR . $EOR . $EOM
+
+And then exit.
+
 
 =head1 POE STATE DIAGRAM
 
-ClientConnected
-
-ClientInput
-    |                               __
-    v                              v  |
-   In -> Translate -> Write --> Read  |
-                      |   ^     |  |  |
-                      |   |_____|  |__|
-                      |   
-                      v
-                     Out
+    ClientConnected
+    
+    ClientInput
+        |                               __
+        v                              v  |
+       In -> Translate -> Write --> Read  |
+                          |   ^     |  |  |
+                          |   |_____|  |__|
+                          |   
+                          v
+                         Out
 
 =cut
 
@@ -69,9 +122,6 @@ my $DONE_FILE = ".vdd.done";
 my $shutdown = 0;
 
 
-=head2 run
-
-=cut
 sub run {
    my $self = shift or die;
 

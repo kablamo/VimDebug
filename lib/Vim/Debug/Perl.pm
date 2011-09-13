@@ -1,4 +1,23 @@
 # ABSTRACT: Perl debugger interface.
+
+=head1 SYNOPSIS
+
+If you are new to the Vim::Debug project please read the L<Vim::Debug::Manual> first.
+
+    package Vim::Debug::Perl
+
+    my $debugger = Vim::Debug::Perl->new;
+    $debugger->next;
+    $debugger->step;
+   
+
+=head1 DESCRIPTION
+
+This module inherits from Vim::Debug.  See that module for a more in depth
+explanation.  This module only handles the Perl specific bits.
+
+=cut
+
 package Vim::Debug::Perl;
 
 use strict;

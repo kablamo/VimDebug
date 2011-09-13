@@ -3,7 +3,7 @@
 =head1 SYNOPSIS
 
    use Vim::Debug::Daemon;
-   Vim::Debug::Daemon->run();
+   Vim::Debug::Daemon->run;
 
 
 =head1 DESCRIPTION

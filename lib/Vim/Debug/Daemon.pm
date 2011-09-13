@@ -104,7 +104,6 @@ __PACKAGE__->mk_accessors( qw(vimdebug translatedInput) );
 
 
 # constants
-$Vim::Debug::Daemon::VERSION = "0.39";
 $| = 1;
 
 # protocol constants

@@ -1,38 +1,28 @@
 # VIMDEBUG
 
-VimDebug integrates the Perl debugger with Vim.  Please note that this code is
-in beta.
+VimDebug integrates the Perl debugger with Vim.  
 
 
 ### Requirements
 
+ - Unix/Ubuntu/OSX
+ - Vim with +signs, and +perl compiled in
  - Perl 5.6.0+
- - A small number of Perl modules
- - Vim with +signs compiled in.
+ - The Vim::Debug Perl module
 
 
 ### Install instructions
-
-    tar xvzf VimDebug*.tar.gz
-    cd VimDebug*
-    perl Makefile.PL
-    make
-    sudo make install
-    cp -r vim/* $VIMHOME/
-
-
-### How to install Perl modules
 
 Perl modules are easily installed using cpanm.  If you don't have cpanm, this
 is the simplest way to get it:
 
     curl -L http://cpanmin.us | perl - --sudo App::cpanminus
 
-Then just type:
+To install Vim::Debug:
 
-    sudo cpanm IO::Pty IPC::Run POE Class::Accessor::Fast
+    sudo cpanm Vim::Debug
 
-For more help with installing Perl modules, see the [cpanm documentation][1]
+For more help installing Perl modules, see the [cpanm documentation][1]
 
 
 ### VimDebug key bindings

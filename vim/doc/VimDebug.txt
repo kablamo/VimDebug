@@ -10,38 +10,34 @@
 3. Installation                     |VimDebug-install|
 4. Keybindings                      |VimDebug-keys|
 
-The functionality mentioned here is a plugin, see |add-plugin|.
-This plugin is only available if 'compatible' is not set and vim has
-been compiled with '+signs'.
-
-{Vi does not have any of this}
-
 ==============================================================================
 1. VimDebug Intro                   *VimDebug-intro*
 
-VimDebug integrates your language's debugger with Vim. Currently there
-is support for Perl, Python, and Ruby. Please note that this code is
-very much in beta and is still missing some important capabilities.
+VimDebug integrates the Perl debugger with Vim.  
 
 ==============================================================================
 2. Requirements                     *VimDebug-req*
 
 VimDebug requires the following to function:
 
+- *nix/Ubuntu/OSX
+- Vim with +signs, and +perl compiled in
 - Perl 5.6.0+
-- A small number of Perl modules
-- Vim with +signs compiled in
+- The Vim::Debug Perl module
+
+VimDebug is a Vim plugin, see |add-plugin|.  This plugin is only available if
+'compatible' is not set and vim has been compiled with '+signs' and '+perl'.
 
 ==============================================================================
 3. Installation                     *VimDebug-install*
 
-VimDebug requires the following Perl modules:
+Use Perl's package manager, cpanm, to install the Vim::Debug Perl module.
 
-- IO:: Pty
-- IPC::Run
+  curl -L http://cpanmin.us | perl - --sudo App::cpanminus # install cpanm
+  sudo cpanm Vim::Debug                                    # install Vim::Debug
 
-Consult available documentation for how to install these, or view the
-current information on github: https://github.com/kablamo/VimDebug
+For more help with installing Perl modules, see the cpanm documentation on
+cpan.
 
 ==============================================================================
 4. Keybindings                      *VimDebug-keys*

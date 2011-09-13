@@ -29,13 +29,81 @@ $ENV{"PERL5DB"}     = 'BEGIN {require "perl5db.pl";}';
 $ENV{"PERLDB_OPTS"} = "ornaments=''";
 
 
-# used to parse debugger 
+
+=head1 DEBUGGER OUTPUT REGEX CLASS ATTRIBUTES
+
+These attributes are used to parse debugger output and are used by Vim::Debug.
+They return a regex and ignore all values passed to them.  
+
+=head2 dbgrPromptRegex()
+
+=head2 compilerErrorRegex()
+
+=head2 runtimeErrorRegex()
+
+=head2 appExitedRegex()
+
+=cut
+
 our $dpr = '.*  DB<+\d+>+ '; # debugger prompt regex
 sub dbgrPromptRegex    { qr/$dpr/ }
 sub compilerErrorRegex { qr/aborted due to compilation error${dpr}/ }
 sub runtimeErrorRegex  { qr/ at .* line \d+${dpr}/ }
 sub appExitedRegex     { qr/((\/perl5db.pl:)|(Use .* to quit or .* to restart)|(\' to quit or \`R\' to restart))${dpr}/ }
 
+=head1 TRANSLATION CLASS ATTRIBUTES
+
+These attributes are used by Vim::Debug::Daemon to convert commands from the
+communication protocol to commands the Perl debugger can recognize.  For
+example, the communication protocol uses the keyword 'next' while the Perl
+debugger uses 'n'.
+
+=head2 next()
+
+=head2 step()
+
+=head2 cont()
+
+=head2 break()
+
+=head2 clear()
+
+=head2 clearAll()
+
+=head2 print()
+
+=head2 command()
+
+=head2 restart()
+
+=head2 quit()
+
+=cut
+
+sub next                { return [ 'n'                  ] }
+sub step                { return [ 's'                  ] }
+sub cont                { return [ 'c'                  ] }
+sub break               { return [ "f $_[2]", "b $_[1]" ] }
+sub clear               { return [ "f $_[2]", "B $_[1]" ] }
+sub clearAll            { return [ "B *"                ] }
+sub print               { return [ "x $_[1]"            ] }
+sub command             { return [ $_[1]                ] }
+sub restart             { return [ "R"                  ] }
+sub quit                { return [ "q"                  ] }
+
+=head2 METHODS
+
+=cut
+
+=head2 parseOutput($output)
+
+$output is output from the Perl debugger.  This method parses $output and
+saves relevant valus to the lineNumber, filePath, and output attributes (these
+attributes are defined in Vim::Debug)
+
+Returns undef.
+
+=cut
 sub parseOutput {
    my $self   = shift or confess;
    my $output = shift or confess;
@@ -67,17 +135,5 @@ sub parseOutput {
 
    return undef;
 }
-
-sub next                { return [ 'n'                  ] }
-sub step                { return [ 's'                  ] }
-sub cont                { return [ 'c'                  ] }
-sub break               { return [ "f $_[2]", "b $_[1]" ] }
-sub clear               { return [ "f $_[2]", "B $_[1]" ] }
-sub clearAll            { return [ "B *"                ] }
-sub print               { return [ "x $_[1]"            ] }
-sub command             { return [ $_[1]                ] }
-sub restart             { return [ "R"                  ] }
-sub quit                { return [ "q"                  ] }
-
 
 1;

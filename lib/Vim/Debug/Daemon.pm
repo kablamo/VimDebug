@@ -224,24 +224,10 @@ sub translate {
    my $self = $_[OBJECT];
    my $v    = $self->vimdebug->{$_[SESSION]->ID};
    my $in   = $_[ARG0];
-   my $cmds;
 
-   # translate protocol $in to native debugger @cmds
-      if ($in =~ /^next$/            ) { $cmds = $v->next           }
-   elsif ($in =~ /^step$/            ) { $cmds = $v->step           }
-   elsif ($in =~ /^cont$/            ) { $cmds = $v->cont           }
-   elsif ($in =~ /^break:(\d+):(.+)$/) { $cmds = $v->break($1, $2)  }
-   elsif ($in =~ /^clear:(\d+):(.+)$/) { $cmds = $v->clear($1, $2)  }
-   elsif ($in =~ /^clearAll$/        ) { $cmds = $v->clearAll       }
-   elsif ($in =~ /^print:(.+)$/      ) { $cmds = $v->print($1)      }
-   elsif ($in =~ /^command:(.+)$/    ) { $cmds = $v->command($1)    }
-   elsif ($in =~ /^restart$/         ) { $cmds = $v->restart        }
-   elsif ($in =~ /^quit$/            ) { $cmds = $v->quit($1)       }
-#  elsif ($in =~ /^(\w+):(.+)$/      ) { $cmds = $v->$1($2)         }
-#  elsif ($in =~ /^(\w+)$/           ) { $cmds = $v->$1()           }
-   else { die "ERROR 002.  Please email vimdebug at iijo dot org.\n" }
+   # Translate protocol $in to native debugger cmds. 
+   $v->translatedInput([$v->translate($in)]);
 
-   $v->translatedInput($cmds);
    $_[KERNEL]->yield("Write", @_[ARG0..$#_]);
 }
 

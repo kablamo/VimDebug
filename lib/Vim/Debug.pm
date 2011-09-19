@@ -118,18 +118,18 @@ sub start {
 =head2 write($command)
 
 Write $command to the debugger's stdin.  This method blocks until the debugger process
-reads.  Be ssure to include a newline.
+reads.  Be sure to include a newline.
 
 write() always returns undef;
 
 =cut
 sub write {
-   my $self = shift or confess;
-   my $c    = shift or confess;
-   $self->value('');
-   $self->stop(0);
-   $WRITE .= "$c\n";
-   return;
+    my $self = shift or confess;
+    my $c    = shift or confess;
+    $self->value('');
+    $self->stop(0);
+    $WRITE .= "$c\n";
+    return;
 }
 
 =head2 read()

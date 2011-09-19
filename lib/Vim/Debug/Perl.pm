@@ -80,6 +80,17 @@ debugger uses 'n'.
 
 =cut
 
+sub next                { return ( 'n'                  ) }
+sub step                { return ( 's'                  ) }
+sub cont                { return ( 'c'                  ) }
+sub break               { return ( "f $_[2]", "b $_[1]" ) }
+sub clear               { return ( "f $_[2]", "B $_[1]" ) }
+sub clearAll            { return ( "B *"                ) }
+sub print               { return ( "x $_[1]"            ) }
+sub command             { return ( $_[1]                ) }
+sub restart             { return ( "R"                  ) }
+sub quit                { return ( "q"                  ) }
+
 =head2 METHODS
 
 =cut
@@ -123,32 +134,6 @@ sub parseOutput {
    }
 
    return undef;
-}
-
-=head2 translate($in)
-
-Translate a protocol command ($in) to a native debugger command.  The native
-debugger command is returned as an array of strings.
-
-Dies if no translation is found.
-
-=cut
-
-sub translate {
-   my ($self, $in) = @_;
-
-   return ('n'           )  if $in =~ /^next$/;
-   return ('s'           )  if $in =~ /^step$/;
-   return ('c'           )  if $in =~ /^cont$/;
-   return ("f $2", "b $1")  if $in =~ /^break:(\d+):(.+)$/;
-   return ("f $2", "B $1")  if $in =~ /^clear:(\d+):(.+)$/;
-   return ("B *"         )  if $in =~ /^clearAll$/;
-   return ("x $1"        )  if $in =~ /^print:(.+)$/;
-   return ($1            )  if $in =~ /^command:(.+)$/;
-   return ("R"           )  if $in =~ /^restart$/;
-   return ("q"           )  if $in =~ /^quit$/;
-
-   die "ERROR 002.  Please email vimdebug at iijo dot org.\n";
 }
 
 1;

@@ -231,7 +231,6 @@ debugger command is returned as an array of strings.
 Dies if no translation is found.                                                                                               
                                                                                                                                
 =cut       
-
 sub translate {
     my ($self, $in) = @_;
     my @cmds = ();

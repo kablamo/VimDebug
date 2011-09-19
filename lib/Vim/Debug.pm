@@ -223,6 +223,36 @@ sub out {
    return $self->{out};
 }
 
+=head2 translate($in)                                                                                                          
+                                                                                                                               
+Translate a protocol command ($in) to a native debugger command.  The native                                                   
+debugger command is returned as an array of strings.                                                                           
+                                                                                                                               
+Dies if no translation is found.                                                                                               
+                                                                                                                               
+=cut       
+
+sub translate {
+    my ($self, $in) = @_;
+    my @cmds = ();
+
+       if ($in =~ /^next$/            ) { @cmds = $v->next           }
+    elsif ($in =~ /^step$/            ) { @cmds = $v->step           }
+    elsif ($in =~ /^cont$/            ) { @cmds = $v->cont           }
+    elsif ($in =~ /^break:(\d+):(.+)$/) { @cmds = $v->break($1, $2)  }
+    elsif ($in =~ /^clear:(\d+):(.+)$/) { @cmds = $v->clear($1, $2)  }
+    elsif ($in =~ /^clearAll$/        ) { @cmds = $v->clearAll       }
+    elsif ($in =~ /^print:(.+)$/      ) { @cmds = $v->print($1)      }
+    elsif ($in =~ /^command:(.+)$/    ) { @cmds = $v->command($1)    }
+    elsif ($in =~ /^restart$/         ) { @cmds = $v->restart        }
+    elsif ($in =~ /^quit$/            ) { @cmds = $v->quit($1)       }
+#   elsif ($in =~ /^(\w+):(.+)$/      ) { @cmds = $v->$1($2)         }
+#   elsif ($in =~ /^(\w+)$/           ) { @cmds = $v->$1()           }
+    else { die "ERROR 002.  Please email vimdebug at iijo dot org.\n" }
+
+    return @cmds;
+}
+
 =head2 lineNumber($number)
 
 If $number parameter is used, the lineNumber class attribute is set using that

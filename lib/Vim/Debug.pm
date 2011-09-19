@@ -236,19 +236,19 @@ sub translate {
     my ($self, $in) = @_;
     my @cmds = ();
 
-       if ($in =~ /^next$/            ) { @cmds = $v->next           }
-    elsif ($in =~ /^step$/            ) { @cmds = $v->step           }
-    elsif ($in =~ /^cont$/            ) { @cmds = $v->cont           }
-    elsif ($in =~ /^break:(\d+):(.+)$/) { @cmds = $v->break($1, $2)  }
-    elsif ($in =~ /^clear:(\d+):(.+)$/) { @cmds = $v->clear($1, $2)  }
-    elsif ($in =~ /^clearAll$/        ) { @cmds = $v->clearAll       }
-    elsif ($in =~ /^print:(.+)$/      ) { @cmds = $v->print($1)      }
-    elsif ($in =~ /^command:(.+)$/    ) { @cmds = $v->command($1)    }
-    elsif ($in =~ /^restart$/         ) { @cmds = $v->restart        }
-    elsif ($in =~ /^quit$/            ) { @cmds = $v->quit($1)       }
-#   elsif ($in =~ /^(\w+):(.+)$/      ) { @cmds = $v->$1($2)         }
-#   elsif ($in =~ /^(\w+)$/           ) { @cmds = $v->$1()           }
-    else { die "ERROR 002.  Please email vimdebug at iijo dot org.\n" }
+       if ($in =~ /^next$/            ) { @cmds = $self->next          }
+    elsif ($in =~ /^step$/            ) { @cmds = $self->step          }
+    elsif ($in =~ /^cont$/            ) { @cmds = $self->cont          }
+    elsif ($in =~ /^break:(\d+):(.+)$/) { @cmds = $self->break($1, $2) }
+    elsif ($in =~ /^clear:(\d+):(.+)$/) { @cmds = $self->clear($1, $2) }
+    elsif ($in =~ /^clearAll$/        ) { @cmds = $self->clearAll      }
+    elsif ($in =~ /^print:(.+)$/      ) { @cmds = $self->print($1)     }
+    elsif ($in =~ /^command:(.+)$/    ) { @cmds = $self->command($1)   }
+    elsif ($in =~ /^restart$/         ) { @cmds = $self->restart       }
+    elsif ($in =~ /^quit$/            ) { @cmds = $self->quit($1)      }
+#   elsif ($in =~ /^(\w+):(.+)$/      ) { @cmds = $self->$1($2)        }
+#   elsif ($in =~ /^(\w+)$/           ) { @cmds = $self->$1()          }
+    else { die "ERROR 002.  Please email vimdebug at iijo dot org.\n"  }
 
     return @cmds;
 }

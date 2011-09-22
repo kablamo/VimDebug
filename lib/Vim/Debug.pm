@@ -60,14 +60,11 @@ Note that the read() method is non blocking.
 
 package Vim::Debug;
 
-use strict;
-use warnings;
-use Class::Accessor::Fast;
-use base qw(Class::Accessor::Fast);
-
 use Carp;
 use IO::Pty;
 use IPC::Run;
+use Moose::Util qw(apply_all_roles);
+use Moose;
 
 $| = 1;
 
@@ -79,10 +76,28 @@ my $RUNTIME_ERROR  = "runtime error";
 my $APP_EXITED     = "application exited";
 my $DBGR_READY     = "debugger ready";
 
-__PACKAGE__->mk_accessors(
-    qw(dbgrCmd timer dbgr stop shutdown lineNumber filePath value translatedInput READ WRITE
-       debug original status oldOut)
-);
+has invoke   => ( is => 'ro', isa => 'ArrayRef[Str]', required => 1 );
+has language => ( is => 'ro', isa => 'Str',           required => 1 );
+
+has _timer    => ( is => 'rw', isa => 'IPC::Run::Timer' );
+has _dbgr     => ( is => 'rw', isa => 'IPC::Run', handles => [qw(finish)] );
+has _READ     => ( is => 'rw', isa => 'Str' );
+has _WRITE    => ( is => 'rw', isa => 'Str' );
+has _original => ( is => 'rw', isa => 'Str' );
+has _out      => ( is => 'rw', isa => 'Str' );
+
+has stop            => ( is => 'rw', isa => 'Int' );
+has lineNumber      => ( is => 'rw', isa => 'Int' );
+has filePath        => ( is => 'rw', isa => 'Str' );
+has value           => ( is => 'rw', isa => 'Str' );
+has translatedInput => ( is => 'rw', isa => 'ArrayRef' );
+has status          => ( is => 'rw', isa => 'Str' );
+
+sub BUILD {
+    my $self = shift;
+    apply_all_roles($self, 'Vim::Debug::' . $self->language);
+    return $self;
+};
 
 =head2 start()
 
@@ -92,27 +107,25 @@ start() always returns undef.
 
 =cut
 sub start {
-   my $self = shift or confess;
+    my $self = shift or confess;
 
-   # initialize some variables
-   $self->original('');
-   $self->out('');
-   $self->value('');
-   $self->oldOut('');
-   $self->translatedInput([]);
-   $self->debug(0);
-   $self->timer(IPC::Run::timeout(10, exception => 'timed out'));
+    $self->value('');
+    $self->_out('');
+    $self->_original('');
+    $self->translatedInput([]);
+    $self->_timer(IPC::Run::timeout(10, exception => 'timed out'));
 
-   # spawn debugger process
-   $self->dbgr(
-      IPC::Run::start(
-         $self->dbgrCmd, 
-         '<pty<', \$WRITE,
-         '>pty>', \$READ,
-         $self->timer
-      )
-   );
-   return undef;
+    # spawn debugger process
+    $self->_dbgr(
+        IPC::Run::start(
+          $self->invoke, 
+          '<pty<', \$WRITE,
+          '>pty>', \$READ,
+          $self->_timer
+       )
+    );
+print "end start\n";
+    return undef;
 }
 
 =head2 write($command)
@@ -156,12 +169,11 @@ sub read {
    my $runtimeErrorRegex  = $self->runtimeErrorRegex;
    my $appExitedRegex     = $self->appExitedRegex;
 
-   $self->timer->reset();
-   eval { $self->dbgr->pump_nb() };
+   $self->_timer->reset();
+   eval { $self->_dbgr->pump_nb() };
    my $out = $READ;
 
    if ($@ =~ /process ended prematurely/) {
-       print "::read(): process ended prematurely\n" if $self->debug;
        undef $@;
        return 1;
    }
@@ -170,13 +182,12 @@ sub read {
    }
 
    if ($self->stop) {
-       print "::read(): stopping\n" if $self->debug;
-       $self->dbgr->signal("INT");
-       $self->timer->reset();
-       $self->dbgr->pump() until ($READ =~ /$dbgrPromptRegex/    || 
-                                  $READ =~ /$compilerErrorRegex/ || 
-                                  $READ =~ /$runtimeErrorRegex/  || 
-                                  $READ =~ /$appExitedRegex/); 
+       $self->_dbgr->signal("INT");
+       $self->_timer->reset();
+       $self->_dbgr->pump() until ($READ =~ /$dbgrPromptRegex/    || 
+                                   $READ =~ /$compilerErrorRegex/ || 
+                                   $READ =~ /$runtimeErrorRegex/  || 
+                                   $READ =~ /$appExitedRegex/); 
        $out = $READ;
    }
 
@@ -188,7 +199,7 @@ sub read {
    elsif ($self->out =~ $appExitedRegex)     { $self->status($APP_EXITED)     }
    else                                      { return 0                       }
 
-   $self->original($out);
+   $self->_original($out);
    $self->parseOutput($self->out);
 
    return 1;
@@ -209,7 +220,7 @@ sub out {
    if (@_) {
       $out = shift;
 
-      my $originalLen = length $self->original;
+      my $originalLen = length $self->_original;
       $out = substr($out, $originalLen);
         
       # vim is not displaying newline characters correctly for some reason.
@@ -217,10 +228,10 @@ sub out {
       $out =~ s/(?:\015{1,2}\012|\015|\012)/\n/sg;
 
       # save
-      $self->{out} = $out;
+      $self->_out($out);
    }
 
-   return $self->{out};
+   return $self->_out;
 }
 
 =head2 translate($in)                                                                                                          

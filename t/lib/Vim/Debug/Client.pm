@@ -14,15 +14,11 @@ Vim::Debug::Daemon.  Its probably only useful for testing.
 
 package Vim::Debug::Client;
 
-use strict;
-use warnings;
-use feature qw(say);
-use base qw(Class::Accessor::Fast);
+use Moose;
 
 use Net::Telnet;
 use Vim::Debug::Client::Response;
 
-__PACKAGE__->mk_accessors( qw(language dbgrCmd telnet sessionId) );
 
 
 # constants
@@ -42,6 +38,10 @@ my $DISCONNECT     = "DISCONNECT";
 # connection constants
 my $DONE_FILE = ".vdd.done";
 
+has language  => ( is => 'ro', isa => 'Str' );
+has dbgrCmd   => ( is => 'ro', isa => 'Str' );
+has telnet    => ( is => 'rw', isa => 'Net::Telnet' );
+has sessionId => ( is => 'rw', isa => 'Int' );
 
 sub connect {
     my $self = shift or die;

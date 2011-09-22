@@ -20,14 +20,10 @@ explanation.  This module only handles the Perl specific bits.
 
 package Vim::Debug::Perl;
 
-use strict;
-use warnings;
-use parent qw(Vim::Debug);
-use Carp;
+use Moose::Role;
 
 $ENV{"PERL5DB"}     = 'BEGIN {require "perl5db.pl";}';
 $ENV{"PERLDB_OPTS"} = "ornaments=''";
-
 
 
 =head1 DEBUGGER OUTPUT REGEX CLASS ATTRIBUTES
@@ -105,8 +101,8 @@ Returns undef.
 
 =cut
 sub parseOutput {
-   my $self   = shift or confess;
-   my $output = shift or confess;
+   my $self   = shift or die;
+   my $output = shift or die;
 
    {
       # See .../t/VD_DI_Perl.t for test cases.

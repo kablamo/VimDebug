@@ -92,16 +92,10 @@ And then exit.
 
 package Vim::Debug::Daemon;
 
-use strict;
-use warnings;
-use feature qw(say);
-use base qw(Class::Accessor::Fast);
-
-use Carp;
+use Data::Dumper::Concise;
+use Moose;
 use POE qw(Component::Server::TCP);
-
-__PACKAGE__->mk_accessors( qw(vimdebug translatedInput) );
-
+use Vim::Debug;
 
 # constants
 $| = 1;
@@ -120,11 +114,12 @@ my $DONE_FILE = ".vdd.done";
 # global var
 my $shutdown = 0;
 
+has vimdebug => ( is => 'rw', isa => 'HashRef', default => sub { {} } );
+has translatedInput => ( is => 'rw', isa => 'Str' );
+
 
 sub run {
    my $self = shift or die;
-
-   $self->vimdebug({});
 
    POE::Component::Server::TCP->new(
       Port               => $PORT,
@@ -152,7 +147,7 @@ sub clientConnected {
       $CONNECT . $EOR . $EOR . $EOR . $_[SESSION]->ID . $EOR . $EOM 
    );
    touch();
-   # $_[SESSION]->option(trace => 1, debug => 1);
+#  $_[SESSION]->option(trace => 1, debug => 1);
 }
 
 sub clientDisconnected {
@@ -201,23 +196,14 @@ sub in {
 }
 
 sub start {
-   my $language = shift or die;
-   my $command  = shift or die;
+    my $language = shift or die;
+    my $command  = shift or die;
 
-   # load module
-   my $moduleName = "Vim/Debug/${language}.pm";
-   require $moduleName;
+    my @cmd = split(/\s+/, $command);
+    my $v = Vim::Debug->new(language => $language, invoke => \@cmd);
+    $v->start();
 
-   # create debugger object
-   my $debuggerName = 'Vim::Debug::' . ${language};
-   my $v = eval $debuggerName . "->new();";
-   die "no such module exists: $debuggerName: $@" unless defined $v;
-
-   my @cmd = split(/\s+/, $command);
-   $v->dbgrCmd(\@cmd);
-   $v->start();
-
-   return $v;
+    return $v;
 }
 
 sub translate {
@@ -246,7 +232,7 @@ sub write {
 
       chomp($in);
       if ($in eq 'quit') {
-         $v->dbgr->finish; # makes sure the child process exits
+         $v->finish; # makes sure the child process exits
          $shutdown = 1;
          $_[HEAP]{client}->event(FlushedEvent => "shutdown");
          $_[HEAP]{client}->put($DISCONNECT . $EOR . $EOR . $EOR . $EOR . $EOM);

@@ -63,8 +63,8 @@ package Vim::Debug;
 use Carp;
 use IO::Pty;
 use IPC::Run;
+use Moose ;
 use Moose::Util qw(apply_all_roles);
-use Moose;
 
 $| = 1;
 
@@ -76,8 +76,14 @@ my $RUNTIME_ERROR  = "runtime error";
 my $APP_EXITED     = "application exited";
 my $DBGR_READY     = "debugger ready";
 
-has invoke   => ( is => 'ro', isa => 'ArrayRef[Str]', required => 1 );
-has language => ( is => 'ro', isa => 'Str',           required => 1 );
+has invoke   => ( is => 'ro', isa => 'Str', required => 1 );
+has language => ( is => 'ro', isa => 'Str', required => 1 );
+
+has stop            => ( is => 'rw', isa => 'Int' );
+has lineNumber      => ( is => 'rw', isa => 'Int' );
+has filePath        => ( is => 'rw', isa => 'Str' );
+has value           => ( is => 'rw', isa => 'Str' );
+has status          => ( is => 'rw', isa => 'Str' );
 
 has _timer    => ( is => 'rw', isa => 'IPC::Run::Timer' );
 has _dbgr     => ( is => 'rw', isa => 'IPC::Run', handles => [qw(finish)] );
@@ -86,18 +92,24 @@ has _WRITE    => ( is => 'rw', isa => 'Str' );
 has _original => ( is => 'rw', isa => 'Str' );
 has _out      => ( is => 'rw', isa => 'Str' );
 
-has stop            => ( is => 'rw', isa => 'Int' );
-has lineNumber      => ( is => 'rw', isa => 'Int' );
-has filePath        => ( is => 'rw', isa => 'Str' );
-has value           => ( is => 'rw', isa => 'Str' );
-has translatedInput => ( is => 'rw', isa => 'ArrayRef' );
-has status          => ( is => 'rw', isa => 'Str' );
+around BUILDARGS => sub {
+    my $orig  = shift;
+    my $class = shift;
+    my %args  = @_;
+
+    if (defined $args{invoke} && $args{invoke} eq 'SCALAR') {
+        $args{invoke} = [split(/\s+/, $args{invoke})];
+        return $class->$orig(%args);
+    }
+    
+    return $class->$orig(@_);
+};
 
 sub BUILD {
     my $self = shift;
     apply_all_roles($self, 'Vim::Debug::' . $self->language);
-    return $self;
-};
+    $self->start;
+}
 
 =head2 start()
 
@@ -112,19 +124,20 @@ sub start {
     $self->value('');
     $self->_out('');
     $self->_original('');
-    $self->translatedInput([]);
     $self->_timer(IPC::Run::timeout(10, exception => 'timed out'));
+
+    my @cmd = split(qr/\s+/, $self->invoke);
 
     # spawn debugger process
     $self->_dbgr(
         IPC::Run::start(
-          $self->invoke, 
+          \@cmd, 
           '<pty<', \$WRITE,
           '>pty>', \$READ,
           $self->_timer
        )
     );
-print "end start\n";
+
     return undef;
 }
 
@@ -237,7 +250,7 @@ sub out {
 =head2 translate($in)                                                                                                          
                                                                                                                                
 Translate a protocol command ($in) to a native debugger command.  The native                                                   
-debugger command is returned as an array of strings.                                                                           
+debugger command is returned as an arrayref of strings.                                                                           
                                                                                                                                
 Dies if no translation is found.                                                                                               
                                                                                                                                
@@ -260,7 +273,7 @@ sub translate {
 #   elsif ($in =~ /^(\w+)$/           ) { @cmds = $self->$1()          }
     else { die "ERROR 002.  Please email vimdebug at iijo dot org.\n"  }
 
-    return @cmds;
+    return \@cmds;
 }
 
 =head2 lineNumber($number)

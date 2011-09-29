@@ -54,7 +54,7 @@ perl $DBGRsocket1         = 0;
 perl $DBGRsocket2         = 0;
 
 " script constants
-let s:EOR_REGEX       = '\[vimdebug.eor\]'   " End Of Record Regular Expression
+let s:EOR_REGEX       = '-vimdebug.eor-'   " End Of Record Regular Expression
 let s:EOM             = "\r\nvimdebug.eom\r\n"       " End Of Message
 let s:EOM_LEN         = len(s:EOM)
 let s:COMPILER_ERROR  = "compiler error"     " not in use yet

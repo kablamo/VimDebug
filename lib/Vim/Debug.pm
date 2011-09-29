@@ -10,8 +10,8 @@ If you are new to the Vim::Debug project please read the L<Vim::Debug::Manual> f
     $debugger->start;
     $debugger->write('s'); # step
     sleep(1) until $debugger->read;
-    print $debugger->lineNumber;
-    print $debugger->fileName;
+    print $debugger->line;
+    print $debugger->file;
     print $debugger->output;
     $debugger->write('q'); # quit
    
@@ -80,8 +80,8 @@ has invoke   => ( is => 'ro', isa => 'Str', required => 1 );
 has language => ( is => 'ro', isa => 'Str', required => 1 );
 
 has stop            => ( is => 'rw', isa => 'Int' );
-has lineNumber      => ( is => 'rw', isa => 'Int' );
-has filePath        => ( is => 'rw', isa => 'Str' );
+has line            => ( is => 'rw', isa => 'Int' );
+has file            => ( is => 'rw', isa => 'Str' );
 has value           => ( is => 'rw', isa => 'Str' );
 has status          => ( is => 'rw', isa => 'Str' );
 
@@ -166,7 +166,7 @@ looks for a debugger prompt.
 If one is not found, the debugger isn't finished thinking so read() returns 0.   
 
 If a debugger prompt is found, the output is parsed.  The following
-information is parsed out and saved into attributes: lineNumber(), fileName(),
+information is parsed out and saved into attributes: line(), file(),
 value(), and out().
 
 read() will also send an interrupt (CTL+C) to the debugger process if the
@@ -276,16 +276,28 @@ sub translate {
     return \@cmds;
 }
 
-=head2 lineNumber($number)
+sub state {
+    my $self = shift;
+    return (
+        stop       => $self->stop,
+        line       => $self->line,
+        file       => $self->file,
+        value      => $self->value,
+        status     => $self->status,
+        output     => $self->out,
+    );
+}
 
-If $number parameter is used, the lineNumber class attribute is set using that
-value.  If no parameters are passed, the current value of the lineNumber 
+=head2 line($number)
+
+If $number parameter is used, the line class attribute is set using that
+value.  If no parameters are passed, the current value of the line
 attribute is returned.
 
-=head2 filePath($path)
+=head2 file($path)
 
-If $path parameter is used, the filePath class attribute is set using that
-value.  If no parameters are passed, the current value of the filePath 
+If $path parameter is used, the file class attribute is set using that
+value.  If no parameters are passed, the current value of the file
 attribute is returned.
 
 =head2 dbgrPromptRegex($regex)

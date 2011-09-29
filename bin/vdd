@@ -9,11 +9,11 @@
 
 use strict;
 use warnings;
-use VimDebug::Daemon;
+use Vim::Debug::Daemon;
 
 $SIG{INT} = \&signalHandler;
 
-VimDebug::Daemon->new->run;
+Vim::Debug::Daemon->new->run;
 
 # die when children die
 sub signalHandler {

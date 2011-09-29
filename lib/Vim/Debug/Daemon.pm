@@ -99,23 +99,16 @@ use Moose;
 use MooseX::ClassAttribute;
 use POE qw(Component::Server::TCP);
 use Vim::Debug;
+use Vim::Debug::Protocol;
 
 # constants
 $| = 1;
-
-# protocol constants
-my $EOR            = "[vimdebug.eor]";       # end of field
-my $EOM            = "\r\nvimdebug.eom";     # end of field
-my $BAD_CMD        = "bad command";
-my $CONNECT        = "CONNECT";
-my $DISCONNECT     = "DISCONNECT";
-
-# connection constants
-my $PORT      = "6543";
 my $DONE_FILE = ".vdd.done";
 
 # global var
 my $shutdown = 0;
+
+has port => ( is => 'ro', isa => 'Int', default => 6543 );
 
 class_has debuggers => (
     is      => 'rw',
@@ -124,8 +117,10 @@ class_has debuggers => (
 );
 
 sub run {
+    my $self = shift or die;
+
     POE::Component::Server::TCP->new(
-        Port               => $PORT,
+        Port               => $self->port,
         ClientConnected    => \&clientConnected,
         ClientDisconnected => \&clientDisconnected,
         ClientInput        => \&clientInput,
@@ -146,9 +141,8 @@ sub run {
 }
 
 sub clientConnected {
-    $_[HEAP]{client}->put(
-       $CONNECT . $EOR . $EOR . $EOR . $_[SESSION]->ID . $EOR . $EOM 
-    );
+    my $response = Vim::Debug::Protocol->connect($_[SESSION]->ID);
+    $_[HEAP]{client}->put($response);
     touch();
 #   $_[SESSION]->option(trace => 1, debug => 1);
 }
@@ -202,7 +196,7 @@ sub stop {
 
     __PACKAGE__->debuggers->{$sessionId}->stop(1);
     $_[HEAP]{client}->event(FlushedEvent => "shutdown");
-    $_[HEAP]{client}->put($DISCONNECT . $EOR . $EOR . $EOR . $EOR . $EOM);
+    $_[HEAP]{client}->put(Vim::Debug::Protocol->disconnect);
     touch();
 }
 
@@ -216,27 +210,21 @@ sub quit {
     $_[HEAP]{debugger}->finish; # makes sure the child process exits;
     $shutdown = 1;
     $_[HEAP]{client}->event(FlushedEvent => "shutdown");
-    $_[HEAP]{client}->put($DISCONNECT . $EOR . $EOR . $EOR . $EOR . $EOM);
+    $_[HEAP]{client}->put(Vim::Debug::Protocol->disconnect);
+    touch();
 }
 
 sub write {
-    my $input    = $_[ARG0];
-    my $debugger = $_[HEAP]{debugger};
-    my $cmds     = $_[HEAP]{translation};
+    my $cmds = $_[HEAP]{translation};
     my $state;
 
     if (scalar(@$cmds) == 0) { 
         $state = 'Out';
     }
-    elsif ($input =~ /^quit/  ) {
-        $debugger->write(pop @$cmds);
-        $state = 'Quit';
+    else {
+        $state = $_[ARG0] =~ /^quit/ ? 'Quit' : 'Read';
+        $_[HEAP]{debugger}->write(pop @$cmds);
     }
-    else { 
-        $debugger->write(pop @$cmds);
-        $state = 'Read';
-    }
-
     $_[KERNEL]->yield($state => @_[ARG0..$#_]);
 }
 
@@ -247,22 +235,10 @@ sub read {
 }
 
 sub out {
-   my $v = $_[HEAP]{debugger};
-   my $out;
+    my $response = Vim::Debug::Protocol->response($_[HEAP]{debugger}->state);
 
-   if (defined $v->lineNumber and defined $v->filePath) {
-      $out = $v->status     . $EOR .
-             $v->lineNumber . $EOR .
-             $v->filePath   . $EOR .
-             $v->value      . $EOR .
-             $v->out        . $EOM;
-   }
-   else {
-      $out = $v->status . $EOR . $EOR . $EOR . $EOR . $v->out . $EOM;
-   }
-
-   $_[HEAP]{client}->put($out);
-   touch();
+    $_[HEAP]{client}->put($response);
+    touch();
 }
 
 sub touch {

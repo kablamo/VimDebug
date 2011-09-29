@@ -94,7 +94,7 @@ sub quit                { return ( "q"                  ) }
 =head2 parseOutput($output)
 
 $output is output from the Perl debugger.  This method parses $output and
-saves relevant valus to the lineNumber, filePath, and output attributes (these
+saves relevant valus to the line, file, and output attributes (these
 attributes are defined in Vim::Debug)
 
 Returns undef.
@@ -106,8 +106,8 @@ sub parseOutput {
 
    {
       # See .../t/VD_DI_Perl.t for test cases.
-      my $filePath;
-      my $lineNumber;
+      my $file;
+      my $line;
       $output =~ /
          ^ \w+ ::
          (?: \w+ :: )*
@@ -117,8 +117,8 @@ sub parseOutput {
             ( .+ ) : ( \d+ )
          \):
       /xm;
-      $self->filePath($1)   if defined $1;
-      $self->lineNumber($2) if defined $2;
+      $self->file($1)   if defined $1;
+      $self->line($2) if defined $2;
    }
 
    {

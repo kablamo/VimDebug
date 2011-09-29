@@ -17,23 +17,18 @@ package Vim::Debug::Client;
 use Moose;
 
 use Net::Telnet;
-use Vim::Debug::Client::Response;
-
-
+use Vim::Debug::Protocol;
 
 # constants
-$Vim::Debug::Client::VERSION = "0.00";
+$Vim::Debug::Client::VERSION = "0.1";
 $| = 1;
 
 # protocol constants
-my $EOR            = '[vimdebug.eor]';       # end of record
-my $EOR_REGEX      = qr/\[vimdebug.eor\]/;
+my $EOR            = '-vimdebug.eor-';       # end of record
+my $EOR_REGEX      = qr/-vimdebug.eor-/;
 my $EOR_LENGTH     = length($EOR);
 my $EOM            = "\r\nvimdebug.eom\n";   # end of message
 my $EOM_REGEX      = '/\nvimdebug.eom\n/';
-my $BAD_CMD        = "bad command";
-my $CONNECT        = "CONNECT";
-my $DISCONNECT     = "DISCONNECT";
 
 # connection constants
 my $DONE_FILE = ".vdd.done";
@@ -43,13 +38,20 @@ has dbgrCmd   => ( is => 'ro', isa => 'Str' );
 has telnet    => ( is => 'rw', isa => 'Net::Telnet' );
 has sessionId => ( is => 'rw', isa => 'Int' );
 
+has _protocol => ( 
+    is          => 'ro', 
+    isa         => 'Vim::Debug::Protocol', 
+    default     => sub { Vim::Debug::Protocol->new },
+    handles     => [qw/_eor _eom _connect _disconnect/],
+);
+
 sub connect {
     my $self = shift or die;
 
     my $telnet = Net::Telnet->new(
         Timeout    => 10,
         Prompt     => $EOM_REGEX,
-        Rs         => $EOR, # input  record separator -- not a regex
+        Rs         => $self->_eor, # input  record separator -- not a regex
         Ors        => "\n", # output record separator -- not a regex
         Telnetmode => 0,
         Port       => 6543,
@@ -108,7 +110,7 @@ sub buildResponse {
 
     @response = map { substr($_, 0, -$EOR_LENGTH) } @response;
 
-    my $response = Vim::Debug::Client::Response->new({
+    my $response = Vim::Debug::Protocol->new({
         status => $response[0],
         line   => $response[1],
         file   => $response[2],

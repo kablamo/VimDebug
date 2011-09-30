@@ -77,7 +77,6 @@ This method needs to be called after send a message to Vim.  It just creates a
 file.
 
 =cut
-
 sub touch {
     my $DONE_FILE = ".vdd.done";
     open(FILE, ">", $DONE_FILE);

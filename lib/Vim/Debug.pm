@@ -108,7 +108,6 @@ around BUILDARGS => sub {
 sub BUILD {
     my $self = shift;
     apply_all_roles($self, 'Vim::Debug::' . $self->language);
-    $self->start;
 }
 
 =head2 start()
@@ -138,7 +137,7 @@ sub start {
        )
     );
 
-    return undef;
+    return $self;
 }
 
 =head2 write($command)

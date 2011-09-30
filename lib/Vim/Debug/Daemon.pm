@@ -176,7 +176,7 @@ sub start {
     __PACKAGE__->debuggers->{$sessionId} = Vim::Debug->new(
         language => $language, 
         invoke   => $command
-    );
+    )->start;
 
     $_[HEAP]{debugger}    = __PACKAGE__->debuggers->{$sessionId};
     $_[HEAP]{translation} = [];

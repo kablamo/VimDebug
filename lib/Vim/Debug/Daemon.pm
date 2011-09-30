@@ -103,7 +103,6 @@ use Vim::Debug::Protocol;
 
 # constants
 $| = 1;
-my $DONE_FILE = ".vdd.done";
 
 # global var
 my $shutdown = 0;
@@ -143,7 +142,7 @@ sub run {
 sub clientConnected {
     my $response = Vim::Debug::Protocol->connect($_[SESSION]->ID);
     $_[HEAP]{client}->put($response);
-    touch();
+    Vim::Debug::Protocol->touch;
 #   $_[SESSION]->option(trace => 1, debug => 1);
 }
 
@@ -197,7 +196,7 @@ sub stop {
     __PACKAGE__->debuggers->{$sessionId}->stop(1);
     $_[HEAP]{client}->event(FlushedEvent => "shutdown");
     $_[HEAP]{client}->put(Vim::Debug::Protocol->disconnect);
-    touch();
+    Vim::Debug::Protocol->touch;
 }
 
 sub translate {
@@ -211,7 +210,7 @@ sub quit {
     $shutdown = 1;
     $_[HEAP]{client}->event(FlushedEvent => "shutdown");
     $_[HEAP]{client}->put(Vim::Debug::Protocol->disconnect);
-    touch();
+    Vim::Debug::Protocol->touch;
 }
 
 sub write {
@@ -236,15 +235,8 @@ sub read {
 
 sub out {
     my $response = Vim::Debug::Protocol->response($_[HEAP]{debugger}->state);
-
     $_[HEAP]{client}->put($response);
-    touch();
-}
-
-sub touch {
-   open(FILE, ">", $DONE_FILE);
-   print FILE "\n";
-   close(FILE);
+    Vim::Debug::Protocol->touch;
 }
 
 

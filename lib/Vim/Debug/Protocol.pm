@@ -71,6 +71,15 @@ sub response {
     return $response;
 }
 
+
+sub touch {
+    my $DONE_FILE = ".vdd.done";
+    open(FILE, ">", $DONE_FILE);
+    print FILE "\n";
+    close(FILE);
+}
+
+
 =head2 line($number)
 
 If $number parameter is used, the line class attribute is set using that

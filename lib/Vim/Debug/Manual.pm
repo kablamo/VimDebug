@@ -1,7 +1,5 @@
-=head1 NAME
+# ABSTRACT: What is Vim::Debug and how do I use it?
 
-What is Vim::Debug and how do I use it?
- 
 =head1 DESCRIPTION
 
 The Vim::Debug project integrates the Perl debugger with Vim, allowing

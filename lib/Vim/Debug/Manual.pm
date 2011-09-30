@@ -2,8 +2,8 @@
 
 =head1 DESCRIPTION
 
-The Vim::Debug project integrates the Perl debugger with Vim, allowing
-developers to visually step through their code and examine variables.  
+Vim::Debug integrates the Perl debugger with Vim, allowing developers to
+visually step through their code and examine variables.  
 
 Please note that this code is in beta.
 

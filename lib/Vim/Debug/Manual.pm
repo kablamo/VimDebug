@@ -5,13 +5,22 @@
 The Vim::Debug project integrates the Perl debugger with Vim, allowing
 developers to visually step through their code and examine variables.  
 
-Please note that this code is in beta and the underlying Perl libraries will
-be changing radically in the near future.
+Please note that this code is in beta.
 
 
 =head1 PREREQUISITES
 
-Vim compiled with +signs and +perl.
+=over 4
+
+=item Unix/Ubuntu/OSX
+
+=item Vim with +signs, and +perl compiled in
+
+=item Perl 5.6.0+
+
+=item The Vim::Debug Perl module
+
+=back
 
 
 =head1 INSTALL INSTRUCTIONS
@@ -54,7 +63,7 @@ These are the default key bindings.  To change them, edit VimDebug.vim:
     <Leader>/  Type a command for the debugger to execute and echo the result
 
 
-head1 DEVELOPERS
+=head1 DEVELOPERS
 
 Fork it on github: http://github.com/kablamo/VimDebug
 

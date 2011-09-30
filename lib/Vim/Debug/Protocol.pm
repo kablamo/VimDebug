@@ -71,6 +71,12 @@ sub response {
     return $response;
 }
 
+=head2 touch()
+
+This method needs to be called after send a message to Vim.  It just creates a
+file.
+
+=cut
 
 sub touch {
     my $DONE_FILE = ".vdd.done";

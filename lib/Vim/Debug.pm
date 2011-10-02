@@ -2,59 +2,37 @@
 
 =head1 SYNOPSIS
 
-If you are new to the Vim::Debug project please read the L<Vim::Debug::Manual> first.
-
     package Vim::Debug;
 
-    my $debugger = Vim::Debug->new;
+    my $debugger = Vim::Debug->new(
+        language => 'Perl',                    # required
+        invoke   => 'perl -Ilib -d t/perl.pl', # required
+    );
+
     $debugger->start;
-    $debugger->write('s'); # step
     sleep(1) until $debugger->read;
-    print $debugger->line;
-    print $debugger->file;
-    print $debugger->output;
-    $debugger->write('q'); # quit
-   
+    print "line:   " . $debugger->line . "\n";
+    print "file:   " . $debugger->file . "\n";
+    print "output: " . $debugger->output . "\n";
+
+    $debugger->step;          sleep(1) until $debugger->read;
+    $debugger->next;          sleep(1) until $debugger->read;
+    $debugger->write('help'); sleep(1) until $debugger->read;
+
+    $debugger->quit; 
+
 
 =head1 DESCRIPTION
 
-The Vim::Debug project integrates the Perl debugger with Vim, allowing
-developers to visually step through their code and examine variables.  
+If you are new to Vim::Debug please read the user manual,
+L<Vim::Debug::Manual>, first.
 
-If you are new to the Vim::Debug project please read the L<Vim::Debug::Manual> first.
+Vim::Debug is an object oriented wrapper around the Perl command line
+debugger.  In theory the debugger could be for any language -- not just Perl.
+But only Perl is supported currently.
 
-Please note that this code is in beta and these libraries will be changing
-radically in the near future.
-
-=head1 PREREQUISITES
-
-Vim compiled with +signs and +perl.
-
-=head1 INSTALL INSTRUCTIONS
-
-Replace $VIMHOME with your vim configuration directory.  (/home/username/.vim on unix.)
-
-=head2 With cpanm
-
-    TODO
-
-=head2 With github
-
-    git clone git@github.com:kablamo/VimDebug.git
-    cd VimDebug
-    perl Makefile.PL
-    make
-    sudo make install
-    cp -r vim/* $VIMHOME/
-
-=head1 Vim::Debug
-
-The Vim::Debug class provides an object oriented wrapper around the Perl
-command line debugger.  
-
-Note that the read() method is non blocking. 
-
-=head1 FUNCTIONS
+The read() method is non blocking.  This allows a user to send an interrupt
+when they get stuck in an infinite loop.
 
 =cut
 
@@ -75,6 +53,24 @@ my $COMPILER_ERROR = "compiler error";
 my $RUNTIME_ERROR  = "runtime error";
 my $APP_EXITED     = "application exited";
 my $DBGR_READY     = "debugger ready";
+
+=head1 ATTRIBUTES
+
+=head2 invoke
+
+=head2 language
+
+=head2 stop
+
+=head2 line
+
+=head2 file
+
+=head2 value
+
+=head2 status
+
+=cut
 
 has invoke   => ( is => 'ro', isa => 'Str', required => 1 );
 has language => ( is => 'ro', isa => 'Str', required => 1 );
@@ -109,6 +105,11 @@ sub BUILD {
     my $self = shift;
     apply_all_roles($self, 'Vim::Debug::' . $self->language);
 }
+
+
+=head1 FUNCTIONS
+
+=cut
 
 =head2 start()
 
@@ -287,39 +288,27 @@ sub state {
     );
 }
 
-=head2 line($number)
-
-If $number parameter is used, the line class attribute is set using that
-value.  If no parameters are passed, the current value of the line
-attribute is returned.
-
-=head2 file($path)
-
-If $path parameter is used, the file class attribute is set using that
-value.  If no parameters are passed, the current value of the file
-attribute is returned.
-
-=head2 dbgrPromptRegex($regex)
-
-If $regex parameter is used, the dbgrPromptRegex class attribute is set using that
-value.  If no parameters are passed, the current value of the dbgrPromptRegex 
-attribute is returned.
-
-
 =head1 SEE ALSO
 
-L<Devel::ebug>, L<perldebguts>
+L<Vim::Debug::Manual>, L<Vim::Debug::Perl>, L<Devel::ebug>, L<perldebguts>
+
+=head1 BUGS
+
+In retrospect its possible there is a better solution to this.  Perhaps
+directly hooking directly into the debugger rather than using regexps to parse
+stdout and stderr?
 
 
 =head1 AUTHOR
 
-Eric Johnson, cpan at iijo : :dot: : org
+Eric Johnson, cpan at iijo :dot: org
+
 
 =head1 COPYRIGHT
 
 Copyright (C) 2003 - 3090, Eric Johnson
 
-This module is GPL.
+This module has the same license as Perl.
 
 =cut
 

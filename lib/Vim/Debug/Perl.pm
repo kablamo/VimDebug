@@ -1,20 +1,13 @@
 # ABSTRACT: Perl debugger interface.
 
-=head1 SYNOPSIS
-
-If you are new to the Vim::Debug project please read the L<Vim::Debug::Manual> first.
-
-    package Vim::Debug::Perl
-
-    my $debugger = Vim::Debug::Perl->new;
-    $debugger->next;
-    $debugger->step;
-   
-
 =head1 DESCRIPTION
 
-This module inherits from Vim::Debug.  See that module for a more in depth
-explanation.  This module only handles the Perl specific bits.
+If you are new to Vim::Debug please read the user manual,
+L<Vim::Debug::Manual>, first.
+
+This module is a role that is dynamically applied to an Vim::Debug instance.
+L<Vim::Debug> represents a debugger.  This module only handles the Perl
+specific bits.  Theoretically there might be a Ruby or Python role someday.
 
 =cut
 
@@ -49,7 +42,7 @@ sub appExitedRegex     { qr/((\/perl5db.pl:)|(Use .* to quit or .* to restart)|(
 
 =head1 TRANSLATION CLASS ATTRIBUTES
 
-These attributes are used by Vim::Debug::Daemon to convert commands from the
+These attributes are used to convert commands from the
 communication protocol to commands the Perl debugger can recognize.  For
 example, the communication protocol uses the keyword 'next' while the Perl
 debugger uses 'n'.

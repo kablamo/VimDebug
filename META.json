@@ -1,0 +1,94 @@
+{
+   "abstract" : "Perl wrapper around a command line debugger",
+   "author" : [
+      "Eric Johnson <kablamo at iijo dot nospamthanks dot org>"
+   ],
+   "dynamic_config" : 0,
+   "generated_by" : "Dist::Zilla version 4.300005, CPAN::Meta::Converter version 2.112621",
+   "license" : [
+      "perl_5"
+   ],
+   "meta-spec" : {
+      "url" : "http://search.cpan.org/perldoc?CPAN::Meta::Spec",
+      "version" : "2"
+   },
+   "name" : "Vim-Debug",
+   "no_index" : {
+      "directory" : [
+         "t",
+         "xt",
+         "examples",
+         "corpus"
+      ],
+      "package" : [
+         "DB"
+      ]
+   },
+   "prereqs" : {
+      "configure" : {
+         "requires" : {
+            "ExtUtils::MakeMaker" : "6.30"
+         }
+      },
+      "runtime" : {
+         "requires" : {
+            "Carp" : 0,
+            "IO::Pty" : 0,
+            "IPC::Run" : 0,
+            "Moose" : 0,
+            "Moose::Role" : 0,
+            "Moose::Util" : 0,
+            "MooseX::ClassAttribute" : 0,
+            "POE" : 0,
+            "POE::Component::Server::TCP" : 0,
+            "perl" : "5.006",
+            "strict" : 0,
+            "warnings" : 0
+         }
+      },
+      "test" : {
+         "requires" : {
+            "File::Find" : 0,
+            "File::Temp" : 0,
+            "Net::Telnet" : 0,
+            "Test::More" : 0
+         }
+      }
+   },
+   "provides" : {
+      "Vim::Debug" : {
+         "file" : "lib/Vim/Debug.pm",
+         "version" : "0.11"
+      },
+      "Vim::Debug::Daemon" : {
+         "file" : "lib/Vim/Debug/Daemon.pm",
+         "version" : "0.11"
+      },
+      "Vim::Debug::Manual" : {
+         "file" : "lib/Vim/Debug/Manual.pm",
+         "version" : "0.11"
+      },
+      "Vim::Debug::Perl" : {
+         "file" : "lib/Vim/Debug/Perl.pm",
+         "version" : "0.11"
+      },
+      "Vim::Debug::Protocol" : {
+         "file" : "lib/Vim/Debug/Protocol.pm",
+         "version" : "0.11"
+      }
+   },
+   "release_status" : "stable",
+   "resources" : {
+      "bugtracker" : {
+         "web" : "https://github.com/kablamo/VimDebug/issues"
+      },
+      "homepage" : "https://github.com/kablamo/VimDebug",
+      "repository" : {
+         "type" : "git",
+         "url" : "https://github.com/kablamo/VimDebug.git",
+         "web" : "https://github.com/kablamo/VimDebug"
+      }
+   },
+   "version" : "0.11"
+}
+

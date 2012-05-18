@@ -1,0 +1,4 @@
+0.11 Fri May 18 13:58:41 BST 2012
+    * Fixed a typo that caused command line arguments to be ignored when
+      starting the debugger.
+    * Switched to Dist::Zilla::PluginBundle::DAGOLDEN

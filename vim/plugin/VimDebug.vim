@@ -89,7 +89,7 @@ function! DBGRstart(...)
       echo "\rthe debugger is already running"
       return
    endif
-   let s:incantation = s:Incantation()
+   let s:incantation = s:Incantation(a:1)
    call s:StartVdd()
    " do after system() so nongui vim doesn't show a blank screen
    echo "\rstarting the debugger..."

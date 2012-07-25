@@ -216,16 +216,6 @@ sub touch {
 L<Vim::Debug::Daemon>
 
 
-=head1 AUTHOR
-
-Eric Johnson, cpan at iijo :dot: org
-
-=head1 COPYRIGHT
-
-Copyright (C) 2003 - 3090, Eric Johnson
-
-This module has the same license as Perl.
-
 =cut
 
 1;

@@ -1,9 +1,4 @@
 #!/usr/bin/env perl
-#
-# (c) eric johnson 2002-3020
-# email: vimDebug at iijo dot org
-# http://iijo.org
-
 # PODNAME: vdd
 # ABSTRACT: The Vim Debugger Daemon
 # VERSION

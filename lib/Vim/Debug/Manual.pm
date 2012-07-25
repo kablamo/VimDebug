@@ -70,3 +70,6 @@ Fork it on github: http://github.com/kablamo/VimDebug
 =cut
 
 package Vim::Debug::Manual;
+
+# VERSION
+

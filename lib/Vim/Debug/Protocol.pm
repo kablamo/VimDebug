@@ -106,6 +106,8 @@ And then exit.
 
 package Vim::Debug::Protocol;
 
+# VERSION
+
 use Moose;
 use MooseX::ClassAttribute;
 

@@ -6,6 +6,7 @@
 
 # PODNAME: vdd
 # ABSTRACT: The Vim Debugger Daemon
+# VERSION
 
 use strict;
 use warnings;

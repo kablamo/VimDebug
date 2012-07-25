@@ -38,6 +38,8 @@ when they get stuck in an infinite loop.
 
 package Vim::Debug;
 
+# VERSION
+
 use Carp;
 use IO::Pty;
 use IPC::Run;

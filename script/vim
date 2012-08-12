@@ -1,0 +1,10 @@
+# This script is for VimDebug developers
+# It allows you to test changes locally instead of needing to install VimDebug
+# every time you make a change.
+#
+# usage: script/vim t/perl.pl
+#
+export PERL5LIB=./lib:$PERL5LIB
+export PATH=./bin:$PATH
+VIMDEBUG=./vim/plugin/VimDebug.vim
+vim -c "source $VIMDEBUG" $*

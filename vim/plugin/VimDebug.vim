@@ -69,8 +69,8 @@ let s:HOST            = "localhost"
 let s:DONE_FILE       = ".vdd.done"
 
 " script variables
-let s:dbgrIsRunning   = 0
 let s:incantation     = ""
+let s:dbgrIsRunning   = 0    " 0: !running, 1: running, 2: starting
 let s:debugger        = ""
 let s:lineNumber      = 0
 let s:fileName        = ""
@@ -89,6 +89,7 @@ function! DBGRstart(...)
       echo "\rthe debugger is already running"
       return
    endif
+   let s:dbgrIsRunning = 2
    let s:incantation = s:Incantation(a:1)
    call s:StartVdd()
    " do after system() so nongui vim doesn't show a blank screen
@@ -98,13 +99,13 @@ function! DBGRstart(...)
       autocmd VimLeave * call DBGRquit()
    endif
    call DBGRopenConsole()
-   let s:dbgrIsRunning = 1
    redraw!
    call s:HandleCmdResult("connected to VimDebug daemon")
    call s:Handshake()
    call s:HandleCmdResult("started the debugger")
    call s:SocketConnect2()
    call s:HandleCmdResult2()
+   let s:dbgrIsRunning = 1
 endfunction
 function! DBGRnext()
    if !s:Copacetic()
@@ -276,7 +277,7 @@ endfunction
 " returns 1 if everything is copacetic
 " returns 0 if things are not copacetic
 function! s:Copacetic()
-   if s:fileName == ""
+   if s:dbgrIsRunning != 1
       echo "\rthe debugger is not running"
       return 0
    elseif s:programDone

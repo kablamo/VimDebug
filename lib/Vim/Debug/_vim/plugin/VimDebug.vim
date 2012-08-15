@@ -390,7 +390,7 @@ function! s:HandleCmdResult(...)
          call s:CurrentLineMagic(l:lineNumber, l:fileName)
       endif
       if len(l:value) > 0
-         echo l:value . "                    "
+         call s:ConsolePrint(l:value)
       endif
 
    elseif l:status == s:APP_EXITED

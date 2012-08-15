@@ -6,5 +6,5 @@
 #
 export PERL5LIB=./lib:$PERL5LIB
 export PATH=./bin:$PATH
-VIMDEBUG=./vim/plugin/VimDebug.vim
+VIMDEBUG=./lib/Vim/Debug/_vim/plugin/VimDebug.vim
 vim -c "source $VIMDEBUG" $*

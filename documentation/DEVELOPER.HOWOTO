@@ -1,5 +1,83 @@
-VimDebug is on github: https://github.com/kablamo/VimDebug
+# --------------------------------------------------------------------
+Running the development code
 
+You will need to obtain the development code if you want to run the
+latest, unreleased, version or if you want to experiment with it or
+improve it in some way.
+
+The code can be cloned from its git repository:
+
+    https://github.com/kablamo/VimDebug.git
+
+To run it, you will also need:
+
+    . A 5.FIXME Perl; CPAN access may be required.
+    . A 7.FIXME Vim built with the +perl and +signs extensions.
+
+Perhaps you already have installed and use some version of VimDebug in
+your current environment. Development work on VimDebug should not
+interfere with that version.
+
+To try out the development code, you need to invoke Vim when Perl and
+Vim have been told where to look for the relevant runtime files. For
+example, use your shell to make a shortcut (shell script, alias,
+whatever) to code like this:
+
+    REPO=/.../wherever/VimDebug
+    export PERL5LIB=$REPO/lib
+    export PATH=$REPO/bin:$PATH
+    VIMDEBUG=$REPO/lib/Vim/Debug/_vim/plugin/VimDebug.vim
+    vim -c "source $VIMDEBUG" $*
+
+Note that for any code changes to apply, you have to relaunch the Vim
+instance (or maybe execute ":runtime plugin/VimDebug.vim" to reload the
+code, not sure if this is usually sufficient).
+
+# --------------------------------------------------------------------
+Installing the development code
+
+At some point, you may want to make your copy of the development code,
+with your modifications, the VimDebug you regularly use, perhaps
+replacing an already installed instance. To do this, you must first
+package the VimDebug distribution with DistZilla (you may need to
+learn about and install Dist::Zilla from CPAN):
+
+    dzil test
+    dzil build
+
+That will update or create a VimDebug-x.xxx/ directory and a
+VimDebug-x.xxx.tar.gz file, each containing an image the distribution
+in its current state.
+
+So you can now install the module either from that newly built
+directory, or by expanding the .tar.gz archive somewhere and moving to
+that directory, and then:
+
+    perl Makefile.PL
+    make
+    make test
+    make install
+
+If you don't possess sufficient privileges to install where your
+current perl runs from, or simply to avoid writing there, CPAN's
+local::lib module may prove useful.
+
+Then, don't forget to then run the Vim component installer, for
+example:
+
+    vimdebug-install -d ~/.vim
+
+See L<Vim::Debug::Manual> for more information.
+
+# --------------------------------------------------------------------
+Releasing to CPAN
+
+Currently, only kablamo does this.
+
+FIXME Eventually flesh this out, for documentation purposes.
+
+# --------------------------------------------------------------------
+Custom debugger support
 
 If you just want to add support for your debugger, its easy.  Really.  Here's
 how in just 3 steps:

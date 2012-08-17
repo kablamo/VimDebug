@@ -26,6 +26,8 @@ See L<Vim::Debug::Protocol> for a description of the communication protocol.
 
 package Vim::Debug::Daemon;
 
+# VERSION
+
 use Moose;
 use MooseX::ClassAttribute;
 use POE qw(Component::Server::TCP);

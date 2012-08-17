@@ -1,0 +1,85 @@
+#!/usr/bin/env perl
+# PODNAME: vimdebug-install
+# ABSTRACT: Install VimDebug's Vim plugin and doc files.
+# VERSION
+
+=head1 SYNOPSIS
+
+    vimdebug-install -d $vim_runtimepath_dir
+
+=head1 DESCRIPTION
+
+This program installs VimDebug's Vim plugin and doc files in a Vim
+runtimepath directory specified at invocation time.
+
+See L<Vim::Debug::Manual> for more info about VimDebug.
+
+=head1 OPTIONS
+
+=over 4
+
+=item -d $vim_runtimepath_dir
+
+Specifies the directory in which the Vim plugin and doc files will be
+installed.  For example, a value of $HOME/.vim typically works on
+Unix.  See Vim's ":help 'runtimepath'" for more details.
+
+=back
+
+=cut
+use strict;
+use warnings;
+use File::Path qw< make_path >;
+use File::Basename qw< dirname >;
+use File::Copy::Recursive qw< dircopy >;
+use Getopt::Long;
+use Try::Tiny;
+use Vim::Debug;
+
+sub usage_die {
+    my (@msg) = @_;
+    die @msg, "\n", << "EOT";
+Usage: $0 -d \$vrd
+    where \$vrd is a Vim runtimepath directory in which the VimDebug
+    plugin and doc files will be installed.
+EOT
+}
+
+    # Main.
+sub {
+        # Obtain the command line options.
+    my %opts;
+    GetOptions(\%opts,
+        'd=s',
+    ) or usage_die();
+
+        # Make sure the destination directory was specified.
+    defined $opts{d} || usage_die("Missing option -d.");
+    my $dst_dir = $opts{d};
+
+        # Make sure we can write to the destination directory.
+    if (! -d $dst_dir) {
+        try {
+            make_path($dst_dir);
+        }
+        catch {
+            usage_die("Couldn't create directory '$dst_dir': $_");
+        }
+    }
+    -w $dst_dir
+      || usage_die("No write permission to directory '$dst_dir'.");
+
+        # Copy the Vim files to the destination directory.
+    my $src_dir = dirname($INC{"Vim/Debug.pm"}) . "/Debug/_vim";
+    if (dircopy($src_dir, $dst_dir) <= 0) {
+        usage_die("For some reason, no files were copied from '$src_dir' to '$dst_dir'.");
+    }
+    else {
+        print STDERR
+            "VimDebug's Vim plugin and doc files " .
+            "were successfully copied from '$src_dir' to '$dst_dir'.\n"
+        ;
+        exit 0;
+    }
+}->();
+

@@ -38,6 +38,8 @@ when they get stuck in an infinite loop.
 
 package Vim::Debug;
 
+# VERSION
+
 use Carp;
 use IO::Pty;
 use IPC::Run;
@@ -298,17 +300,6 @@ In retrospect its possible there is a better solution to this.  Perhaps
 directly hooking directly into the debugger rather than using regexps to parse
 stdout and stderr?
 
-
-=head1 AUTHOR
-
-Eric Johnson, cpan at iijo :dot: org
-
-
-=head1 COPYRIGHT
-
-Copyright (C) 2003 - 3090, Eric Johnson
-
-This module has the same license as Perl.
 
 =cut
 

@@ -13,6 +13,8 @@ specific bits.  Theoretically there might be a Ruby or Python role someday.
 
 package Vim::Debug::Perl;
 
+# VERSION
+
 use Moose::Role;
 
 $ENV{"PERL5DB"}     = 'BEGIN {require "perl5db.pl";}';

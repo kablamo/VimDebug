@@ -1,4 +1,7 @@
 
+0.901 2013.02.14 11:54:44 SGT
+    * Fix version numbers
+
 0.14 2013.02.14 11:40:56 SGT
     * POD in Vim::Debug::Manual
     * Don't echo value after obtaining debugger output

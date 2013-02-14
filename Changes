@@ -1,3 +1,7 @@
+
+0.14 2013.02.14 11:40:56 SGT
+    * Don't echo value after obtaining debugger output
+
 0.13 2013.02.13 11:05:14 SGT
     * More POD
     * Bug fix: debugger cmd was sometimes not built correctly

@@ -391,9 +391,6 @@ function! s:HandleCmdResult(...)
       if len(l:lineNumber) > 0
          call s:CurrentLineMagic(l:lineNumber, l:fileName)
       endif
-      if len(l:value) > 0
-         echo l:value . "                    "
-      endif
 
    elseif l:status == s:APP_EXITED
       call s:ConsolePrint(l:output)

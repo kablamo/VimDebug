@@ -1,4 +1,16 @@
+0.13 2013.02.13 11:05:14 SGT
+    * More POD
+    * Provide a Perl script for installing Vim files
+    * Bug fix: debugger cmd was sometimes not built correctly
+
+0.12 Sat Sep  1 14:24:01 BST 2012
+    * bin/vimdebug-install improves the install experience
+    * Improvements for developers
+    * Updates to docs
+    * Dist::Zilla tweaks
+
 0.11 Fri May 18 13:58:41 BST 2012
     * Fixed a typo that caused command line arguments to be ignored when
       starting the debugger.
     * Switched to Dist::Zilla::PluginBundle::DAGOLDEN
+

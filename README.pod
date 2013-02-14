@@ -12,18 +12,22 @@ VimDebug integrates the Perl debugger with Vim, allowing developers to
 visually step through their code, examine variables, set or clear
 breakpoints, etc.
 
-VimDebug is known to work under Unix/Ubuntu/OSX. It requires Perl
-5.FIXME or later and some CPAN modules may need to be installed.  It
-also requires a Vim 7.FIXME or later that was built with the +signs
-and +perl extensions.
+VimDebug is known to work under Unix/Ubuntu/OSX. It requires Perl 5.FIXME or
+later and some CPAN modules may need to be installed.  It also requires Vim
+7.FIXME or later that was built with the +signs and +perl extensions.
 
 =head1 How do I install VimDebug?
 
-The VimDebug code has a Perl component and a Vim component.
+VimDebug has a Perl component and a Vim component.  To install the Perl
+libraries use L<cpanm|https://metacpan.org/module/App::cpanminus>:
 
-First, install the Perl component, Vim::Debug, from CPAN, like you
-would any other Perl module, Then, install the Vim component (which
-the installed Perl component knows about) by running:
+    # install cpanm
+    curl -L http://cpanmin.us | perl - --sudo App::cpanminus
+
+    # install VimDebug Perl libraries
+    cpanm VimDebug
+
+Next, install the Vim component:
 
     vimdebug-install -d ~/.vim
 

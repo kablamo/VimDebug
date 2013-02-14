@@ -1,120 +1,71 @@
+=pod
+
 =encoding utf-8
 
 =head1 NAME
 
-Vim::Debug - Perl wrapper around a command line debugger
+Vim::Debug::Manual - Integrate the Perl debugger with Vim
 
-=head1 SYNOPSIS
+=head1 What is VimDebug?
 
-    package Vim::Debug;
+VimDebug integrates the Perl debugger with Vim, allowing developers to
+visually step through their code, examine variables, set or clear
+breakpoints, etc.
 
-    my $debugger = Vim::Debug->new(
-        language => 'Perl',                    # required
-        invoke   => 'perl -Ilib -d t/perl.pl', # required
-    );
+VimDebug is known to work under Unix/Ubuntu/OSX. It requires Perl
+5.FIXME or later and some CPAN modules may need to be installed.  It
+also requires a Vim 7.FIXME or later that was built with the +signs
+and +perl extensions.
 
-    $debugger->start;
-    sleep(1) until $debugger->read;
-    print "line:   " . $debugger->line . "\n";
-    print "file:   " . $debugger->file . "\n";
-    print "output: " . $debugger->output . "\n";
+=head1 How do I install VimDebug?
 
-    $debugger->step;          sleep(1) until $debugger->read;
-    $debugger->next;          sleep(1) until $debugger->read;
-    $debugger->write('help'); sleep(1) until $debugger->read;
+The VimDebug code has a Perl component and a Vim component.
 
-    $debugger->quit; 
+First, install the Perl component, Vim::Debug, from CPAN, like you
+would any other Perl module, Then, install the Vim component (which
+the installed Perl component knows about) by running:
 
-=head1 DESCRIPTION
+    vimdebug-install -d ~/.vim
 
-If you are new to Vim::Debug please read the user manual,
-L<Vim::Debug::Manual>, first.
+You may want to replace C<~/.vim> by some other directory that your
+Vim recognizes as a runtimepath directory. See Vim's ":help
+'runtimepath'" for more information.
 
-Vim::Debug is an object oriented wrapper around the Perl command line
-debugger.  In theory the debugger could be for any language -- not just Perl.
-But only Perl is supported currently.
+=head1 Using VimDebug
 
-The read() method is non blocking.  This allows a user to send an interrupt
-when they get stuck in an infinite loop.
+Launch Vim and open a file named with a ".pl" extension. Press <F12>
+to start the debugger. To change the default Vim key bindings, shown
+here, edit VimDebug.vim:
 
-=head1 ATTRIBUTES
+    <F12>      Start the debugger
+    <Leader>s/ Start the debugger.  Prompts for command line arguments.
+    <F10>      Restart debugger. Break points are ALWAYS saved (for all dbgrs).
+    <F11>      Exit the debugger
 
-=head2 invoke
+    <F6>       Next
+    <F7>       Step
+    <F8>       Continue
 
-=head2 language
+    <Leader>b  Set break point on the current line
+    <Leader>c  Clear break point on the current line
 
-=head2 stop
+    <Leader>v  Print the value of the variable under the cursor
+    <Leader>v/ Print the value of an expression thats entered
 
-=head2 line
+    <Leader>/  Type a command for the debugger to execute and echo the result
 
-=head2 file
+=head1 Improving VimDebug
 
-=head2 value
+VimDebug is on github: https://github.com/kablamo/VimDebug.git
 
-=head2 status
+To do development work on VimDebug, clone its git repo and read
+./documentation/DEVELOPER.HOWOTO.
 
-=head1 FUNCTIONS
+In principle, the VimDebug code can be extended to handle other
+debuggers, like the one for Ruby or Python, but that remains to be
+done.
 
-=head2 start()
-
-Starts up the command line debugger in a seperate process.
-
-start() always returns undef.
-
-=head2 write($command)
-
-Write $command to the debugger's stdin.  This method blocks until the debugger process
-reads.  Be sure to include a newline.
-
-write() always returns undef;
-
-=head2 read()
-
-Performs a nonblocking read on stdout from the debugger process.  read() first
-looks for a debugger prompt.  
-
-If one is not found, the debugger isn't finished thinking so read() returns 0.   
-
-If a debugger prompt is found, the output is parsed.  The following
-information is parsed out and saved into attributes: line(), file(),
-value(), and out().
-
-read() will also send an interrupt (CTL+C) to the debugger process if the
-stop() attribute is set to true.
-
-=head2 out($out)
-
-If called with a parameter, out() removes ornaments (like <CTL-M> or
-irrelevant error messages or whatever) from text and saves the value.
-
-If called without a parameter, out() returns the saved value.
-
-=head2 translate($in)                                                                                                          
-
-Translate a protocol command ($in) to a native debugger command.  The native                                                   
-debugger command is returned as an arrayref of strings.                                                                           
-
-Dies if no translation is found.                                                                                               
-
-=head1 SEE ALSO
-
-L<Vim::Debug::Manual>, L<Vim::Debug::Perl>, L<Devel::ebug>, L<perldebguts>
-
-=head1 BUGS
-
-In retrospect its possible there is a better solution to this.  Perhaps
-directly hooking directly into the debugger rather than using regexps to parse
-stdout and stderr?
-
-=head1 AUTHOR
-
-Eric Johnson, cpan at iijo :dot: org
-
-=head1 COPYRIGHT
-
-Copyright (C) 2003 - 3090, Eric Johnson
-
-This module has the same license as Perl.
+Please note that this code is in beta.
 
 =head1 AUTHOR
 
@@ -122,7 +73,7 @@ Eric Johnson <kablamo at iijo dot nospamthanks dot org>
 
 =head1 COPYRIGHT AND LICENSE
 
-This software is copyright (c) 2012 by Eric Johnson.
+This software is copyright (c) 2013 by Eric Johnson.
 
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.

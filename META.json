@@ -1,10 +1,10 @@
 {
-   "abstract" : "Perl wrapper around a command line debugger",
+   "abstract" : "Integrate the Perl debugger with Vim",
    "author" : [
       "Eric Johnson <kablamo at iijo dot nospamthanks dot org>"
    ],
    "dynamic_config" : 0,
-   "generated_by" : "Dist::Zilla version 4.300005, CPAN::Meta::Converter version 2.112621",
+   "generated_by" : "Dist::Zilla version 4.300029, CPAN::Meta::Converter version 2.120921",
    "license" : [
       "perl_5"
    ],
@@ -30,51 +30,64 @@
             "ExtUtils::MakeMaker" : "6.30"
          }
       },
+      "develop" : {
+         "requires" : {
+            "Pod::Coverage::TrustPod" : "0",
+            "Test::CPAN::Meta" : "0",
+            "Test::Pod" : "1.41",
+            "Test::Pod::Coverage" : "1.08"
+         }
+      },
       "runtime" : {
          "requires" : {
-            "Carp" : 0,
-            "IO::Pty" : 0,
-            "IPC::Run" : 0,
-            "Moose" : 0,
-            "Moose::Role" : 0,
-            "Moose::Util" : 0,
-            "MooseX::ClassAttribute" : 0,
-            "POE" : 0,
-            "POE::Component::Server::TCP" : 0,
+            "Carp" : "0",
+            "File::Basename" : "0",
+            "File::Copy::Recursive" : "0",
+            "File::Path" : "0",
+            "Getopt::Long" : "0",
+            "IO::Pty" : "0",
+            "IPC::Run" : "0",
+            "Moose" : "0",
+            "Moose::Role" : "0",
+            "Moose::Util" : "0",
+            "MooseX::ClassAttribute" : "0",
+            "POE" : "0",
+            "POE::Component::Server::TCP" : "0",
+            "Try::Tiny" : "0",
             "perl" : "5.006",
-            "strict" : 0,
-            "warnings" : 0
+            "strict" : "0",
+            "warnings" : "0"
          }
       },
       "test" : {
          "requires" : {
-            "File::Find" : 0,
-            "File::Temp" : 0,
-            "Net::Telnet" : 0,
-            "Test::More" : 0
+            "File::Find" : "0",
+            "File::Temp" : "0",
+            "Net::Telnet" : "0",
+            "Test::More" : "0"
          }
       }
    },
    "provides" : {
       "Vim::Debug" : {
          "file" : "lib/Vim/Debug.pm",
-         "version" : "0.11"
+         "version" : "0.001"
       },
       "Vim::Debug::Daemon" : {
          "file" : "lib/Vim/Debug/Daemon.pm",
-         "version" : "0.11"
+         "version" : "0.001"
       },
       "Vim::Debug::Manual" : {
          "file" : "lib/Vim/Debug/Manual.pm",
-         "version" : "0.11"
+         "version" : "0.001"
       },
       "Vim::Debug::Perl" : {
          "file" : "lib/Vim/Debug/Perl.pm",
-         "version" : "0.11"
+         "version" : "0.001"
       },
       "Vim::Debug::Protocol" : {
          "file" : "lib/Vim/Debug/Protocol.pm",
-         "version" : "0.11"
+         "version" : "0.001"
       }
    },
    "release_status" : "stable",
@@ -82,13 +95,13 @@
       "bugtracker" : {
          "web" : "https://github.com/kablamo/VimDebug/issues"
       },
-      "homepage" : "https://github.com/kablamo/VimDebug",
+      "homepage" : "https://metacpan.org/release/Vim-Debug",
       "repository" : {
          "type" : "git",
-         "url" : "https://github.com/kablamo/VimDebug.git",
+         "url" : "git://github.com/kablamo/VimDebug.git",
          "web" : "https://github.com/kablamo/VimDebug"
       }
    },
-   "version" : "0.11"
+   "version" : "0.001"
 }
 

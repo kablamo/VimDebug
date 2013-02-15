@@ -4,7 +4,7 @@
       "Eric Johnson <kablamo at iijo dot nospamthanks dot org>"
    ],
    "dynamic_config" : 0,
-   "generated_by" : "Dist::Zilla version 4.300029, CPAN::Meta::Converter version 2.120921",
+   "generated_by" : "Dist::Zilla version 4.300030, CPAN::Meta::Converter version 2.120921",
    "license" : [
       "perl_5"
    ],
@@ -71,23 +71,23 @@
    "provides" : {
       "Vim::Debug" : {
          "file" : "lib/Vim/Debug.pm",
-         "version" : "0.901"
+         "version" : "0.902"
       },
       "Vim::Debug::Daemon" : {
          "file" : "lib/Vim/Debug/Daemon.pm",
-         "version" : "0.901"
+         "version" : "0.902"
       },
       "Vim::Debug::Manual" : {
          "file" : "lib/Vim/Debug/Manual.pm",
-         "version" : "0.901"
+         "version" : "0.902"
       },
       "Vim::Debug::Perl" : {
          "file" : "lib/Vim/Debug/Perl.pm",
-         "version" : "0.901"
+         "version" : "0.902"
       },
       "Vim::Debug::Protocol" : {
          "file" : "lib/Vim/Debug/Protocol.pm",
-         "version" : "0.901"
+         "version" : "0.902"
       }
    },
    "release_status" : "stable",
@@ -102,6 +102,6 @@
          "web" : "https://github.com/kablamo/VimDebug"
       }
    },
-   "version" : "0.901"
+   "version" : "0.902"
 }
 

@@ -19,7 +19,7 @@ libraries use L<cpanm|https://metacpan.org/module/App::cpanminus>:
     curl -L http://cpanmin.us | perl - --sudo App::cpanminus
 
     # install VimDebug Perl libraries
-    cpanm VimDebug
+    cpanm Vim::Debug
 
 Next, install the Vim component:
 

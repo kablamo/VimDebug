@@ -61,8 +61,11 @@
       },
       "test" : {
          "requires" : {
+            "ExtUtils::MakeMaker" : "0",
             "File::Find" : "0",
+            "File::Spec::Functions" : "0",
             "File::Temp" : "0",
+            "List::Util" : "0",
             "Net::Telnet" : "0",
             "Test::More" : "0"
          }
@@ -71,23 +74,23 @@
    "provides" : {
       "Vim::Debug" : {
          "file" : "lib/Vim/Debug.pm",
-         "version" : "0.902"
+         "version" : "0.903"
       },
       "Vim::Debug::Daemon" : {
          "file" : "lib/Vim/Debug/Daemon.pm",
-         "version" : "0.902"
+         "version" : "0.903"
       },
       "Vim::Debug::Manual" : {
          "file" : "lib/Vim/Debug/Manual.pm",
-         "version" : "0.902"
+         "version" : "0.903"
       },
       "Vim::Debug::Perl" : {
          "file" : "lib/Vim/Debug/Perl.pm",
-         "version" : "0.902"
+         "version" : "0.903"
       },
       "Vim::Debug::Protocol" : {
          "file" : "lib/Vim/Debug/Protocol.pm",
-         "version" : "0.902"
+         "version" : "0.903"
       }
    },
    "release_status" : "stable",
@@ -102,6 +105,6 @@
          "web" : "https://github.com/kablamo/VimDebug"
       }
    },
-   "version" : "0.902"
+   "version" : "0.903"
 }
 

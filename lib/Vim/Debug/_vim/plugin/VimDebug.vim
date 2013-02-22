@@ -359,7 +359,7 @@ function! s:Incantation(...)
    let s:debugger    = s:DbgrName()
    let s:incantation = (a:0 == 0
       \ ? s:AutoIncantation(s:debugger)
-      \ : join(a:000, " "))
+      \ : (a:0 == 0 ? '' : (" " . join(a:000, " ")))
    return s:incantation
 endfunction 
 function! s:DbgrName()

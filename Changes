@@ -1,4 +1,7 @@
 
+0.903 2013.02.22 12:57:27 GMT
+    * Fix bug in starting the debugger with F12
+
 0.902 2013.02.15 17:34:13 SGT
     * Small change to POD: Fix install commands
 

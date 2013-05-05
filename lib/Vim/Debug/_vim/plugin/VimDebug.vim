@@ -90,23 +90,28 @@ function! DBGRstart(...)
       echo "\rthe debugger is already running"
       return
    endif
-   let s:dbgrIsRunning = 2
-   let s:incantation = s:Incantation(a:1)
-   call s:StartVdd()
-   " do after system() so nongui vim doesn't show a blank screen
-   echo "\rstarting the debugger..."
-   call s:SocketConnect()
-   if has("autocmd")
-      autocmd VimLeave * call DBGRquit()
-   endif
-   call DBGRopenConsole()
-   redraw!
-   call s:HandleCmdResult("connected to VimDebug daemon")
-   call s:Handshake()
-   call s:HandleCmdResult("started the debugger")
-   call s:SocketConnect2()
-   call s:HandleCmdResult2()
-   let s:dbgrIsRunning = 1
+   try
+      let s:dbgrIsRunning = 2
+      let s:incantation = s:Incantation(a:1)
+      call s:StartVdd()
+      " do after system() so nongui vim doesn't show a blank screen
+      echo "\rstarting the debugger..."
+      call s:SocketConnect()
+      if has("autocmd")
+         autocmd VimLeave * call DBGRquit()
+      endif
+      call DBGRopenConsole()
+      redraw!
+      call s:HandleCmdResult("connected to VimDebug daemon")
+      call s:Handshake()
+      call s:HandleCmdResult("started the debugger")
+      call s:SocketConnect2()
+      call s:HandleCmdResult2()
+      let s:dbgrIsRunning = 1
+   catch /UnknownFileType/
+      let s:dbgrIsRunning = 0
+      echo "There is no debugger associated with this file type."
+   endtry
 endfunction
 function! DBGRnext()
    if !s:Copacetic()
@@ -376,8 +381,7 @@ function! s:DbgrName()
    elseif &l:filetype == "ruby"   || l:fileExtension == "r"
       return "Ruby"
    else
-      echo "\rthere is no debugger associated with this file type"
-      throw "can't debug file type"
+      throw "UnknownFileType"
    endif
 endfunction
 

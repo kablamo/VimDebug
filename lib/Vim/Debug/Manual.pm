@@ -12,22 +12,36 @@ later and some CPAN modules may need to be installed.  It also requires Vim
 
 =head1 How do I install VimDebug?
 
-VimDebug has a Perl component and a Vim component.  To install the Perl
-libraries use L<cpanm|https://metacpan.org/module/App::cpanminus>:
+VimDebug has a Perl component and a Vim component.
 
-    # install cpanm
+A simple way to install the Perl component is to use
+L<cpanminus's|https://metacpan.org/module/App::cpanminus> C<cpanm>
+program. First, install C<cpanminus>:
+
     curl -L http://cpanmin.us | perl - --sudo App::cpanminus
 
-    # install VimDebug Perl libraries
+Then, install VimDebug's Perl files:
+
     cpanm Vim::Debug
 
-Next, install the Vim component:
+Next, install the Vim component, by executing the following program,
+supplied by the Perl component:
 
     vimdebug-install -d ~/.vim
 
 You may want to replace C<~/.vim> by some other directory that your
 Vim recognizes as a runtimepath directory. See Vim's ":help
 'runtimepath'" for more information.
+
+Finally, install and read the Vim help file, which describes
+VimDebug's keymap:
+
+    :helptags ~/.vim/doc
+    :help VimDebug
+
+Make sure that the directory where that C<doc> directory resides is in
+your Vim runtimepath, else Vim won't find its help information even if
+it manages to build the help index.
 
 =head1 Using VimDebug
 

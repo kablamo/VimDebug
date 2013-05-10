@@ -2,9 +2,10 @@
 " email: vimDebug at iijo dot org
 " http://iijo.org
 
-if (!has('perl') && !has('signs'))
-    echo "VimDebug requires +perl and +signs"
-    finish
+   " Check prerequisites.
+if (!has('perl') || !has('signs'))
+   echo "VimDebug requires +perl and +signs"
+   finish
 endif
 
 

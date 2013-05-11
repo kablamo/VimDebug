@@ -71,7 +71,7 @@ here, edit VimDebug.vim:
 VimDebug is on github: https://github.com/kablamo/VimDebug.git
 
 To do development work on VimDebug, clone its git repo and read
-./documentation/DEVELOPER.HOWOTO.
+./documentation/DEVELOPER.
 
 In principle, the VimDebug code can be extended to handle other
 debuggers, like the one for Ruby or Python, but that remains to be

@@ -70,10 +70,11 @@ let s:PORT            = 6543
 let s:HOST            = "localhost"
 let s:DONE_FILE       = ".vdd.done"
 
+
 " script variables
 let s:incantation     = ""
 let s:dbgrIsRunning   = 0    " 0: !running, 1: running, 2: starting
-let s:debugger        = ""
+let s:debugger        = "Perl"
 let s:lineNumber      = 0
 let s:fileName        = ""
 let s:bufNr           = 0
@@ -93,7 +94,7 @@ function! DBGRstart(...)
    endif
    try
       let s:dbgrIsRunning = 2
-      let s:incantation = s:Incantation(a:1)
+      call s:Incantation()
       call s:StartVdd()
       " do after system() so nongui vim doesn't show a blank screen
       echo "\rstarting the debugger..."
@@ -109,6 +110,9 @@ function! DBGRstart(...)
       call s:SocketConnect2()
       call s:HandleCmdResult2()
       let s:dbgrIsRunning = 1
+   catch /AbortLaunch/
+      echo "Launch aborted."
+      let s:dbgrIsRunning = 0
    catch /UnknownFileType/
       let s:dbgrIsRunning = 0
       echo "There is no debugger associated with this file type."
@@ -348,44 +352,27 @@ endfunction
 function! s:LineNrFromId(id)
    return a:id % 10000000
 endfunction
-function! s:AutoIncantation(...)
-   if     a:1 == "Perl"
-      return "perl -Ilib -d " . s:fileName
-   elseif a:1 == "Gdb"
-      return "gdb " . s:fileName . " -f"
-   elseif a:1 == "Python"
-      return "pdb " . s:fileName
-   elseif a:1 == "Ruby"
-      return "ruby -rdebug " . s:fileName
-   endif
-endfunction
-function! s:Incantation(...)
-   let s:bufNr       = bufnr("%")
-   let s:fileName    = bufname("%")
-   let s:debugger    = s:DbgrName()
-   let s:incantation = ((a:0 == 0 || a:1 == "")
-      \ ? s:AutoIncantation(s:debugger)
-      \ : join(a:000, " "))
-   return s:incantation
+
+function! s:Incantation()
+   try
+      let s:bufNr       = bufnr("%")
+      let s:fileName    = bufname("%")
+      if s:fileName == ""
+         throw "NoFileToDebug"
+      endif
+      let args = input("Enter arguments if any: ")
+         " Some day, we may do more than just Perl.
+      let s:incantation = "perl -Ilib -d " . s:fileName
+      if args != ""
+         let s:incantation .= " " . args
+      endif
+   catch /NoFileToDebug/
+      echo "No file to debug."
+      throw "AbortLaunch"
+   catch
+      throw "AbortLaunch"
+   endtry
 endfunction 
-function! s:DbgrName()
-   let l:fileExtension = fnamemodify(s:fileName, ':e')
-
-   " consult file extension and filetype
-   if     &l:filetype == "perl"   || l:fileExtension == "pl"
-      return "Perl"
-   elseif &l:filetype == "c"      || l:fileExtension == "c"   ||
-        \ &l:filetype == "cpp"    || l:fileExtension == "cpp"
-      return "Gdb"
-   elseif &l:filetype == "python" || l:fileExtension == "py"
-      return "Python"
-   elseif &l:filetype == "ruby"   || l:fileExtension == "r"
-      return "Ruby"
-   else
-      throw "UnknownFileType"
-   endif
-endfunction
-
 
 function! s:HandleCmdResult(...)
    let l:cmdResult  = split(s:SocketRead(), s:EOR_REGEX, 1)

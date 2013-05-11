@@ -2,8 +2,8 @@
 Running the development code
 
 You will need to obtain the development code if you want to run the
-latest, unreleased, version or if you want to experiment with it or
-improve it in some way.
+latest, perhaps unreleased version or if you want to experiment with
+it or improve it in some way.
 
 The code can be cloned from its git repository:
 
@@ -14,24 +14,14 @@ To run it, you will also need:
     . A 5.FIXME Perl; CPAN access may be required.
     . A 7.FIXME Vim built with the +perl and +signs extensions.
 
-Perhaps you already have installed and use some version of VimDebug in
-your current environment. Development work on VimDebug should not
-interfere with that version.
+To try out the development code with no interference whatsoever from
+any other Vim module or setup, we have supplied a script that you can
+use, like this for example:
 
-To try out the development code, you need to invoke Vim when Perl and
-Vim have been told where to look for the relevant runtime files. For
-example, use your shell to make a shortcut (shell script, alias,
-whatever) to code like this:
+    .../script/vim $file_to_debug
 
-    REPO=/.../wherever/VimDebug
-    export PERL5LIB=$REPO/lib
-    export PATH=$REPO/bin:$PATH
-    VIMDEBUG=$REPO/lib/Vim/Debug/_vim/plugin/VimDebug.vim
-    vim -c "source $VIMDEBUG" $*
-
-Note that for any code changes to apply, you have to relaunch the Vim
-instance (or maybe execute ":runtime plugin/VimDebug.vim" to reload the
-code, not sure if this is usually sufficient).
+Note that if you make any changes to the development code, for those
+code changes to apply you will have to relaunch that Vim instance.
 
 # --------------------------------------------------------------------
 Installing the development code

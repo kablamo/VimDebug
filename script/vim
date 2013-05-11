@@ -1,10 +1,26 @@
-# This script is for VimDebug developers
-# It allows you to test changes locally instead of needing to install VimDebug
-# every time you make a change.
+#!/usr/bin/env perl
+
+# This script allows VimDebug developers to run the development code
+# with no interference whatsoever from any other Vim module or setup.
 #
-# usage: script/vim t/perl.pl
-#
-export PERL5LIB=./lib:$PERL5LIB
-export PATH=./bin:$PATH
-VIMDEBUG=./lib/Vim/Debug/_vim/plugin/VimDebug.vim
-vim -c "source $VIMDEBUG" $*
+# Usage: ./vim $some_file
+
+use strict;
+use warnings;
+use Dir::Self;
+
+my $GIT_REPO = __DIR__ . "/..";
+$ENV{PERL5LIB} = "PERL5LIB=$GIT_REPO/lib";
+$ENV{PATH} = "$GIT_REPO/bin:$ENV{PATH}";
+
+my $VD_DIR = "$GIT_REPO/lib/Vim/Debug/_vim";
+
+exec "vim",
+    "-u", "NONE",
+    "-U", "NONE",
+    "-c", "set nocp",
+    "-c", "set runtimepath=$VD_DIR",
+    "-c", "runtime plugin/VimDebug.vim",
+    @ARGV
+;
+

@@ -10,7 +10,7 @@ use warnings;
 use Dir::Self;
 
 my $GIT_REPO = __DIR__ . "/..";
-$ENV{PERL5LIB} = "PERL5LIB=$GIT_REPO/lib";
+$ENV{PERL5LIB} = "$GIT_REPO/lib";
 $ENV{PATH} = "$GIT_REPO/bin:$ENV{PATH}";
 
 my $VD_DIR = "$GIT_REPO/lib/Vim/Debug/_vim";

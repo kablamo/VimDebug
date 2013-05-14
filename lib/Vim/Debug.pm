@@ -5,8 +5,8 @@
     package Vim::Debug;
 
     my $debugger = Vim::Debug->new(
-        language => 'Perl',                    # required
-        invoke   => 'perl -Ilib -d t/perl.pl', # required
+        language => 'Perl',
+        invoke   => 'perl -Ilib -d t/perl.pl 42',
     );
 
     $debugger->start;
@@ -19,8 +19,7 @@
     $debugger->next;          sleep(1) until $debugger->read;
     $debugger->write('help'); sleep(1) until $debugger->read;
 
-    $debugger->quit; 
-
+    $debugger->quit;
 
 =head1 DESCRIPTION
 
@@ -28,14 +27,13 @@ If you are new to Vim::Debug please read the user manual,
 L<Vim::Debug::Manual>, first.
 
 Vim::Debug is an object oriented wrapper around the Perl command line
-debugger.  In theory the debugger could be for any language -- not just Perl.
-But only Perl is supported currently.
+debugger. In theory the debugger could be for any language -- not just
+Perl. But only Perl is supported currently.
 
-The read() method is non blocking.  This allows a user to send an interrupt
-when they get stuck in an infinite loop.
+The read() method is non blocking. This allows a user to send an
+interrupt when they get stuck in an infinite loop.
 
 =cut
-
 package Vim::Debug;
 
 # VERSION
@@ -56,32 +54,36 @@ my $RUNTIME_ERROR  = "runtime error";
 my $APP_EXITED     = "application exited";
 my $DBGR_READY     = "debugger ready";
 
-=head1 ATTRIBUTES
+=method language
 
-=head2 invoke
+The language that the debugger is made to handle. Currently, only
+'Perl' is supported.
 
-=head2 language
+=method invoke
 
-=head2 stop
+The string used to invoke the debugger, for example 'perl -Ilib -d
+t/perl.pl 42',
 
-=head2 line
+=method stop
 
-=head2 file
+=method line
 
-=head2 value
+=method file
 
-=head2 status
+=method value
+
+=method status
 
 =cut
 
-has invoke   => ( is => 'ro', isa => 'Str', required => 1 );
-has language => ( is => 'ro', isa => 'Str', required => 1 );
+has invoke    => ( is => 'ro', isa => 'Str', required => 1 );
+has language  => ( is => 'ro', isa => 'Str', required => 1 );
 
-has stop            => ( is => 'rw', isa => 'Int' );
-has line            => ( is => 'rw', isa => 'Int' );
-has file            => ( is => 'rw', isa => 'Str' );
-has value           => ( is => 'rw', isa => 'Str' );
-has status          => ( is => 'rw', isa => 'Str' );
+has stop      => ( is => 'rw', isa => 'Int' );
+has line      => ( is => 'rw', isa => 'Int' );
+has file      => ( is => 'rw', isa => 'Str' );
+has value     => ( is => 'rw', isa => 'Str' );
+has status    => ( is => 'rw', isa => 'Str' );
 
 has _timer    => ( is => 'rw', isa => 'IPC::Run::Timer' );
 has _dbgr     => ( is => 'rw', isa => 'IPC::Run', handles => [qw(finish)] );
@@ -99,7 +101,7 @@ around BUILDARGS => sub {
         $args{invoke} = [split(/\s+/, $args{invoke})];
         return $class->$orig(%args);
     }
-    
+
     return $class->$orig(@_);
 };
 
@@ -108,16 +110,11 @@ sub BUILD {
     apply_all_roles($self, 'Vim::Debug::' . $self->language);
 }
 
+=method start()
 
-=head1 FUNCTIONS
+Starts up the command line debugger in a separate process.
 
-=cut
-
-=head2 start()
-
-Starts up the command line debugger in a seperate process.
-
-start() always returns undef.
+Returns $self.
 
 =cut
 sub start {
@@ -133,22 +130,21 @@ sub start {
     # spawn debugger process
     $self->_dbgr(
         IPC::Run::start(
-          \@cmd, 
-          '<pty<', \$WRITE,
-          '>pty>', \$READ,
-          $self->_timer
-       )
+            \@cmd,
+            '<pty<', \$WRITE,
+            '>pty>', \$READ,
+            $self->_timer,
+        )
     );
-
     return $self;
 }
 
-=head2 write($command)
+=method write($command)
 
-Write $command to the debugger's stdin.  This method blocks until the debugger process
-reads.  Be sure to include a newline.
+Write $command to the debugger's stdin. This method blocks until the
+debugger process reads. Be sure to include a newline.
 
-write() always returns undef;
+Return value should be ignored.
 
 =cut
 sub write {
@@ -160,67 +156,70 @@ sub write {
     return;
 }
 
-=head2 read()
+=method read()
 
-Performs a nonblocking read on stdout from the debugger process.  read() first
-looks for a debugger prompt.  
+Performs a non-blocking read on stdout from the debugger process.
+read() first looks for a debugger prompt.
 
-If one is not found, the debugger isn't finished thinking so read() returns 0.   
+If none is found, the debugger isn't finished thinking so read()
+returns 0.
 
 If a debugger prompt is found, the output is parsed.  The following
 information is parsed out and saved into attributes: line(), file(),
 value(), and out().
 
-read() will also send an interrupt (CTL+C) to the debugger process if the
-stop() attribute is set to true.
+read() will also send an interrupt (CTL+C) to the debugger process if
+the stop() attribute is set to true.
 
 =cut
 sub read {
-   my $self = shift or confess;
-   $| = 1;
+    my $self = shift or confess;
+    $| = 1;
 
-   my $dbgrPromptRegex    = $self->dbgrPromptRegex;
-   my $compilerErrorRegex = $self->compilerErrorRegex;
-   my $runtimeErrorRegex  = $self->runtimeErrorRegex;
-   my $appExitedRegex     = $self->appExitedRegex;
+    my $dbgrPromptRegex    = $self->dbgrPromptRegex;
+    my $compilerErrorRegex = $self->compilerErrorRegex;
+    my $runtimeErrorRegex  = $self->runtimeErrorRegex;
+    my $appExitedRegex     = $self->appExitedRegex;
 
-   $self->_timer->reset();
-   eval { $self->_dbgr->pump_nb() };
-   my $out = $READ;
+    $self->_timer->reset();
+    eval { $self->_dbgr->pump_nb() };
+    my $out = $READ;
 
-   if ($@ =~ /process ended prematurely/) {
-       undef $@;
-       return 1;
-   }
-   elsif ($@) {
-       die $@;
-   }
+    if ($@ =~ /process ended prematurely/) {
+        undef $@;
+        return 1;
+    }
+    elsif ($@) {
+        die $@;
+    }
 
-   if ($self->stop) {
-       $self->_dbgr->signal("INT");
-       $self->_timer->reset();
-       $self->_dbgr->pump() until ($READ =~ /$dbgrPromptRegex/    || 
-                                   $READ =~ /$compilerErrorRegex/ || 
-                                   $READ =~ /$runtimeErrorRegex/  || 
-                                   $READ =~ /$appExitedRegex/); 
-       $out = $READ;
-   }
+    if ($self->stop) {
+        $self->_dbgr->signal("INT");
+        $self->_timer->reset();
+        $self->_dbgr->pump() until (
+            $READ =~ /$dbgrPromptRegex/    ||
+            $READ =~ /$compilerErrorRegex/ ||
+            $READ =~ /$runtimeErrorRegex/  ||
+            $READ =~ /$appExitedRegex/
+        );
+        $out = $READ;
+    }
 
-   $self->out($out);
+    $self->out($out);
 
-   if    ($self->out =~ $dbgrPromptRegex)    { $self->status($DBGR_READY)     }
-   elsif ($self->out =~ $compilerErrorRegex) { $self->status($COMPILER_ERROR) }
-   elsif ($self->out =~ $runtimeErrorRegex)  { $self->status($RUNTIME_ERROR)  }
-   elsif ($self->out =~ $appExitedRegex)     { $self->status($APP_EXITED)     }
-   else                                      { return 0                       }
+    if    ($self->out =~ $dbgrPromptRegex)    { $self->status($DBGR_READY)     }
+    elsif ($self->out =~ $compilerErrorRegex) { $self->status($COMPILER_ERROR) }
+    elsif ($self->out =~ $runtimeErrorRegex)  { $self->status($RUNTIME_ERROR)  }
+    elsif ($self->out =~ $appExitedRegex)     { $self->status($APP_EXITED)     }
+    else                                      { return 0                       }
 
-   $self->_original($out);
-   $self->parseOutput($self->out);
+    $self->_original($out);
+    $self->parseOutput($self->out);
 
-   return 1;
+    return 1;
 }
 
-=head2 out($out)
+=method out($out)
 
 If called with a parameter, out() removes ornaments (like <CTL-M> or
 irrelevant error messages or whatever) from text and saves the value.
@@ -229,37 +228,37 @@ If called without a parameter, out() returns the saved value.
 
 =cut
 sub out {
-   my $self = shift or confess;
-   my $out = '';
+    my $self = shift or confess;
+    my $out = '';
 
-   if (@_) {
-      $out = shift;
+    if (@_) {
+        $out = shift;
 
-      my $originalLen = length $self->_original;
-      $out = substr($out, $originalLen);
-        
-      # vim is not displaying newline characters correctly for some reason.
-      # this localizes the newlines.
-      $out =~ s/(?:\015{1,2}\012|\015|\012)/\n/sg;
+        my $originalLen = length $self->_original;
+        $out = substr($out, $originalLen);
 
-      # save
-      $self->_out($out);
-   }
+        # vim is not displaying newline characters correctly for some reason.
+        # this localizes the newlines.
+        $out =~ s/(?:\015{1,2}\012|\015|\012)/\n/sg;
 
-   return $self->_out;
+        # save
+        $self->_out($out);
+    }
+
+    return $self->_out;
 }
 
-=head2 translate($in)                                                                                                          
-                                                                                                                               
-Translate a protocol command ($in) to a native debugger command.  The native                                                   
-debugger command is returned as an arrayref of strings.                                                                           
-                                                                                                                               
-Dies if no translation is found.                                                                                               
-                                                                                                                               
-=cut       
+=method translate($in)
+
+Translate protocol command $in to a native debugger command, returned
+as an arrayref of strings.
+
+Dies if no translation is found.
+
+=cut
 sub translate {
     my ($self, $in) = @_;
-    my @cmds = ();
+    my @cmds;
 
        if ($in =~ /^next$/            ) { @cmds = $self->next          }
     elsif ($in =~ /^step$/            ) { @cmds = $self->step          }
@@ -271,22 +270,29 @@ sub translate {
     elsif ($in =~ /^command:(.+)$/    ) { @cmds = $self->command($1)   }
     elsif ($in =~ /^restart$/         ) { @cmds = $self->restart       }
     elsif ($in =~ /^quit$/            ) { @cmds = $self->quit($1)      }
-#   elsif ($in =~ /^(\w+):(.+)$/      ) { @cmds = $self->$1($2)        }
-#   elsif ($in =~ /^(\w+)$/           ) { @cmds = $self->$1()          }
+   # elsif ($in =~ /^(\w+):(.+)$/      ) { @cmds = $self->$1($2)        }
+   # elsif ($in =~ /^(\w+)$/           ) { @cmds = $self->$1()          }
     else { die "ERROR 002.  Please email vimdebug at iijo dot org.\n"  }
 
     return \@cmds;
 }
 
+=method state()
+
+Returns a hash (a list actually) whose keys are qw<stop line file
+value status output>, and whose values are the corresponding values of
+the object.
+
+=cut
 sub state {
     my $self = shift;
     return (
-        stop       => $self->stop,
-        line       => $self->line,
-        file       => $self->file,
-        value      => $self->value,
-        status     => $self->status,
-        output     => $self->out,
+        stop   => $self->stop,
+        line   => $self->line,
+        file   => $self->file,
+        value  => $self->value,
+        status => $self->status,
+        output => $self->out,
     );
 }
 
@@ -300,7 +306,5 @@ In retrospect its possible there is a better solution to this.  Perhaps
 directly hooking directly into the debugger rather than using regexps to parse
 stdout and stderr?
 
-
 =cut
-
 1;

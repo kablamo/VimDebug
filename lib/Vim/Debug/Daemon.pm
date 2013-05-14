@@ -5,7 +5,6 @@
    use Vim::Debug::Daemon;
    Vim::Debug::Daemon->run;
 
-
 =head1 DESCRIPTION
 
 If you are new to Vim::Debug please read the user manual,
@@ -13,7 +12,7 @@ L<Vim::Debug::Manual>, first.
 
 This module implements a TCP server.  Clients will usually be an editor like
 Vim.  A debugger is spawned for each client.  The daemon manages communication
-between one or more clients and their debuggers.  
+between one or more clients and their debuggers.
 
 Internally this is implemented with POE so that it can do non blocking reads
 for debugger output.  This allows the user to send an interrupt.  This is
@@ -23,7 +22,6 @@ taking a long time.
 See L<Vim::Debug::Protocol> for a description of the communication protocol.
 
 =cut
-
 package Vim::Debug::Daemon;
 
 # VERSION
@@ -107,7 +105,7 @@ sub start {
     my ($sessionId, $language, $command) = ($1, $2, $3);
 
     __PACKAGE__->debuggers->{$sessionId} = Vim::Debug->new(
-        language => $language, 
+        language => $language,
         invoke   => $command
     )->start;
 
@@ -133,7 +131,7 @@ sub stop {
 }
 
 sub translate {
-    # Translate protocol $in to native debugger cmds. 
+    # Translate protocol $in to native debugger cmds.
     $_[HEAP]{translation} = $_[HEAP]{debugger}->translate($_[ARG0]);
     $_[KERNEL]->yield("Write", @_[ARG0..$#_]);
 }
@@ -150,7 +148,7 @@ sub write {
     my $cmds = $_[HEAP]{translation};
     my $state;
 
-    if (scalar(@$cmds) == 0) { 
+    if (scalar(@$cmds) == 0) {
         $state = 'Out';
     }
     else {
@@ -171,6 +169,5 @@ sub out {
     $_[HEAP]{client}->put($response);
     Vim::Debug::Protocol->touch;
 }
-
 
 1;

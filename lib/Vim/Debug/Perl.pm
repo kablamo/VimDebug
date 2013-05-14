@@ -24,21 +24,24 @@ $ENV{"PERLDB_OPTS"} = "ornaments=''";
 =head1 DEBUGGER OUTPUT REGEX CLASS ATTRIBUTES
 
 These attributes are used to parse debugger output and are used by Vim::Debug.
-They return a regex and ignore all values passed to them.  
+They return a regex and ignore all values passed to them.
 
-=head2 dbgrPromptRegex()
+=func dbgrPromptRegex()
 
-=head2 compilerErrorRegex()
+=func compilerErrorRegex()
 
-=head2 runtimeErrorRegex()
+=func runtimeErrorRegex()
 
-=head2 appExitedRegex()
+=func appExitedRegex()
 
 =cut
 
-our $dpr = '.*  DB<+\d+>+ '; # debugger prompt regex
+    # Debugger prompt regex.
+#my $dpr = qr/.*  DB<+\d+>+ /sx;
+our $dpr = '.*  DB<+\d+>+ ';
+
 sub dbgrPromptRegex    { qr/$dpr/ }
-sub compilerErrorRegex { qr/aborted due to compilation error${dpr}/ }
+sub compilerErrorRegex { qr/aborted due to compilation error${dpr}/s }
 sub runtimeErrorRegex  { qr/ at .* line \d+${dpr}/ }
 sub appExitedRegex     { qr/((\/perl5db.pl:)|(Use .* to quit or .* to restart)|(\' to quit or \`R\' to restart))${dpr}/ }
 
@@ -49,44 +52,40 @@ communication protocol to commands the Perl debugger can recognize.  For
 example, the communication protocol uses the keyword 'next' while the Perl
 debugger uses 'n'.
 
-=head2 next()
+=func next()
 
-=head2 step()
+=func step()
 
-=head2 cont()
+=func cont()
 
-=head2 break()
+=func break()
 
-=head2 clear()
+=func clear()
 
-=head2 clearAll()
+=func clearAll()
 
-=head2 print()
+=func print()
 
-=head2 command()
+=func command()
 
-=head2 restart()
+=func restart()
 
-=head2 quit()
-
-=cut
-
-sub next                { return ( 'n'                  ) }
-sub step                { return ( 's'                  ) }
-sub cont                { return ( 'c'                  ) }
-sub break               { return ( "f $_[2]", "b $_[1]" ) }
-sub clear               { return ( "f $_[2]", "B $_[1]" ) }
-sub clearAll            { return ( "B *"                ) }
-sub print               { return ( "x $_[1]"            ) }
-sub command             { return ( $_[1]                ) }
-sub restart             { return ( "R"                  ) }
-sub quit                { return ( "q"                  ) }
-
-=head2 METHODS
+=func quit()
 
 =cut
 
-=head2 parseOutput($output)
+sub next     { 'n' }
+sub step     { 's' }
+sub cont     { 'c' }
+sub break    { "f $_[2]", "b $_[1]" }
+sub clear    { "f $_[2]", "B $_[1]" }
+sub clearAll { 'B *' }
+sub print    { "x $_[1]" }
+sub command  { $_[1] }
+sub restart  { 'R' }
+sub quit     { 'q' }
+
+=method parseOutput($output)
 
 $output is output from the Perl debugger.  This method parses $output and
 saves relevant valus to the line, file, and output attributes (these
@@ -96,33 +95,29 @@ Returns undef.
 
 =cut
 sub parseOutput {
-   my $self   = shift or die;
-   my $output = shift or die;
+    my $self   = shift or die;
+    my $output = shift or die;
 
-   {
-      # See .../t/VD_DI_Perl.t for test cases.
-      my $file;
-      my $line;
-      $output =~ /
-         ^ \w+ ::
-         (?: \w+ :: )*
-         (?: CODE \( 0x \w+ \) | \w+ )?
-         \(
+    # See .../t/VD_DI_Perl.t for test cases.
+    my $file;
+    my $line;
+    $output =~ /
+        ^ \w+ ::
+        (?: \w+ :: )*
+        (?: CODE \( 0x \w+ \) | \w+ )?
+        \(
             (?: .* \x20 )?
             ( .+ ) : ( \d+ )
-         \):
-      /xm;
-      $self->file($1)   if defined $1;
-      $self->line($2) if defined $2;
-   }
+        \):
+    /xm;
+    $self->file($1) if defined $1;
+    $self->line($2) if defined $2;
 
-   {
-      if ($output =~ /^x .*\n/m) {
-         $output =~ s/^x .*\n//m; # remove first line
-         $output =~ s/\n.*$//m; # remove last line
-         $self->value($output);
-      }
-   }
+    if ($output =~ /^x .*\n/m) {
+        $output =~ s/^x .*\n//m; # remove first line
+        $output =~ s/\n.*$//m; # remove last line
+        $self->value($output);
+    }
 
    return undef;
 }

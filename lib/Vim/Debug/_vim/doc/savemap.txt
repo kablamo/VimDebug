@@ -1,0 +1,232 @@
+*savemap.txt* *savemap*
+
+Author:
+  tyru <tyru.exe@gmail.com>
+Version: 0.2.0
+" NEW BSD LICENSE {{{
+"   Copyright (c) 2009, tyru
+"   All rights reserved.
+"
+"   Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+"
+"       * Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+"       * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+"       * Neither the name of the tyru nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+"
+"   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+" }}}
+
+==============================================================================
+CONTENTS						*savemap-contents*
+
+Introduction		|savemap-introduction|
+Interface			|savemap-interface|
+  Functions			|savemap-functions|
+Restore Object		|savemap-restore-object|
+TODO				|savemap-todo|
+Changelog			|savemap-changelog|
+
+
+==============================================================================
+INTRODUCTION						*savemap-introduction* {{{
+
+|savemap| is the library to provide a way
+to restore current mapping(s)/abbreviation(s) "perfectly".
+
+...But remember, you can always use |:map-<buffer>| for "simple" case.
+
+>
+    nmap foo blahblahblah
+
+    let foo_nmap = savemap#save_map('n', 'foo')
+    if empty(foo_nmap)
+        echoerr 'your vim version is lower than 7.3.032!'
+    endif
+
+    nmap foo bar
+    " Execute 'bar'.
+    normal foo
+
+    call foo_nmap.restore()
+    " Execute 'blahblahblah'.
+    normal foo
+
+
+Omit 2nd arg of |savemap#save_map()| to save all mappings of the mode.
+>
+    let normal_mappings = savemap#save_map('n')
+    if empty(normal_mappings)
+        echoerr 'your vim version is lower than 7.3.032!'
+    endif
+
+   " Clear!
+    nmapclear
+
+    " Map own mappings.
+    nnoremap a b
+    nnoremap c d
+    ...
+
+    try
+        ... " Do it
+    finally
+        call normal_mappings.restore()
+    endtry
+
+
+Requirements:
+- Vim 7.3 or higher
+
+}}}
+==============================================================================
+INTERFACE				*savemap-interface* {{{
+------------------------------------------------------------------------------
+FUNCTIONS					*savemap-functions* {{{
+
+savemap#load()							*savemap#load()*
+	Load autoload/savemap.vim .
+
+									*savemap#save_map()*
+savemap#save_map({mode} [, {lhs}])   or
+savemap#save_map({options} [, {options2} ...])
+	Return non-empty |Dictionary| which has .restore() method
+	to restore the mapping.
+	See |savemap-restore-object| for the details.
+
+	In the 1st form, if {lhs} was omitted,
+	.restore() will restore all mappings in {mode}.
+
+	In the 2nd form, you can filter in all mappings
+	with {options} keys & values.
+	{options} is a |Dictionary| like the following:
+		"lhs"
+			The {lhs} of the mapping.
+
+			NOTE: You cannot specify both of "lhs-regexp"
+			and "lhs", or both of "rhs", "rhs-regexp"
+			altogether.
+			It is undefined behavior.
+			But you can specify "lhs" or "lhs-regexp"
+			with "rhs" or "rhs-regexp" altogether.
+			you will get mappings object holding
+			the mappings matching with "lhs" or
+			"lhs-regexp" __AND__ "rhs" or "rhs-regexp".
+		"rhs"
+			The {rhs} of the mapping as typed.
+		"lhs-regexp"
+			The regexp of the matching mappings of lhs.
+		"rhs-regexp"
+			The regexp of the matching mappings of rhs.
+		"silent"
+			non-zero for a |:map-silent| mapping.
+			zero for a non-|:map-silent| mapping.
+			If the key does not exist,
+			get the both of mappings.
+		"noremap"
+			non-zero if the {rhs} of the mapping is not remappable.
+			zero if the {rhs} of the mapping is remappable.
+			If the key does not exist,
+			get the both of mappings.
+		"expr"
+			non-zero for an expression mapping (|:map-<expr>|).
+			zero for a non-expression mapping.
+			If the key does not exist,
+			get the both of mappings.
+		"buffer"
+			non-zero for a buffer local mapping (|:map-local|).
+			zero for a non-buffer local mapping.
+			If the key does not exist,
+			get the both of mappings.
+		"mode"
+			Modes for which the mapping is defined.
+			these characters will be used:
+			"n"		Normal
+			"v"		Visual (including Select)
+			"o"		Operator-pending
+			"i"		Insert
+			"c"		Cmd-line
+			"s"		Select
+			"x"		Visual
+			"l"		langmap |language-mapping|
+			" "		Normal, Visual and Operator-pending
+			"!"		Insert and Commandline mode
+			(|mapmode-ic|)
+		"sid"
+			(TODO)
+
+			The script local ID, used for <sid> mappings
+			(|<SID>|).
+			If the key does not exist,
+			get all mappings.
+
+	As you see above, this function
+	was designed like |maparg()|.
+
+	If Vim does not support the 4th argument of |maparg()|,
+	Return empty |Dictionary|.
+
+								*savemap#save_abbr()*
+savemap#save_abbr({mode} [, {lhs}])   or
+savemap#save_abbr({options} [, {options2} ...])
+	|Abbreviation| version of |savemap#save_map()|.
+
+savemap#supported_version()				*savemap#supported_version()*
+	Return non-zero if Vim supported the 4th argument of |maparg()|.
+
+}}}
+}}}
+==============================================================================
+RESTORE OBJECT				*savemap-restore-object* {{{
+
+Savemap.restore()		*Savemap.restore()*
+	Restore the mappings
+	which the object is holding.
+
+Savemap.has_abbr()		*Savemap.has_abbr()*
+	Return boolean value that means whether
+	the object holds abbreviations or mappings.
+
+Savemap.get_map_info()		*Savemap.get_map_info()*
+	Return |List| which means mappings which the object holds.
+	The |List| has mappings info as its elements.
+	the structure of mappings info is: >
+		{
+			"buffer": {map-info},
+			"normal": {map-info},
+		}
+<	{map-info} can be a empty dictionary
+	when the mapping is not found.
+	Or if the mapping is the found,
+	{map-info}'s structure is same as |maparg()|'s dictionary
+	which can be obtained when {dict} is non-zero.
+
+}}}
+==============================================================================
+TODO						*savemap-todo* {{{
+}}}
+==============================================================================
+CHANGELOG						*savemap-changelog* {{{
+
+0.0.0:
+- Initial upload
+0.2.0:
+- change the specification of |savemap#save_map()|, |savemap#save_abbr()|.
+	- Even if {lhs} was omitted, Returns |Dictionary| not |List|.
+- fix the bug ignoring a non-<buffer> mapping when a <buffer> mapping exists with same lhs-es.
+- improve |savemap#save_map()| and |savemap#save_abbr()|.
+	- you can filter mappings you want by following conditions:
+		- lhs (literaly, regexp)
+		- rhs (literaly, regexp)
+		- <silent>
+		- remap
+		- <expr>
+		- <buffer>
+		- modes
+- add some methods of the return value of
+  |savemap#save_map()| and |savemap#save_abbr()|.
+	- see |savemap-restore-object| for details.
+- change the license.
+
+}}}
+==============================================================================
+vim:tw=78:fo=tcq2mM:ts=4:ft=help:norl:noet:fdm=marker:fen

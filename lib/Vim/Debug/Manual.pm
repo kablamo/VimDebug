@@ -12,10 +12,11 @@ later and some CPAN modules may need to be installed.  It also requires Vim
 
 =head1 How do I install VimDebug?
 
-VimDebug has a Perl component and a Vim component.
+VimDebug has a Perl component and a Vim component. The Vim component
+happens to be supplied with the Perl component.
 
-A simple way to install the Perl component is to use
-L<cpanminus's|https://metacpan.org/module/App::cpanminus> C<cpanm>
+The Perl component, Vim::Debug, can be obtained from CPAN. A simple
+way to install it is to use L<cpanminus's|https://metacpan.org/module/App::cpanminus> C<cpanm>
 program. First, install C<cpanminus>:
 
     curl -L http://cpanmin.us | perl - --sudo App::cpanminus
@@ -24,17 +25,17 @@ Then, install VimDebug's Perl files:
 
     cpanm Vim::Debug
 
-Next, install the Vim component, by executing the following program,
-supplied by the Perl component:
+To install the Vim component, execute the following program,
+which was installed with the Perl component:
 
     vimdebug-install -d ~/.vim
 
 You may want to replace C<~/.vim> by some other directory that your
-Vim recognizes as a runtimepath directory. See Vim's ":help
-'runtimepath'" for more information.
+Vim recognizes as a runtimepath directory. See Vim's C<:help
+'runtimepath'> for more information.
 
-Finally, install and read the Vim help file, which describes
-VimDebug's keymap:
+Finally, launch Vim and install and read the Vim help file, which
+describes how to use VimDebug:
 
     :helptags ~/.vim/doc
     :help VimDebug
@@ -42,29 +43,6 @@ VimDebug's keymap:
 Make sure that the directory where that C<doc> directory resides is in
 your Vim runtimepath, else Vim won't find its help information even if
 it manages to build the help index.
-
-=head1 Using VimDebug
-
-Launch Vim and open a file named with a ".pl" extension. Press <F12>
-to start the debugger. To change the default Vim key bindings, shown
-here, edit VimDebug.vim:
-
-    <F12>      Start the debugger
-    <Leader>s/ Start the debugger.  Prompts for command line arguments.
-    <F10>      Restart debugger. Break points are ALWAYS saved (for all dbgrs).
-    <F11>      Exit the debugger
-
-    <F6>       Next
-    <F7>       Step
-    <F8>       Continue
-
-    <Leader>b  Set break point on the current line
-    <Leader>c  Clear break point on the current line
-
-    <Leader>v  Print the value of the variable under the cursor
-    <Leader>v/ Print the value of an expression thats entered
-
-    <Leader>/  Type a command for the debugger to execute and echo the result
 
 =head1 Improving VimDebug
 

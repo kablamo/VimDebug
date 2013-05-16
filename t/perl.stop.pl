@@ -1,6 +1,5 @@
 #!perl
 
-
 sub foo {
    my $foo = "monkey";
    my $a = 0;
@@ -23,5 +22,4 @@ my $human   = "i want bananas";
 while (1) {
    sleep 1;
 }
-
 

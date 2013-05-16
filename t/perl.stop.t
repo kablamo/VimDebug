@@ -1,6 +1,7 @@
-#!/usr/bin/perl
+#!perl
 
 use strict;
+use warnings;
 
 use lib qw(lib t/lib);
 use Vim::Debug::Client;
@@ -57,7 +58,5 @@ is($r->file, $testFile,  "continue: file");
 
 $r = $client1->quit;
 
-
 done_testing;
-
 

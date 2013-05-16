@@ -1,14 +1,15 @@
-#!/usr/bin/perl
+#!perl
 
 use strict;
+use warnings;
 
 use lib qw(lib t/lib);
 use Vim::Debug::Client;
 use Vim::Debug::Daemon;
 use Test::More;
 
-$SIG{INT} = \&signalHandler;
-sub signalHandler { exit } # die when children die
+    # Die when children die.
+$SIG{INT} = sub { exit };
 
 my $pid = fork;
 if (!$pid) {

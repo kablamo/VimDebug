@@ -1,6 +1,5 @@
 #!perl
 
-
 sub foo {
    my $foo = "monkey";
    my $a = 0;
@@ -19,5 +18,4 @@ my $monkey  = "i want bananas";
 my $gorilla = "i want bananas";
 my $chimp   = "i want bananas";
 my $human   = "i want bananas";
-
 

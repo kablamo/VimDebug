@@ -43,16 +43,18 @@ use IO::Pty;
 use IPC::Run;
 use Moose ;
 use Moose::Util qw(apply_all_roles);
+use Vim::Debug::Protocol;
 
 $| = 1;
 
 my $READ;
 my $WRITE;
 
-my $COMPILER_ERROR = "compiler error";
-my $RUNTIME_ERROR  = "runtime error";
-my $APP_EXITED     = "application exited";
-my $DBGR_READY     = "debugger ready";
+    # Debugger statuses.
+sub s_compilerError { Vim::Debug::Protocol->k_compilerError }
+sub s_runtimeError  { Vim::Debug::Protocol->k_runtimeError }
+sub s_appExited     { Vim::Debug::Protocol->k_appExited }
+sub s_dbgrReady     { Vim::Debug::Protocol->k_dbgrReady }
 
 =method language
 
@@ -172,19 +174,12 @@ read() will also send an interrupt (CTL+C) to the debugger process if
 the stop() attribute is set to true.
 
 =cut
+# --------------------------------------------------------------------
 sub read {
     my $self = shift or confess;
-    $| = 1;
-
-    my $dbgrPromptRegex    = $self->dbgrPromptRegex;
-    my $compilerErrorRegex = $self->compilerErrorRegex;
-    my $runtimeErrorRegex  = $self->runtimeErrorRegex;
-    my $appExitedRegex     = $self->appExitedRegex;
 
     $self->_timer->reset();
     eval { $self->_dbgr->pump_nb() };
-    my $out = $READ;
-
     if ($@ =~ /process ended prematurely/) {
         undef $@;
         return 1;
@@ -193,29 +188,16 @@ sub read {
         die $@;
     }
 
+    my $out = $READ;
     if ($self->stop) {
         $self->_dbgr->signal("INT");
         $self->_timer->reset();
-        $self->_dbgr->pump() until (
-            $READ =~ /$dbgrPromptRegex/    ||
-            $READ =~ /$compilerErrorRegex/ ||
-            $READ =~ /$runtimeErrorRegex/  ||
-            $READ =~ /$appExitedRegex/
-        );
+        $self->_dbgr->pump() until $self->prompted_and_parsed($READ);
         $out = $READ;
     }
-
     $self->out($out);
-
-    if    ($self->out =~ $dbgrPromptRegex)    { $self->status($DBGR_READY)     }
-    elsif ($self->out =~ $compilerErrorRegex) { $self->status($COMPILER_ERROR) }
-    elsif ($self->out =~ $runtimeErrorRegex)  { $self->status($RUNTIME_ERROR)  }
-    elsif ($self->out =~ $appExitedRegex)     { $self->status($APP_EXITED)     }
-    else                                      { return 0                       }
-
+    $self->prompted_and_parsed($self->out) || return 0;
     $self->_original($out);
-    $self->parseOutput($self->out);
-
     return 1;
 }
 

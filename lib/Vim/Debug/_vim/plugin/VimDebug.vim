@@ -2,40 +2,53 @@
 " email: vimDebug at iijo dot org
 " http://iijo.org
 
-   " Check prerequisites.
+" Check prerequisites.
+
 if (!has('perl') || !has('signs'))
    echo "VimDebug requires +perl and +signs"
    finish
 endif
 
+   " The VimDebug start key. If you unset it, VimDebug won't load.
+let s:StartKey = "<F12>"
+if s:StartKey == ""
+   echo "No start key defined, so you can't use VimDebug."
+   finish
+endif
 
-" key bindings
-map <unique> <F12>         :DBGRstart<CR>
-map <unique> <Leader><F12> :DBGRstart<SPACE>perl -Ilib -d <C-R>%
-map <unique> <F7>          :DBGRstep<CR>
-map <unique> <F8>          :DBGRnext<CR>
-map <unique> <F9>          :DBGRcont<CR>                   " continue
-map <unique> <Leader>b     :DBGRsetBreakPoint<CR>
-map <unique> <Leader>c     :DBGRclearBreakPoint<CR>
-map <unique> <Leader>ca    :DBGRclearAllBreakPoints<CR>
-map <unique> <Leader>v/    :DBGRprint<SPACE>
-map <unique> <Leader>v     :DBGRprintExpand expand("<cWORD>")<CR> " value under cursor
-map <unique> <Leader>/     :DBGRcommand<SPACE>
-map <unique> <F10>         :DBGRrestart<CR>
-map <unique> <F11>         :DBGRquit<CR>
+   " Make sure the start key is available.
+try
+   exec "nmap <unique> " . s:StartKey . " :call VDstart(\"\")<cr>"
+catch
+   echo v:exception
+   echo "Can't use VimDebug, its start key " . s:StartKey . " is already mapped."
+   exec "map " . s:StartKey
+   finish
+endtry
 
-" commands
-command! -nargs=* DBGRstart               call DBGRstart("<args>")
-command! -nargs=0 DBGRstep                call DBGRstep()
-command! -nargs=0 DBGRnext                call DBGRnext()
-command! -nargs=0 DBGRcont                call DBGRcont()
-command! -nargs=0 DBGRsetBreakPoint       call DBGRsetBreakPoint()
-command! -nargs=0 DBGRclearBreakPoint     call DBGRclearBreakPoint()
-command! -nargs=0 DBGRclearAllBreakPoints call DBGRclearAllBreakPoints()
-command! -nargs=1 DBGRprintExpand         call DBGRprint("<args>")
-command! -nargs=1 DBGRcommand             call DBGRcommand("<args>")
-command! -nargs=0 DBGRrestart             call DBGRrestart()
-command! -nargs=0 DBGRquit                call DBGRquit()
+   " Define the debugger key bindings. Be careful if you change these
+   " values or s:StartKey. Each entry of the list is a two-element
+   " list defining a key and its corresponding mapping.
+let s:dbgr_keys = [
+  \ ["<F11>",      ":DBGRquit<cr>"],
+  \ ["<F10>",      ":DBGRrestart<cr>"],
+  \ ["<F9>",       ":DBGRcont<cr>"],
+  \ ["<F8>",       ":DBGRnext<cr>"],
+  \ ["<F7>",       ":DBGRstep<cr>"],
+  \ ["<Leader>b",  ":DBGRsetBreakPoint<cr>"],
+  \ ["<Leader>c",  ":DBGRclearBreakPoint<cr>"],
+  \ ["<Leader>ca", ":DBGRclearAllBreakPoints<cr>"],
+  \ ["<Leader>v/", ":DBGRprint<space>"],
+  \ ["<Leader>v",  ":DBGRprintExpand expand(\"<cword>\")<cr> \""],
+  \ ["<Leader>/",  ":DBGRcommand<space>"],
+\]
+   " The user keys will be saved here if/when we launch VimDebug. The
+   " entries of this list will be a bit different: each one will be a
+   " two-element list of a key and of a "saved-map" that will be
+   " provided by the 'savemap' vimscript.
+let s:user_savedkeys    = []
+
+" Miscellaneous settings.
 
 " colors
 hi currentLine term=reverse cterm=reverse gui=reverse
@@ -52,24 +65,10 @@ sign define empty       linehl=empty
 let g:DBGRconsoleHeight   = 7
 let g:DBGRlineNumbers     = 1
 let g:DBGRshowConsole     = 1
-perl $DBGRsocket1         = 0;
-perl $DBGRsocket2         = 0;
-
-" script constants
-let s:EOR_REGEX       = '-vimdebug.eor-'   " End Of Record Regular Expression
-let s:EOM             = "\r\nvimdebug.eom\r\n"       " End Of Message
-let s:EOM_LEN         = len(s:EOM)
-let s:COMPILER_ERROR  = "compiler error"     " not in use yet
-let s:RUNTIME_ERROR   = "runtime error"      " not in use yet
-let s:APP_EXITED      = "application exited" " not in use yet
-let s:DBGR_READY      = "debugger ready"      
-let s:CONNECT         = "CONNECT"
-let s:DISCONNECT      = "DISCONNECT"
 
 let s:PORT            = 6543
 let s:HOST            = "localhost"
 let s:DONE_FILE       = ".vdd.done"
-
 
 " script variables
 let s:incantation     = ""
@@ -85,16 +84,61 @@ let s:breakPoints     = []
 let s:return          = 0
 let s:sessionId       = -1
 
+" Perl setup.
 
-" debugger functions
-function! DBGRstart(...)
-   if s:dbgrIsRunning
-      echo "\rthe debugger is already running"
-      return
+perl << EOT
+      # Setting up 'lib' like this is useful during development.
+   use Dir::Self;
+   use lib __DIR__ . "/../../..";
+      # Obtain protocol constant values directly from the Perl
+      # module. This will allow us to use things like "s:k_eor" for
+      # example in our Vim code.
+   use Vim::Debug::Protocol;
+   for my $method (qw<
+      k_compilerError
+      k_runtimeError
+      k_dbgrReady
+      k_appExited
+      k_eor
+      k_badCmd
+      k_connect
+      k_disconnect
+   >) {
+      VIM::DoCommand("let s:$method = '" . Vim::Debug::Protocol->$method . "'");
+   }
+      # Later perl snippets will use these variables.
+   $DBGRsocket1 = 0;
+   $DBGRsocket2 = 0;
+   $EOM = Vim::Debug::Protocol->k_eom . "\r\n";
+   $EOM_LEN = length $EOM;
+EOT
+
+" VimDebug
+
+   " We keep track of two sets of key bindings: 0, the user's key
+   " bindings as they stand before we install VimDebug's, and 1,
+   " VimDebug's own, when the debugger is running.
+let s:current_keys = 0
+
+   " Start the debugger if it's not already running, or toggle the
+   " keyboard. If argument is empty string, prompt for arguments.
+function! VDstart(...)
+   if ! s:dbgrIsRunning
+      try
+         call _VDinit(a:000)
+         call _VDsetKeys(1)
+      catch /NotStarted/
+         let s:dbgrIsRunning = 0
+      endtry
+   else
+      call _VDsetKeys(2)
    endif
+endfunction
+
+function! _VDinit(dbgr_args_list)
    try
+      call s:Incantation(a:dbgr_args_list)
       let s:dbgrIsRunning = 2
-      call s:Incantation()
       call s:StartVdd()
       " do after system() so nongui vim doesn't show a blank screen
       echo "\rstarting the debugger..."
@@ -111,13 +155,67 @@ function! DBGRstart(...)
       call s:HandleCmdResult2()
       let s:dbgrIsRunning = 1
    catch /AbortLaunch/
-      echo "Launch aborted."
-      let s:dbgrIsRunning = 0
-   catch /UnknownFileType/
-      let s:dbgrIsRunning = 0
-      echo "There is no debugger associated with this file type."
+      echo "Debugger launch aborted."
+      throw "NotStarted"
+   catch /MissingVdd/
+      echo "vdd is not in your PATH. Something went wrong with your VimDebug install."
+      throw "NotStarted"
+   catch /.*/
+      echo "Unexpected error: " . v:exception
+      throw "NotStarted"
    endtry
 endfunction
+
+   " Request keys 1 for VimDebug's key bindings, or 0 for the user's, or 2
+   " to toggle between the two.
+function! _VDsetKeys (req_keys)
+   if ! s:dbgrIsRunning
+      return
+   endif
+   if a:req_keys == 2
+         " Toggle between 0 and 1.
+      let want_keys = 1 - s:current_keys
+   else
+      let want_keys = a:req_keys
+   endif
+   if want_keys == 1
+      let s:user_savedkeys = []
+      for key_map in s:dbgr_keys
+         let key = key_map[0]
+         let map = key_map[1]
+         call add(s:user_savedkeys, [key, savemap#save_map("n", key)])
+         exec "nmap " . key . " " . map
+      endfor
+      let s:current_keys = 1
+      echo "VimDebug keys are active."
+   else
+      for key_savedmap in s:user_savedkeys
+         let key = key_savedmap[0]
+         let saved_map = key_savedmap[1]
+         if empty(saved_map['__map_info'][0]['normal'])
+            exec "unmap " . key
+         else
+            call saved_map.restore()
+         endif
+      endfor
+      let s:current_keys = 0
+      echo "User keys are active."
+   endif
+endfunction
+
+" Debugger functions.
+
+command! -nargs=0 DBGRstep                call DBGRstep()
+command! -nargs=0 DBGRnext                call DBGRnext()
+command! -nargs=0 DBGRcont                call DBGRcont()
+command! -nargs=0 DBGRsetBreakPoint       call DBGRsetBreakPoint()
+command! -nargs=0 DBGRclearBreakPoint     call DBGRclearBreakPoint()
+command! -nargs=0 DBGRclearAllBreakPoints call DBGRclearAllBreakPoints()
+command! -nargs=1 DBGRprintExpand         call DBGRprint("<args>")
+command! -nargs=1 DBGRcommand             call DBGRcommand("<args>")
+command! -nargs=0 DBGRrestart             call DBGRrestart()
+command! -nargs=0 DBGRquit                call DBGRquit()
+
 function! DBGRnext()
    if !s:Copacetic()
       return
@@ -126,6 +224,7 @@ function! DBGRnext()
    call s:SocketWrite("next")
    call s:HandleCmdResult()
 endfunction
+
 function! DBGRstep()
    if !s:Copacetic()
       return
@@ -134,6 +233,7 @@ function! DBGRstep()
    call s:SocketWrite("step")
    call s:HandleCmdResult()
 endfunction
+
 function! DBGRcont()
    if !s:Copacetic()
       return
@@ -142,6 +242,7 @@ function! DBGRcont()
    call s:SocketWrite("cont")
    call s:HandleCmdResult()
 endfunction
+
 function! DBGRsetBreakPoint()
    if !s:Copacetic()
       return
@@ -172,6 +273,7 @@ function! DBGRsetBreakPoint()
 
    call s:HandleCmdResult("breakpoint set")
 endfunction
+
 function! DBGRclearBreakPoint()
    if !s:Copacetic()
       return
@@ -199,6 +301,7 @@ function! DBGRclearBreakPoint()
 
    call s:HandleCmdResult("breakpoint disabled")
 endfunction
+
 function! DBGRclearAllBreakPoints()
    if !s:Copacetic()
       return
@@ -219,6 +322,7 @@ function! DBGRclearAllBreakPoints()
 
    call s:HandleCmdResult("all breakpoints disabled")
 endfunction
+
 function! DBGRprint(...)
    if !s:Copacetic()
       return
@@ -228,6 +332,7 @@ function! DBGRprint(...)
       call s:HandleCmdResult()
    endif
 endfunction
+
 function! DBGRcommand(...)
    if !s:Copacetic()
       return
@@ -238,6 +343,7 @@ function! DBGRcommand(...)
       call s:HandleCmdResult()
    endif
 endfunction
+
 function! DBGRrestart()
    if ! s:dbgrIsRunning
       echo "\rthe debugger is not running"
@@ -251,11 +357,13 @@ function! DBGRrestart()
    call s:HandleCmdResult("restarted")
    let s:programDone = 0
 endfunction
+
 function! DBGRquit()
    if ! s:dbgrIsRunning
       echo "\rthe debugger is not running"
       return
    endif
+   call _VDsetKeys(0)
 
    " unplace all signs that were set in this debugging session
    call s:UnplaceBreakPointSigns()
@@ -282,8 +390,7 @@ function! DBGRquit()
    call DBGRcloseConsole()
 endfunction
 
-
-" utility functions
+" Utility functions.
 
 " returns 1 if everything is copacetic
 " returns 0 if things are not copacetic
@@ -297,6 +404,7 @@ function! s:Copacetic()
    endif
    return 1
 endfunction
+
 function! s:PlaceEmptySign()
    let l:id = s:CreateId(bufnr("%"), "1")
    if count(s:emptySigns, l:id) == 0
@@ -305,6 +413,7 @@ function! s:PlaceEmptySign()
       exe "sign place " . l:id . " line=1 name=empty file=" . l:fileName
    endif
 endfunction
+
 function! s:UnplaceEmptySigns()
    let l:oldBufNr = bufnr("%")
    for l:id in s:emptySigns
@@ -319,6 +428,7 @@ function! s:UnplaceEmptySigns()
    endfor
    let s:emptySigns = []
 endfunction
+
 function! s:UnplaceBreakPointSigns()
    let l:oldBufNr = bufnr("%")
    for l:id in s:breakPoints
@@ -333,74 +443,103 @@ function! s:UnplaceBreakPointSigns()
    endfor
    let s:breakPoints = []
 endfunction
+
 function! s:SetNumber()
    if g:DBGRlineNumbers == 1
       set number
    endif
 endfunction
+
 function! s:SetNoNumber()
    if g:DBGRlineNumbers == 1
       set nonumber
    endif
 endfunction
+
 function! s:CreateId(bufNr, lineNumber)
    return a:bufNr * 10000000 + a:lineNumber
 endfunction
+
 function! s:BufNrFromId(id)
    return a:id / 10000000
 endfunction
+
 function! s:LineNrFromId(id)
    return a:id % 10000000
 endfunction
 
-function! s:Incantation()
+function! s:Incantation(dbgr_args_list)
    try
       let s:bufNr       = bufnr("%")
       let s:fileName    = bufname("%")
       if s:fileName == ""
          throw "NoFileToDebug"
       endif
-      let args = input("Enter arguments if any: ")
+      let nb_dbgr_args = len(a:dbgr_args_list)
+      if nb_dbgr_args == 0
+         let dbgr_args = ""
+      elseif nb_dbgr_args == 1 && a:dbgr_args_list[0] == ""
+         let dbgr_args = input("Enter arguments if any: ")
+      else
+         let dbgr_args = join(a:dbgr_args_list)
+      endif
          " Some day, we may do more than just Perl.
       let s:incantation = "perl -Ilib -d " . s:fileName
-      if args != ""
-         let s:incantation .= " " . args
+      if dbgr_args != ""
+         let s:incantation .= " " . dbgr_args
       endif
    catch /NoFileToDebug/
       echo "No file to debug."
       throw "AbortLaunch"
    catch
+      echo "Exception caught: " . v:exception
       throw "AbortLaunch"
    endtry
 endfunction 
 
 function! s:HandleCmdResult(...)
-   let l:cmdResult  = split(s:SocketRead(), s:EOR_REGEX, 1)
+   let l:cmdResult  = split(s:SocketRead(), s:k_eor, 1)
    let [l:status, l:lineNumber, l:fileName, l:value, l:output] = l:cmdResult
 
-   if l:status == s:DBGR_READY
+   if l:status == s:k_dbgrReady
       call s:ConsolePrint(l:output)
       if len(l:lineNumber) > 0
          call s:CurrentLineMagic(l:lineNumber, l:fileName)
       endif
 
-   elseif l:status == s:APP_EXITED
+   elseif l:status == s:k_appExited
       call s:ConsolePrint(l:output)
       call s:HandleProgramTermination()
-      redraw! | echo "\rthe application being debugged terminated"
+      redraw! | echo "The application being debugged terminated."
 
-   elseif l:status == s:CONNECT
+   elseif l:status == s:k_compilerError
+      call s:ConsolePrint(l:output)
+      call s:HandleProgramTermination()
+      redraw! | echo "The program did not compile."
+
+   elseif l:status == s:k_runtimeError
+      call s:ConsolePrint(l:output)
+      call s:HandleProgramTermination()
+      redraw! | echo "There was a runtime error."
+
+   elseif l:status == s:k_connect
       let s:sessionId = l:value
 
-   elseif l:status == s:DISCONNECT
+   elseif l:status == s:k_disconnect
       echo "disconnected"
 
    else
-      echo "error:001.  something bad happened.  please report this to vimdebug at iijo dot org"
+      echo " error:001. Something bad happened. Please report this to vimdebug at iijo dot org"
+      echo got
    endif
 
    return
 endfunction
+
+function! s:HandleCmdResult2(...)
+   let l:foo = s:SocketRead2()
+endfunction
+
 " - jumps to the lineNumber in the file, fileName
 " - highlights the current line
 " - returns nothing
@@ -426,6 +565,7 @@ function! s:CurrentLineMagic(lineNumber, fileName)
 
    return
 endfunction
+
 " the fileName may have been changed if we stepped into a library or some
 " other piece of code in an another file.  load the new file if thats
 " necessary and then jump to lineNumber
@@ -458,6 +598,7 @@ function! s:JumpToLine(lineNumber, fileName)
 
    return bufname(l:fileName)
 endfunction
+
 function! s:UnplaceTheLastCurrentLineSign()
    let l:lastId = s:CreateId(s:bufNr, s:lineNumber)
    exe 'sign unplace ' . l:lastId
@@ -465,6 +606,7 @@ function! s:UnplaceTheLastCurrentLineSign()
       exe "sign place " . l:lastId . " line=" . s:lineNumber . " name=breakPoint file=" . s:fileName
    endif
 endfunction
+
 function! s:PlaceCurrentLineSign(lineNumber, fileName)
    let l:bufNr = bufnr(a:fileName)
    let s:bufNr = l:bufNr
@@ -478,6 +620,7 @@ function! s:PlaceCurrentLineSign(lineNumber, fileName)
         \ " line=" . a:lineNumber . " name=currentLine file=" . a:fileName
    endif
 endfunction
+
 function! s:HandleProgramTermination()
    call s:UnplaceTheLastCurrentLineSign()
    let s:lineNumber  = 0
@@ -485,8 +628,8 @@ function! s:HandleProgramTermination()
    let s:programDone = 1
 endfunction
 
+" Debugger console functions.
 
-" debugger console functions
 function! DBGRopenConsole()
    if g:DBGRshowConsole == 0
       return 0
@@ -499,6 +642,7 @@ function! DBGRopenConsole()
    set buftype=nofile
    wincmd p
 endfunction
+
 function! DBGRcloseConsole()
    if g:DBGRshowConsole == 0
       return 0
@@ -510,6 +654,7 @@ function! DBGRcloseConsole()
    exe l:consoleWinNr . "wincmd w"
    q
 endfunction
+
 function! s:ConsolePrint(msg)
    if g:DBGRshowConsole == 0
       return 0
@@ -529,20 +674,22 @@ function! s:ConsolePrint(msg)
    wincmd p
 endfunction
 
-" socket functions
+" Socket functions.
+
 function! s:StartVdd()
    if !executable('vdd')
-      echo "\rvdd is not in your PATH.  Something went wrong with your install."
-      throw "\rvdd is not in your PATH.  Something went wrong with your install."
+      throw "MissingVdd"
    endif
    exec "silent :! vdd &"
 endfunction
+
 function! s:Handshake()
     let l:msg  = "start:" . s:sessionId .
-               \      ":" . s:debugger  .
+               \      ":" . s:debugger .
                \      ":" . s:incantation
     call s:SocketWrite(l:msg)
 endfunction
+
 function! s:SocketConnect()
    perl << EOF
       use IO::Socket;
@@ -560,38 +707,7 @@ function! s:SocketConnect()
       VIM::DoCommand("throw '${msg}'");
 EOF
 endfunction
-function! s:SocketRead()
-   try 
-      " yeah this is a very inefficient but non blocking loop.
-      " vdd signals that its done sending a msg when it touches the file.
-      " while VimDebug thinks, the user can cancel their operation.
-      while !filereadable(s:DONE_FILE)
-      endwhile
-   catch /Vim:Interrupt/
-      echom "action cancelled"
-      call s:SocketWrite2('stop:' . s:sessionId)  " disconnect
-      call s:HandleCmdResult2()                   " handle disconnect
-      call s:SocketConnect2()                     " reconnect
-      call s:HandleCmdResult2()                   " handle reconnect
-   endtry
-   
-   perl << EOF
-      my $EOM     = VIM::Eval('s:EOM');
-      my $EOM_LEN = VIM::Eval('s:EOM_LEN');
-      my $data = '';
-      $data .= <$DBGRsocket1> until substr($data, -1 * $EOM_LEN) eq $EOM;
-      $data .= <$DBGRsocket1> until substr($data, -1 * $EOM_LEN) eq $EOM;
-      $data = substr($data, 0, -1 * $EOM_LEN); # chop EOM
-      $data =~ s|'|''|g; # escape single quotes '
-      VIM::DoCommand("call delete(s:DONE_FILE)");
-      VIM::DoCommand("return '" . $data . "'"); 
-EOF
-endfunction
-function! s:SocketWrite(data)
-   perl print $DBGRsocket1 VIM::Eval('a:data') . "\n";
-endfunction
-" TODO: figure out how to and pass perl vars into vim functions so we don't
-" have duplicate code
+
 function! s:SocketConnect2()
    perl << EOF
       use IO::Socket;
@@ -609,6 +725,33 @@ function! s:SocketConnect2()
       VIM::DoCommand("throw '${msg}'");
 EOF
 endfunction
+
+function! s:SocketRead()
+   try 
+      " yeah this is a very inefficient but non blocking loop.
+      " vdd signals that its done sending a msg when it touches the file.
+      " while VimDebug thinks, the user can cancel their operation.
+      while !filereadable(s:DONE_FILE)
+      endwhile
+   catch /Vim:Interrupt/
+      echom "action cancelled"
+      call s:SocketWrite2('stop:' . s:sessionId)  " disconnect
+      call s:HandleCmdResult2()                   " handle disconnect
+      call s:SocketConnect2()                     " reconnect
+      call s:HandleCmdResult2()                   " handle reconnect
+   endtry
+   
+   perl << EOF
+      my $data = '';
+      $data .= <$DBGRsocket1> until substr($data, -1 * $EOM_LEN) eq $EOM;
+      $data .= <$DBGRsocket1> until substr($data, -1 * $EOM_LEN) eq $EOM;
+      $data = substr($data, 0, -1 * $EOM_LEN); # chop EOM
+      $data =~ s|'|''|g; # escape single quotes '
+      VIM::DoCommand("call delete(s:DONE_FILE)");
+      VIM::DoCommand("return '" . $data . "'"); 
+EOF
+endfunction
+
 function! s:SocketRead2()
    try 
       " yeah this is a very inefficient but non blocking loop.
@@ -619,8 +762,6 @@ function! s:SocketRead2()
    endtry
    
    perl << EOF
-      my $EOM     = VIM::Eval('s:EOM');
-      my $EOM_LEN = VIM::Eval('s:EOM_LEN');
       my $data = '';
       $data .= <$DBGRsocket2> until substr($data, -1 * $EOM_LEN) eq $EOM;
       $data .= <$DBGRsocket2> until substr($data, -1 * $EOM_LEN) eq $EOM;
@@ -630,10 +771,12 @@ function! s:SocketRead2()
       VIM::DoCommand("return '" . $data . "'"); 
 EOF
 endfunction
+
+function! s:SocketWrite(data)
+   perl print $DBGRsocket1 VIM::Eval('a:data') . "\n";
+endfunction
+
 function! s:SocketWrite2(data)
    perl print $DBGRsocket2 VIM::Eval('a:data') . "\n";
 endfunction
-function! s:HandleCmdResult2(...)
-    let l:foo = s:SocketRead2()
-    return
-endfunction
+

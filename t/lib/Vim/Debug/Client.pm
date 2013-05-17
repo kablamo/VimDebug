@@ -1,20 +1,21 @@
-# ABSTRACT: Vim::Debug Client
+# ABSTRACT: A Vim::Debug client, for testing.
 
 =head1 SYNOPSIS
 
-   use Vim::Debug::Client;
-   Vim::Debug::Client->connect();
+    use Vim::Debug::Client;
+    Vim::Debug::Client->connect();
 
 =head1 DESCRIPTION
 
-This module implements a Vim::Debug client.  The client communicates with the
-Vim::Debug::Daemon.  Its probably only useful for testing.
+This module implements a Vim::Debug client. The client communicates
+with the Vim::Debug::Daemon.  It's probably only useful for testing.
 
 =cut
-
 package Vim::Debug::Client;
-
 use Moose;
+use warnings;
+
+# VERSION
 
 use Net::Telnet;
 use Vim::Debug::Protocol;
@@ -24,11 +25,8 @@ $Vim::Debug::Client::VERSION = "0.1";
 $| = 1;
 
 # protocol constants
-my $EOR            = '-vimdebug.eor-';       # end of record
-my $EOR_REGEX      = qr/-vimdebug.eor-/;
-my $EOR_LENGTH     = length($EOR);
-my $EOM            = "\r\nvimdebug.eom\n";   # end of message
-my $EOM_REGEX      = '/\nvimdebug.eom\n/';
+my $EOM       = Vim::Debug::Protocol->k_eom . "\n";
+my $EOM_REGEX = "/\Q$EOM\E/";
 
 # connection constants
 my $DONE_FILE = ".vdd.done";
@@ -42,7 +40,7 @@ has _protocol => (
     is          => 'ro', 
     isa         => 'Vim::Debug::Protocol', 
     default     => sub { Vim::Debug::Protocol->new },
-    handles     => [qw/_eor _eom _connect _disconnect/],
+    handles     => [qw/k_eor k_eom k_connect k_disconnect/],
 );
 
 sub connect {
@@ -51,7 +49,7 @@ sub connect {
     my $telnet = Net::Telnet->new(
         Timeout    => 10,
         Prompt     => $EOM_REGEX,
-        Rs         => $self->_eor, # input  record separator -- not a regex
+        Rs         => $self->k_eor, # input  record separator -- not a regex
         Ors        => "\n", # output record separator -- not a regex
         Telnetmode => 0,
         Port       => 6543,
@@ -69,7 +67,7 @@ sub connect {
     }
 
     my ($output, $eom) = $telnet->waitfor($EOM_REGEX);
-    my @parts = split($EOR_REGEX, $output);
+    my @parts = split $self->k_eor, $output;
 
     $self->sessionId($parts[-1]);
 
@@ -108,7 +106,7 @@ sub jfdi {
 sub buildResponse {
     my ( $self, @response) = @_;
 
-    @response = map { substr($_, 0, -$EOR_LENGTH) } @response;
+    @response = map { substr($_, 0, -length($self->k_eor)) } @response;
 
     my $response = Vim::Debug::Protocol->new({
         status => $response[0],
@@ -135,7 +133,5 @@ sub quit     {
     $self->telnet->cmd("quit");
     return 1;
 }
-
-
 
 1;

@@ -14,7 +14,6 @@
     my $dbgr = Vim::Debug->new( language => 'Perl', invoke => 'cmd')->start;
     my $response = Vim::Debug::Protocol->respond( $dbgr->status );
 
-
 =head1 DESCRIPTION
 
 If you are new to Vim::Debug please read the user manual,
@@ -23,7 +22,6 @@ L<Vim::Debug::Manual>, first.
 This module implements the network protocol between Vim and the
 Vim::Debug::Daemon.  It worries about end of field and end of message strings
 and all that sort of formatting.
-
 
 =head1 COMMUNICATION PROTOCOL
 
@@ -53,20 +51,19 @@ All messages to the server have the following format:
     Parameter 2
     End Of Record
     ..
-    Parameter n 
+    Parameter n
     End Of Message
 
 After every message, the daemon also touches a file.  Which is kind of crazy
 and should be fixed but is currently necessary because the vimscript is doing
 nonblocking reads on the sockets.
 
-
 =head2 Connecting
 
 When you connect to the Vim::Debug Daemon (vdd), it will send you a message
 that looks like this:
 
-    $CONNECT . $EOR . $EOR . $EOR . $SESSION_ID . $EOR . $EOM 
+    $CONNECT . $EOR . $EOR . $EOR . $SESSION_ID . $EOR . $EOM
 
 You should respond with a message that looks like
 
@@ -84,26 +81,24 @@ The server will respond with:
 
 And then exit.
 
-
 =head1 POE STATE DIAGRAM
 
     ClientConnected
-        
+
             ---> Stop
            |
     ClientInput ----------> Start
-      |                      |   
+      |                      |
       |                      |   __
       v                      v  v  |
      Translate --> Write --> Read  |
                    |   ^     |  |  |
                    |   |_____|  |__|
-                   |   
+                   |
                    v
                   Out
 
 =cut
-
 package Vim::Debug::Protocol;
 
 # VERSION
@@ -126,12 +121,6 @@ These values all indicate the current state of the debugger.
 =head2 output()
 
 =cut
-
-class_has compilerError => ( is => 'ro', isa => 'Str', default => 'compiler error' );
-class_has runtimeError  => ( is => 'ro', isa => 'Str', default => 'runtime error' );
-class_has dbgrReady     => ( is => 'ro', isa => 'Str', default => 'debugger ready' );
-class_has appExited => ( is => 'ro', isa => 'Str', default => 'application exited' );
-
 has status     => ( is => 'rw', isa => 'Str' );
 has line       => ( is => 'rw', isa => 'Int' );
 has file       => ( is => 'rw', isa => 'Str' );
@@ -139,70 +128,66 @@ has value      => ( is => 'rw', isa => 'Str' );
 has output     => ( is => 'rw', isa => 'Str' );
 
 # protocol constants
-# $self->eor is end of record.  $self->eom is end of message
-class_has _eor        => ( is => 'ro', isa => 'Str', default => '-vimdebug.eor-' );
-class_has _eom        => ( is => 'ro', isa => 'Str', default => "\r\nvimdebug.eom" );
-class_has _badCmd     => ( is => 'ro', isa => 'Str', default => 'bad command' );
-class_has _connect    => ( is => 'ro', isa => 'Str', default => 'CONNECT' );
-class_has _disconnect => ( is => 'ro', isa => 'Str', default => 'DISCONNECT' );
+# "eor": end of record; "eom": end of message.
+class_has k_compilerError => ( is => 'ro', isa => 'Str', default => 'compiler error' );
+class_has k_runtimeError  => ( is => 'ro', isa => 'Str', default => 'runtime error' );
+class_has k_dbgrReady     => ( is => 'ro', isa => 'Str', default => 'debugger ready' );
+class_has k_appExited     => ( is => 'ro', isa => 'Str', default => 'application exited' );
+class_has k_eor           => ( is => 'ro', isa => 'Str', default => ' {-VDEOR-} ' );
+class_has k_eom           => ( is => 'ro', isa => 'Str', default => " {-VDEOM-}" );
+class_has k_badCmd        => ( is => 'ro', isa => 'Str', default => 'bad command' );
+class_has k_connect       => ( is => 'ro', isa => 'Str', default => 'CONNECT' );
+class_has k_disconnect    => ( is => 'ro', isa => 'Str', default => 'DISCONNECT' );
 
-=head1 FUNCTIONS
-
-=cut
-
-=head2 connect($sessionId)
+=func connect($sessionId)
 
 Returns formatted string that is used to reply to a client who just connected
 to Vim::Debug::Daemon.
 
 =cut
-
 sub connect {
     my $class = shift or die;
     my $sessionId = shift or die;
-    return $class->response( status => _connect(), value => $sessionId );
+    return $class->response( status => k_connect(), value => $sessionId );
 }
 
-=head2 disconnect()
+=func disconnect()
 
 Returns formatted string that is used to tell a client to disconnect from
 Vim::Debug::Daemon.
 
 =cut
-
 sub disconnect {
     my $class = shift or die;
-    return $class->response( status => _disconnect() );
+    return $class->response( status => k_disconnect() );
 }
 
-=head2 response()
+=func response()
 
 Any of the class attributes can be passed to this method.
 
 Returns formatted string that is used to tell respond to a client that is
-talking to the Vim::Debug::Daemon.  
+talking to the Vim::Debug::Daemon.
 
 =cut
-
 sub response {
     my $class = shift;
     my $self  = $class->new(@_);
     my $response;
     foreach my $attr (qw/status line file value output/) {
         $response .= $self->$attr if defined $self->$attr;
-        $response .= $self->_eor unless $attr eq 'output';
+        $response .= $self->k_eor unless $attr eq 'output';
     }
-    $response .= $self->_eom;
+    $response .= $self->k_eom;
     return $response;
 }
 
-=head2 touch()
+=func touch()
 
 This method needs to be called after send a message to Vim.  It creates a
 file.
 
 =cut
-
 sub touch {
     my $DONE_FILE = ".vdd.done";
     open(FILE, ">", $DONE_FILE);
@@ -210,12 +195,9 @@ sub touch {
     close(FILE);
 }
 
-
 =head1 SEE ALSO
 
 L<Vim::Debug::Daemon>
 
-
 =cut
-
 1;

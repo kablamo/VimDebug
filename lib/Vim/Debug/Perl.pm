@@ -10,7 +10,6 @@ L<Vim::Debug> represents a debugger.  This module only handles the Perl
 specific bits.  Theoretically there might be a Ruby or Python role someday.
 
 =cut
-
 package Vim::Debug::Perl;
 
 # VERSION
@@ -20,36 +19,11 @@ use Moose::Role;
 $ENV{"PERL5DB"}     = 'BEGIN {require "perl5db.pl";}';
 $ENV{"PERLDB_OPTS"} = "ornaments=''";
 
-
-=head1 DEBUGGER OUTPUT REGEX CLASS ATTRIBUTES
-
-These attributes are used to parse debugger output and are used by Vim::Debug.
-They return a regex and ignore all values passed to them.
-
-=func dbgrPromptRegex()
-
-=func compilerErrorRegex()
-
-=func runtimeErrorRegex()
-
-=func appExitedRegex()
-
-=cut
-
-    # Debugger prompt regex.
-#my $dpr = qr/.*  DB<+\d+>+ /sx;
-our $dpr = '.*  DB<+\d+>+ ';
-
-sub dbgrPromptRegex    { qr/$dpr/ }
-sub compilerErrorRegex { qr/aborted due to compilation error${dpr}/s }
-sub runtimeErrorRegex  { qr/ at .* line \d+${dpr}/ }
-sub appExitedRegex     { qr/((\/perl5db.pl:)|(Use .* to quit or .* to restart)|(\' to quit or \`R\' to restart))${dpr}/ }
-
 =head1 TRANSLATION CLASS ATTRIBUTES
 
-These attributes are used to convert commands from the
-communication protocol to commands the Perl debugger can recognize.  For
-example, the communication protocol uses the keyword 'next' while the Perl
+These attributes are used to convert commands from the communication
+protocol to commands the Perl debugger can recognize.  For example,
+the communication protocol uses the keyword 'next' while the Perl
 debugger uses 'n'.
 
 =func next()
@@ -73,7 +47,6 @@ debugger uses 'n'.
 =func quit()
 
 =cut
-
 sub next     { 'n' }
 sub step     { 's' }
 sub cont     { 'c' }
@@ -85,41 +58,84 @@ sub command  { $_[1] }
 sub restart  { 'R' }
 sub quit     { 'q' }
 
-=method parseOutput($output)
+=method prompted_and_parsed($output)
 
-$output is output from the Perl debugger.  This method parses $output and
-saves relevant valus to the line, file, and output attributes (these
-attributes are defined in Vim::Debug)
+If the $output string doesn't end with the debugger prompt string,
+this method will return false, because that means that there should be
+more debugger output coming.
 
-Returns undef.
+Otherwise, $output will be parsed and the object's 'file', 'line',
+'value', and 'status' attributes will be set and the method will
+return true.
 
 =cut
-sub parseOutput {
-    my $self   = shift or die;
-    my $output = shift or die;
+    # Debugger prompt regex.
+my $dpr = qr/  DB<+\d+>+ \z/s;
 
-    # See .../t/VD_DI_Perl.t for test cases.
+sub prompted_and_parsed {
+    my ($self, $str) = @_;
+
+        # If we don't have the debugger prompt string, we're not ready
+        # to parse.
+    return unless $str =~ s/$dpr//;
+
+    $self->parseOutput($str);
+    return 1;
+}
+
+sub parseOutput {
+    my ($self, $str) = @_;
+
     my $file;
     my $line;
-    $output =~ /
-        ^ \w+ ::
-        (?: \w+ :: )*
-        (?: CODE \( 0x \w+ \) | \w+ )?
-        \(
-            (?: .* \x20 )?
-            ( .+ ) : ( \d+ )
-        \):
-    /xm;
-    $self->file($1) if defined $1;
-    $self->line($2) if defined $2;
+    my $status;
 
-    if ($output =~ /^x .*\n/m) {
-        $output =~ s/^x .*\n//m; # remove first line
-        $output =~ s/\n.*$//m; # remove last line
-        $self->value($output);
+    if (
+        $str  =~ /
+            ^ Execution\ of\ .*?\ aborted\ due\ to\ compilation\ errors\.
+            \n \ at\ (.*?)\ line\ (\d+)\.
+        /xm
+    ) {
+        $status = $self->s_compilerError;
+        $file = $1;
+        $line = $2;
     }
+    elsif (
+        $str =~ /
+            (?:
+                (?: \/perl5db.pl: ) |
+                (?: Use\ .*\ to\ quit\ or\ .*\ to\ restart ) |
+                (?: '\ to\ quit\ or\ `R'\ to\ restart )
+            )
+        /sx
+    ) {
+        $status = $self->s_appExited;
+    }
+    else {
+        $status = $self->s_dbgrReady;
+        $str =~ /
+            ^ \w+ ::
+            (?: \w+ :: )*
+            (?: CODE \( 0x \w+ \) | \w+ )?
+            \(
+                (?: .* \x20 )?
+                ( .+ ) : ( \d+ )
+            \):
+        /xm;
+        $file = $1;
+        $line = $2;
 
-   return undef;
+            # Remove first and last lines when 'x' was the command,
+            # the text remaining being the value that was requested.
+        if ($str =~ /^x .*\n/m) {
+            $str =~ s/^x .*\n//m;
+            $str =~ s/\n.*$//m;
+            $self->value($str);
+        }
+    }
+    $self->file($file) if $file;
+    $self->line($line) if $line;
+    $self->status($status);
 }
 
 1;

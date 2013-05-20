@@ -1,2 +1,4 @@
 /Vim-Debug-*
 /.build/
+/lib/Vim/Debug/_vim/doc/tags
+

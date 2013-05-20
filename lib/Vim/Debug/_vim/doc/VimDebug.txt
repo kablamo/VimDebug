@@ -95,7 +95,7 @@ These are the default key bindings. To change them edit VimDebug.vim.
 <Leader>c     Clear breakpoint on the current line.
 <Leader>ca    Clear all breakpoints.
 
-<Leader>v     Print the value of the variable under the cursor
-<Leader>v/    Print the value of an expression thats entered.
+<Leader>x     Print the value of the variable under the cursor
+<Leader>x/    Print the value of an expression thats entered.
 <Leader>/     Type a command for the debugger to execute and echo the result.
 

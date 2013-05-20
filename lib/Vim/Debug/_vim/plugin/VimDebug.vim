@@ -38,8 +38,8 @@ let s:dbgr_keys = [
   \ ["<Leader>b",  ":DBGRsetBreakPoint<cr>"],
   \ ["<Leader>c",  ":DBGRclearBreakPoint<cr>"],
   \ ["<Leader>ca", ":DBGRclearAllBreakPoints<cr>"],
-  \ ["<Leader>v/", ":DBGRprint<space>"],
-  \ ["<Leader>v",  ":DBGRprintExpand expand(\"<cword>\")<cr> \""],
+  \ ["<Leader>x/", ":DBGRprint<space>"],
+  \ ["<Leader>x",  ":DBGRprintExpand expand(\"<cword>\")<cr> \""],
   \ ["<Leader>/",  ":DBGRcommand<space>"],
 \]
    " The user keys will be saved here if/when we launch VimDebug. The

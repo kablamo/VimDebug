@@ -35,6 +35,7 @@ let s:dbgr_keys = [
   \ ["<F9>",       ":DBGRcont<cr>"],
   \ ["<F8>",       ":DBGRnext<cr>"],
   \ ["<F7>",       ":DBGRstep<cr>"],
+  \ ["<F6>",       ":DBGRstepout<cr>"],
   \ ["<Leader>b",  ":DBGRsetBreakPoint<cr>"],
   \ ["<Leader>c",  ":DBGRclearBreakPoint<cr>"],
   \ ["<Leader>ca", ":DBGRclearAllBreakPoints<cr>"],
@@ -205,6 +206,7 @@ endfunction
 
 " Debugger functions.
 
+command! -nargs=0 DBGRstepout             call DBGRstepout()
 command! -nargs=0 DBGRstep                call DBGRstep()
 command! -nargs=0 DBGRnext                call DBGRnext()
 command! -nargs=0 DBGRcont                call DBGRcont()
@@ -231,6 +233,15 @@ function! DBGRstep()
    endif
    echo "\rstep..."
    call s:SocketWrite("step")
+   call s:HandleCmdResult()
+endfunction
+
+function! DBGRstepout()
+   if !s:Copacetic()
+      return
+   endif
+   echo "\rstepout..."
+   call s:SocketWrite("stepout")
    call s:HandleCmdResult()
 endfunction
 

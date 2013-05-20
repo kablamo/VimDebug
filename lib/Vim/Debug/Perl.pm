@@ -49,6 +49,7 @@ debugger uses 'n'.
 =cut
 sub next     { 'n' }
 sub step     { 's' }
+sub stepout  { 'r' }
 sub cont     { 'c' }
 sub break    { "f $_[2]", "b $_[1]" }
 sub clear    { "f $_[2]", "B $_[1]" }

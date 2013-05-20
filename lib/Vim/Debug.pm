@@ -244,6 +244,7 @@ sub translate {
 
        if ($in =~ /^next$/            ) { @cmds = $self->next          }
     elsif ($in =~ /^step$/            ) { @cmds = $self->step          }
+    elsif ($in =~ /^stepout$/         ) { @cmds = $self->stepout       }
     elsif ($in =~ /^cont$/            ) { @cmds = $self->cont          }
     elsif ($in =~ /^break:(\d+):(.+)$/) { @cmds = $self->break($1, $2) }
     elsif ($in =~ /^clear:(\d+):(.+)$/) { @cmds = $self->clear($1, $2) }

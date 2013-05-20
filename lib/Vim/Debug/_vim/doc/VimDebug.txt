@@ -83,13 +83,14 @@ change them by editing VimDebug.vim.
 
 These are the default key bindings. To change them edit VimDebug.vim.
 
-<F12>         Start the debugger, or toggle the key bindigs.
+<F12>         Start the debugger, or toggle the key bindings.
 <F11>         Exit the debugger.
 <F10>         Restart the debugger. Breakpoints are saved.
 
 <F9>          Continue.
 <F8>          Next.
-<F7>          Step.
+<F7>          Step in.
+<F6>          Step out.
 
 <Leader>b     Set breakpoint on the current line.
 <Leader>c     Clear breakpoint on the current line.

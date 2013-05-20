@@ -1,0 +1,50 @@
+#!/usr/bin/env perl
+
+=head1 NAME
+
+    vdvim - Launch a minimal vim/gvim with VimDebug development files.
+
+=head1 SYNOPSIS
+
+    vdvim [-g] [-m] [$some_file_to_edit]
+
+=head1 DESCRIPTION
+
+This program is useful for VimDebug developers to try out things. It
+launches Vim with the VimDebug development code with no interference
+whatsoever from any other Vim module or setup, since it loads no vimrc
+files nor any plugins but the VimDebug one (and 'savemap', that is
+supplied with and required by VimDebug).
+
+Use the '-g' option to launch 'gvim' instead of 'vim'. Use the '-m'
+option to have an existing mapping on <F12> (it will just echo the
+string "f12") before loading VimDebug.
+
+Note that this program expects to find the VimDebug development code
+relative to where it itself is located on disk, so if you copy it or
+move it around, you may need to fix its code accordinly.
+
+=cut
+
+use strict;
+use warnings;
+use Getopt::Long;
+use Dir::Self;
+
+sub {
+    my $GIT_REPO = __DIR__ . "/..";
+    $ENV{PERL5LIB} = "$GIT_REPO/lib";
+    $ENV{PATH} = "$GIT_REPO/bin:$ENV{PATH}";
+    GetOptions(\my %opts, 'g', 'm') or die;
+    exec(
+        ($opts{g} ? 'gvim' : 'vim'),
+        "-u", "NONE",
+        "-U", "NONE",
+        "-c", "set nocp",
+        ($opts{m} ? ("-c", "map <F12> :echo 'f12'<cr>") : ()),
+        "-c", "set runtimepath=$GIT_REPO/lib/Vim/Debug/_vim",
+        "-c", "runtime plugin/VimDebug.vim",
+        @ARGV
+    );
+}->()
+

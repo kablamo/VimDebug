@@ -9,7 +9,7 @@
 2. Requirements                     |VimDebug-req|
 3. Installation                     |VimDebug-install|
 4. Usage                            |VimDebug-usage|
-5. Keybindings                      |VimDebug-keys|
+5. Keybindings                      |VimDebug-bindings|
 
 ==============================================================================
 1. VimDebug Intro                   *VimDebug-intro*
@@ -49,37 +49,39 @@ cpan.
 ==============================================================================
 4. Usage                            *VimDebug-usage*
 
-As you launch Vim, loading VimDebug.vim will check to see if it has unique
-nmap access to its start key, by default <F12>. If it doesn't, it will let you
-know that you can't use VimDebug. If it does, pressing it will attempt to
-launch the debugger on whatever file is loaded in the current window,
-prompting you for arguments.
+When you launch Vim, VimDebug will check to see if it has unique normal mode
+access to its start key, by default <F12>. If it does, pressing this key will
+attempt to launch the debugger on whatever file is loaded in the current
+window, prompting you for arguments. If it doesn't, you can still launch the
+debugger by invoking the following command, to which you may pass arguments
+that will be passed on to the debugger:
 
-Another way to launch the debugger is to call its start function:
+    :VDstart foo 42
 
-    :call VDstart()
+If VimDebug successfully launches the debugger, it will install its own
+|VimDebug-bindings| for navigating it. This may disrupt some of your current
+bindings, but VimDebug will have saved those previous bindings, and while the
+debugger is running, pressing the start key will toggle the bindings between
+your saved key bindings and VimDebug's own. If the start key is not available,
+you can always invoke a command to toggle the bindings:
 
-You can pass a string argument that holds arguments that will be passed to the
-debugger invocation. For example:
-
-    :call VDstart("foo 42")
-
-If you pass a single argument that is an empty string. VimDebug will prompt
-you for arguments.
-
-If VimDebug successfully launches the debugger, it will install its own key
-bindings for navigating it, and this may disrupt some of the current bindings.
-But VimDebug will have saved those previous bindings, and while the debugger
-is running, pressing the start key will toggle the bindings between the user's
-saved key bindings and VimDebug's own.
+    :VDtoggleKeys
     
 The key bindings are also restored upon exit from the debugger.
+
+If you are using the GUI version, gvim, VimDebug will install a "Debugger"
+menu. At first only a "Start" entry will be available, to launch the debugger,
+prompting for arguments. Once launched, this entry becomes disabled and a
+"Toggle key bindings" one becomes available instead, as well as entries for
+the debugger commands. These entries show the corresponding key bindings that
+can be used; if the key bindings have been toggled back to your previous
+bindings, they will be shown in parentheses.
 
 If you don't like the default start key or other key bindings, you can always
 change them by editing VimDebug.vim.
 
 ==============================================================================
-5. Key bindings                     *VimDebug-keys*
+5. Key bindings                     *VimDebug-bindings*
 
 These are the default key bindings. To change them edit VimDebug.vim.
 

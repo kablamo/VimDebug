@@ -138,6 +138,7 @@ class_has k_eom           => ( is => 'ro', isa => 'Str', default => " {-VDEOM-}"
 class_has k_badCmd        => ( is => 'ro', isa => 'Str', default => 'bad command' );
 class_has k_connect       => ( is => 'ro', isa => 'Str', default => 'CONNECT' );
 class_has k_disconnect    => ( is => 'ro', isa => 'Str', default => 'DISCONNECT' );
+class_has k_doneFile      => ( is => 'ro', isa => 'Str', default => '.vdd.done' );
 
 =func connect($sessionId)
 
@@ -189,10 +190,9 @@ file.
 
 =cut
 sub touch {
-    my $DONE_FILE = ".vdd.done";
-    open(FILE, ">", $DONE_FILE);
+    open FILE, ">", Vim::Debug::Protocol->k_doneFile;
     print FILE "\n";
-    close(FILE);
+    close FILE;
 }
 
 =head1 SEE ALSO

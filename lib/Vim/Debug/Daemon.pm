@@ -38,7 +38,7 @@ $| = 1;
 # global var
 my $shutdown = 0;
 
-has port => ( is => 'ro', isa => 'Int', default => 6543 );
+class_has port => ( is => 'ro', isa => 'Int', default => 6543 );
 
 class_has debuggers => (
     is      => 'rw',

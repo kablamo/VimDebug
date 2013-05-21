@@ -29,8 +29,6 @@ my $EOM       = Vim::Debug::Protocol->k_eom . "\n";
 my $EOM_REGEX = "/\Q$EOM\E/";
 
 # connection constants
-my $DONE_FILE = ".vdd.done";
-
 has language  => ( is => 'ro', isa => 'Str' );
 has dbgrCmd   => ( is => 'ro', isa => 'Str' );
 has telnet    => ( is => 'rw', isa => 'Net::Telnet' );
@@ -52,7 +50,7 @@ sub connect {
         Rs         => $self->k_eor, # input  record separator -- not a regex
         Ors        => "\n", # output record separator -- not a regex
         Telnetmode => 0,
-        Port       => 6543,
+        Port       => Vim::Debug::Daemon->port,
     );
     $self->telnet($telnet);
 

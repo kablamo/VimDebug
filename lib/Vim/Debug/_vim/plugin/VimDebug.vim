@@ -2,6 +2,7 @@
 " email: vimDebug at iijo dot org
 " http://iijo.org
 
+" --------------------------------------------------------------------
 " Check prerequisites.
 
 if (!has('perl') || !has('signs'))
@@ -9,137 +10,158 @@ if (!has('perl') || !has('signs'))
    finish
 endif
 
-   " The VimDebug start key. If you unset it, VimDebug won't load.
-let s:StartKey = "<F12>"
-if s:StartKey == ""
-   echo "No start key defined, so you can't use VimDebug."
-   finish
-endif
+" --------------------------------------------------------------------
+" Configuration variables.
 
-   " Make sure the start key is available.
-try
-   exec "nmap <unique> " . s:StartKey . " :call VDstart(\"\")<cr>"
-catch
-   echo v:exception
-   echo "Can't use VimDebug, its start key " . s:StartKey . " is already mapped."
-   exec "map " . s:StartKey
-   finish
-endtry
+" Make sure all the values remain coherent if you change any.
 
-   " Define the debugger key bindings. Be careful if you change these
-   " values or s:StartKey. Each entry of the list is a two-element
-   " list defining a key and its corresponding mapping.
-let s:dbgr_keys = [
-  \ ["<F11>",      ":DBGRquit<cr>"],
-  \ ["<F10>",      ":DBGRrestart<cr>"],
-  \ ["<F9>",       ":DBGRcont<cr>"],
-  \ ["<F8>",       ":DBGRnext<cr>"],
-  \ ["<F7>",       ":DBGRstep<cr>"],
-  \ ["<F6>",       ":DBGRstepout<cr>"],
-  \ ["<Leader>b",  ":DBGRsetBreakPoint<cr>"],
-  \ ["<Leader>c",  ":DBGRclearBreakPoint<cr>"],
-  \ ["<Leader>ca", ":DBGRclearAllBreakPoints<cr>"],
-  \ ["<Leader>x/", ":DBGRprint<space>"],
-  \ ["<Leader>x",  ":DBGRprintExpand expand(\"<cword>\")<cr> \""],
-  \ ["<Leader>/",  ":DBGRcommand<space>"],
+   " The VimDebug start key. If this key is not already mapped in
+   " normal mode (nmap), we will map it to start VimDebug. Otherwise,
+   " to start the debugger one can call DBGRstart(...) or use the GUI
+   " with its menu interface.
+let s:cfg_startKey = "<F12>"
+
+   " GUI menu label.
+let s:cfg_menuLabel = '&Debugger'
+
+   " Key bindings and menu settings. Each entry has: key, label, map.
+let s:cfg_interface = [
+ \ ['<F8>',       '&Next',                   'DBGRnext()'],
+ \ ['<F7>',       '&Step in',                'DBGRstep()'],
+ \ ['<F6>',       'Step &out',               'DBGRstepout()'],
+ \ ['<F9>',       '&Continue',               'DBGRcont()'],
+ \ ['<Leader>b',  'Set &breakpoint',         'DBGRsetBreakPoint()'],
+ \ ['<Leader>c',  'C&lear breakpoint',       'DBGRclearBreakPoint()'],
+ \ ['<Leader>ca', 'Clear &all breakpoints',  'DBGRclearAllBreakPoints()'],
+ \ ['<Leader>x/', '&Print value',            'DBGRprint(inputdialog("Value to print: "))'],
+ \ ['<Leader>x',  'Print &value here',       'DBGRprint(expand("<cword>"))'],
+ \ ['<Leader>/',  'E&xecute command',        'DBGRcommand(inputdialog("Command to execute: "))'],
+ \ ['<F10>',      '&Restart',                'DBGRrestart()'],
+ \ ['<F11>',      '&Quit',                   'DBGRquit()'],
 \]
-   " The user keys will be saved here if/when we launch VimDebug. The
-   " entries of this list will be a bit different: each one will be a
-   " two-element list of a key and of a "saved-map" that will be
-   " provided by the 'savemap' vimscript.
-let s:user_savedkeys    = []
 
-" Miscellaneous settings.
+   " Global variables. Each entry has: global variable name, default
+   " value.
+let s:cfg_globals = {
+ \ 'g:DBGRconsoleHeight'  : 7,
+ \ 'g:DBGRlineNumbers'    : 1,
+ \ 'g:DBGRshowConsole'    : 1,
+ \ 'g:DBGRdebugArgs'      : "",
+\}
 
-" colors
-hi currentLine term=reverse cterm=reverse gui=reverse
-hi breakPoint  term=NONE    cterm=NONE    gui=NONE
-hi empty       term=NONE    cterm=NONE    gui=NONE
+" --------------------------------------------------------------------
+" This function will be called at the end of this script to
+" initialize everything.
 
-" signs
-sign define currentLine linehl=currentLine
-sign define breakPoint  linehl=breakPoint  text=>>
-sign define both        linehl=currentLine text=>>
-sign define empty       linehl=empty
-
-" global variables
-let g:DBGRconsoleHeight   = 7
-let g:DBGRlineNumbers     = 1
-let g:DBGRshowConsole     = 1
-
-let s:PORT            = 6543
-let s:HOST            = "localhost"
-let s:DONE_FILE       = ".vdd.done"
-
-" script variables
-let s:incantation     = ""
-let s:dbgrIsRunning   = 0    " 0: !running, 1: running, 2: starting
-let s:debugger        = "Perl"
-let s:lineNumber      = 0
-let s:fileName        = ""
-let s:bufNr           = 0
-let s:programDone     = 0
-let s:consoleBufNr    = -99
-let s:emptySigns      = []
-let s:breakPoints     = []
-let s:return          = 0
-let s:sessionId       = -1
-
-" Perl setup.
-
-perl << EOT
-      # Setting up 'lib' like this is useful during development.
-   use Dir::Self;
-   use lib __DIR__ . "/../../..";
-      # Obtain protocol constant values directly from the Perl
-      # module. This will allow us to use things like "s:k_eor" for
-      # example in our Vim code.
-   use Vim::Debug::Protocol;
-   for my $method (qw<
-      k_compilerError
-      k_runtimeError
-      k_dbgrReady
-      k_appExited
-      k_eor
-      k_badCmd
-      k_connect
-      k_disconnect
-   >) {
-      VIM::DoCommand("let s:$method = '" . Vim::Debug::Protocol->$method . "'");
-   }
-      # Later perl snippets will use these variables.
-   $DBGRsocket1 = 0;
-   $DBGRsocket2 = 0;
-   $EOM = Vim::Debug::Protocol->k_eom . "\r\n";
-   $EOM_LEN = length $EOM;
+function! s:Initialize ()
+   perl << EOT
+         # Setting up 'lib' like this is useful during development.
+      use Dir::Self;
+      use lib __DIR__ . "/../../..";
+         # Obtain protocol constant values directly from the Perl
+         # module. This will allow us to use things like "s:k_eor" for
+         # example in our Vim code.
+      use Vim::Debug::Protocol;
+      use Vim::Debug::Daemon;
+      for my $method (qw<
+         k_compilerError
+         k_runtimeError
+         k_dbgrReady
+         k_appExited
+         k_eor
+         k_badCmd
+         k_connect
+         k_disconnect
+         k_doneFile
+      >) {
+         VIM::DoCommand("let s:$method = '" . Vim::Debug::Protocol->$method . "'");
+      }
+         # Later perl snippets will use these variables.
+      $DBGRsocket1 = 0;
+      $DBGRsocket2 = 0;
+      $EOM = Vim::Debug::Protocol->k_eom . "\r\n";
+      $EOM_LEN = length $EOM;
+      $PORT = Vim::Debug::Daemon->port;
 EOT
 
-" VimDebug
+      " Colors.
+   hi currentLine term=reverse cterm=reverse gui=reverse
+   hi breakPoint  term=NONE    cterm=NONE    gui=NONE
+   hi empty       term=NONE    cterm=NONE    gui=NONE
 
-   " We keep track of two sets of key bindings: 0, the user's key
-   " bindings as they stand before we install VimDebug's, and 1,
-   " VimDebug's own, when the debugger is running.
-let s:current_keys = 0
+      " Signs.
+   sign define currentLine linehl=currentLine
+   sign define breakPoint  linehl=breakPoint  text=>>
+   sign define both        linehl=currentLine text=>>
+   sign define empty       linehl=empty
 
-   " Start the debugger if it's not already running, or toggle the
-   " keyboard. If argument is empty string, prompt for arguments.
-function! VDstart(...)
-   if ! s:dbgrIsRunning
-      try
-         call _VDinit(a:000)
-         call _VDsetKeys(1)
-      catch /NotStarted/
-         let s:dbgrIsRunning = 0
-      endtry
-   else
-      call _VDsetKeys(2)
+      " Initialize globals to their default value, unless they already
+      " have a value.
+   for [l:var, l:dft_val] in items(s:cfg_globals)
+      exec 
+       \ "if ! exists('g:" . l:var . "') |" .
+       \    "let " . l:var . " = '" . l:dft_val . "'| " .
+       \ "endif"
+   endfor
+
+   " Script variables.
+
+      " The string used to invoke the language's debugger.
+   let s:incantation = ""
+
+      " 0, the language's debugger is not running; 1, it is running.
+   let s:dbgrIsRunning = 0
+
+      " 0, a program is being debugged; 1, no program is being
+      " debugged, or it has done running.
+   let s:programDone = 1
+
+      " Could eventually be some other debugger, but currently we
+      " support only Perl.
+   let s:debugger = "Perl"
+
+   let s:consoleBufNr    = -99
+   let s:bufNr           = 0
+   let s:fileName        = ""
+   let s:lineNumber      = 0
+   let s:emptySigns      = []
+   let s:breakPoints     = []
+   let s:sessionId       = -1
+
+   let s:interfaceSetting = 0
+
+      " The user key bindings will be saved here if/when we launch
+      " VimDebug. The entries of this list will be a bit different:
+      " each one will be a two-element list of a key and of a
+      " "saved-map" that will be provided by the 'savemap' vimscript.
+   let s:userSavedkeys = []
+
+      " Will be set to 1 (true) if the start key is defined
+      " and we can map to it.
+   let s:canMapStartKey = 0
+
+   if s:cfg_startKey != "" && empty(maparg(s:cfg_startKey, "n"))
+      let s:canMapStartKey = 1
    endif
+
+      " Set up the start key and menus.
+   call s:mapStartKey_DBGRstart()
+   call s:VDmenuSet(0)
+
 endfunction
 
-function! _VDinit(dbgr_args_list)
+" --------------------------------------------------------------------
+" Debugger functions.
+
+   " Start the debugger if it's not already running. If there is an
+   " empty string argument, prompt for debugger arguments.
+function! DBGRstart(...)
+   if s:dbgrIsRunning
+      echo "The debugger is already running."
+      return
+   endif
    try
-      call s:Incantation(a:dbgr_args_list)
-      let s:dbgrIsRunning = 2
+      call s:Incantation(a:000)
       call s:StartVdd()
       " do after system() so nongui vim doesn't show a blank screen
       echo "\rstarting the debugger..."
@@ -154,69 +176,18 @@ function! _VDinit(dbgr_args_list)
       call s:HandleCmdResult("started the debugger")
       call s:SocketConnect2()
       call s:HandleCmdResult2()
+      call _VDsetInterface(1)
+      call s:mapStartKey_toggleKeyBindings()
       let s:dbgrIsRunning = 1
+      let s:programDone = 0
    catch /AbortLaunch/
       echo "Debugger launch aborted."
-      throw "NotStarted"
    catch /MissingVdd/
       echo "vdd is not in your PATH. Something went wrong with your VimDebug install."
-      throw "NotStarted"
    catch /.*/
       echo "Unexpected error: " . v:exception
-      throw "NotStarted"
    endtry
 endfunction
-
-   " Request keys 1 for VimDebug's key bindings, or 0 for the user's, or 2
-   " to toggle between the two.
-function! _VDsetKeys (req_keys)
-   if ! s:dbgrIsRunning
-      return
-   endif
-   if a:req_keys == 2
-         " Toggle between 0 and 1.
-      let want_keys = 1 - s:current_keys
-   else
-      let want_keys = a:req_keys
-   endif
-   if want_keys == 1
-      let s:user_savedkeys = []
-      for key_map in s:dbgr_keys
-         let key = key_map[0]
-         let map = key_map[1]
-         call add(s:user_savedkeys, [key, savemap#save_map("n", key)])
-         exec "nmap " . key . " " . map
-      endfor
-      let s:current_keys = 1
-      echo "VimDebug keys are active."
-   else
-      for key_savedmap in s:user_savedkeys
-         let key = key_savedmap[0]
-         let saved_map = key_savedmap[1]
-         if empty(saved_map['__map_info'][0]['normal'])
-            exec "unmap " . key
-         else
-            call saved_map.restore()
-         endif
-      endfor
-      let s:current_keys = 0
-      echo "User keys are active."
-   endif
-endfunction
-
-" Debugger functions.
-
-command! -nargs=0 DBGRstepout             call DBGRstepout()
-command! -nargs=0 DBGRstep                call DBGRstep()
-command! -nargs=0 DBGRnext                call DBGRnext()
-command! -nargs=0 DBGRcont                call DBGRcont()
-command! -nargs=0 DBGRsetBreakPoint       call DBGRsetBreakPoint()
-command! -nargs=0 DBGRclearBreakPoint     call DBGRclearBreakPoint()
-command! -nargs=0 DBGRclearAllBreakPoints call DBGRclearAllBreakPoints()
-command! -nargs=1 DBGRprintExpand         call DBGRprint("<args>")
-command! -nargs=1 DBGRcommand             call DBGRcommand("<args>")
-command! -nargs=0 DBGRrestart             call DBGRrestart()
-command! -nargs=0 DBGRquit                call DBGRquit()
 
 function! DBGRnext()
    if !s:Copacetic()
@@ -295,7 +266,7 @@ function! DBGRclearBreakPoint()
    let l:currLineNr   = line(".")
    let l:id           = s:CreateId(l:bufNr, l:currLineNr)
 
-   if count(s:breakPoints, l:id) == 0 
+   if count(s:breakPoints, l:id) == 0
       redraw! | echo "\rno breakpoint set here"
       return
    endif
@@ -374,7 +345,8 @@ function! DBGRquit()
       echo "\rthe debugger is not running"
       return
    endif
-   call _VDsetKeys(0)
+   call _VDsetInterface(0)
+   call s:mapStartKey_DBGRstart()
 
    " unplace all signs that were set in this debugging session
    call s:UnplaceBreakPointSigns()
@@ -392,7 +364,7 @@ function! DBGRquit()
    let s:lineNumber      = 0
    let s:fileName        = ""
    let s:bufNr           = 0
-   let s:programDone     = 0
+   let s:programDone     = 1
 
    let s:dbgrIsRunning = 0
    redraw! | echo "\rexited the debugger"
@@ -401,10 +373,146 @@ function! DBGRquit()
    call DBGRcloseConsole()
 endfunction
 
+" --------------------------------------------------------------------
+" Interface handling.
+
+" These are the possible values of s:interfaceSetting, which tells us
+" which key bindings are active and what the GUI menu looks like.
+"
+"  0 : User keys,     grayed out menu entries.
+"  1 : VimDebug keys, active menu entries.
+"  2 : User keys,     active menu entries, keys in  parentheses.
+
+   " Request interface setting 0, 1, or 2, or 3 to toggle between 1
+   " and 2.
+function! _VDsetInterface(request)
+   if a:request == 3
+      if s:interfaceSetting == 0
+         return
+      endif
+         " Toggle between 1 and 2.
+      let l:want = 3 - s:interfaceSetting
+   else
+      let l:want = a:request
+   endif
+
+   if l:want == 0 || l:want == 2
+      call s:VDrestoreKeyBindings()
+   elseif l:want == 1
+      call s:VDsetKeyBindings()
+   else
+      return
+   endif
+
+   call s:VDmenuSet(l:want)
+   let s:interfaceSetting = l:want
+endfunction
+
+function! s:VDsetKeyBindings ()
+   let s:userSavedkeys = []
+   for l:data in s:cfg_interface
+      let l:key = l:data[0]
+      let l:map = l:data[2]
+      call add(s:userSavedkeys, [l:key, savemap#save_map("n", l:key)])
+      exec "nmap " . l:key . " :call " . l:map . "<cr>"
+   endfor
+   echo "VimDebug keys are active."
+endfunction
+
+function! s:VDrestoreKeyBindings ()
+   for l:key_savedmap in s:userSavedkeys
+      let l:key = l:key_savedmap[0]
+      let l:saved_map = l:key_savedmap[1]
+      if empty(l:saved_map['__map_info'][0]['normal'])
+         exec "unmap " . l:key
+      else
+         call l:saved_map.restore()
+      endif
+   endfor
+   let s:userSavedkeys = []
+   echo "User keys are active."
+endfunction
+
+function! s:VDmenu_Start (on_or_off)
+   if a:on_or_off == 1
+      exec "amenu " . s:cfg_menuLabel . ".Start :call DBGRstart(\"\")<cr>"
+   else
+      exec "amenu disable " . s:cfg_menuLabel . ".Start"
+   endif
+endfunction
+
+function! s:VDmenu_Toggle (on_or_off)
+   if a:on_or_off == 1
+      exec "amenu " . s:cfg_menuLabel . ".To&ggle\\ key\\ bindings :call _VDsetInterface(3)<cr>"
+   else
+      exec "amenu disable "  . s:cfg_menuLabel . ".To&ggle\\ key\\ bindings"
+   endif
+endfunction
+
+   " Set up the GUI menu.
+function! s:VDmenuSet (request)
+   if ! has("gui_running")
+      return
+   endif
+      " Delete the existing menu.
+   try
+      exec ":aunmenu " . s:cfg_menuLabel
+   catch
+   endtry
+
+      " Insert the first three menu lines.
+   call s:VDmenu_Start(1)
+   call s:VDmenu_Toggle(1)
+   exec "amenu ". s:cfg_menuLabel . ".-separ- :"
+      " Disable the relevant one.
+   if a:request == 0
+      call s:VDmenu_Toggle(0)
+   else
+      call s:VDmenu_Start(0)
+   endif
+
+      " Build the other menu entries.
+   for l:data in s:cfg_interface
+      let l:key   = l:data[0]
+      let l:label = l:data[1]
+      let l:map   = l:data[2]
+      let l:esc_label_key = escape(l:label . "\t" . l:key, " \t")
+      try
+         if a:request == 0
+            exec "amenu disable " . s:cfg_menuLabel . "." . l:esc_label_key
+         elseif a:request == 1
+            exec "amenu " . s:cfg_menuLabel . "." . l:esc_label_key . " :call " . l:map . "<cr>"
+         else
+            let l:esc_label_no_key = escape(l:label . "\t(" . l:key . ")", " \t")
+            exec "amenu " . s:cfg_menuLabel . "." . l:esc_label_no_key . " :call " . l:map . "<cr>"
+         endif
+      catch
+      endtry
+   endfor
+endfunction
+
+function! s:mapStartKey_DBGRstart ()
+   if s:canMapStartKey
+      exec "nmap " . s:cfg_startKey . " :call DBGRstart(\"\")<cr>"
+   endif
+endfunction
+
+function! s:mapStartKey_toggleKeyBindings ()
+   if s:canMapStartKey
+      exec "nmap " . s:cfg_startKey . " :call _VDsetInterface(3)<cr>"
+   endif
+endfunction
+
+" --------------------------------------------------------------------
+" User commands.
+
+command! -nargs=* VDstart      call DBGRstart(<f-args>)
+command! -nargs=0 VDtoggleKeys call _VDsetInterface(3)
+
+" --------------------------------------------------------------------
 " Utility functions.
 
-" returns 1 if everything is copacetic
-" returns 0 if things are not copacetic
+   " Returns 1 if everything is copacetic, 0 otherwise.
 function! s:Copacetic()
    if s:dbgrIsRunning != 1
       echo "\rthe debugger is not running"
@@ -486,18 +594,16 @@ function! s:Incantation(dbgr_args_list)
       if s:fileName == ""
          throw "NoFileToDebug"
       endif
-      let nb_dbgr_args = len(a:dbgr_args_list)
-      if nb_dbgr_args == 0
-         let dbgr_args = ""
-      elseif nb_dbgr_args == 1 && a:dbgr_args_list[0] == ""
-         let dbgr_args = input("Enter arguments if any: ")
-      else
-         let dbgr_args = join(a:dbgr_args_list)
-      endif
-         " Some day, we may do more than just Perl.
+      let l:nb_dbgr_args = len(a:dbgr_args_list)
+      let g:DBGRdebugArgs =
+       \ l:nb_dbgr_args == 0
+       \ ? ""
+       \ : l:nb_dbgr_args == 1 && a:dbgr_args_list[0] == ""
+       \ ? inputdialog("Enter arguments for debugging, if any: ", g:DBGRdebugArgs)
+       \ : join(a:dbgr_args_list)
       let s:incantation = "perl -Ilib -d " . s:fileName
-      if dbgr_args != ""
-         let s:incantation .= " " . dbgr_args
+      if g:DBGRdebugArgs != ""
+         let s:incantation .= " " . g:DBGRdebugArgs
       endif
    catch /NoFileToDebug/
       echo "No file to debug."
@@ -506,7 +612,7 @@ function! s:Incantation(dbgr_args_list)
       echo "Exception caught: " . v:exception
       throw "AbortLaunch"
    endtry
-endfunction 
+endfunction
 
 function! s:HandleCmdResult(...)
    let l:cmdResult  = split(s:SocketRead(), s:k_eor, 1)
@@ -639,6 +745,7 @@ function! s:HandleProgramTermination()
    let s:programDone = 1
 endfunction
 
+" --------------------------------------------------------------------
 " Debugger console functions.
 
 function! DBGRopenConsole()
@@ -685,6 +792,7 @@ function! s:ConsolePrint(msg)
    wincmd p
 endfunction
 
+" --------------------------------------------------------------------
 " Socket functions.
 
 function! s:StartVdd()
@@ -708,12 +816,12 @@ function! s:SocketConnect()
          $DBGRsocket1 = IO::Socket::INET->new(
             Proto    => "tcp",
             PeerAddr => "localhost",
-            PeerPort => "6543",
+            PeerPort => $PORT,
          );
          return if defined $DBGRsocket1;
          sleep 1;
       }
-      my $msg = "cannot connect to port 6543 at localhost";
+      my $msg = "cannot connect to port $PORT at localhost";
       VIM::Msg($msg);
       VIM::DoCommand("throw '${msg}'");
 EOF
@@ -726,23 +834,23 @@ function! s:SocketConnect2()
          $DBGRsocket2 = IO::Socket::INET->new(
             Proto    => "tcp",
             PeerAddr => "localhost",
-            PeerPort => "6543",
+            PeerPort => $PORT,
          );
          return if defined $DBGRsocket2;
          sleep 1;
       }
-      my $msg = "cannot connect to port 6543 at localhost";
+      my $msg = "cannot connect to port $PORT at localhost";
       VIM::Msg($msg);
       VIM::DoCommand("throw '${msg}'");
 EOF
 endfunction
 
 function! s:SocketRead()
-   try 
+   try
       " yeah this is a very inefficient but non blocking loop.
       " vdd signals that its done sending a msg when it touches the file.
       " while VimDebug thinks, the user can cancel their operation.
-      while !filereadable(s:DONE_FILE)
+      while !filereadable(s:k_doneFile)
       endwhile
    catch /Vim:Interrupt/
       echom "action cancelled"
@@ -751,35 +859,35 @@ function! s:SocketRead()
       call s:SocketConnect2()                     " reconnect
       call s:HandleCmdResult2()                   " handle reconnect
    endtry
-   
+
    perl << EOF
       my $data = '';
       $data .= <$DBGRsocket1> until substr($data, -1 * $EOM_LEN) eq $EOM;
       $data .= <$DBGRsocket1> until substr($data, -1 * $EOM_LEN) eq $EOM;
       $data = substr($data, 0, -1 * $EOM_LEN); # chop EOM
       $data =~ s|'|''|g; # escape single quotes '
-      VIM::DoCommand("call delete(s:DONE_FILE)");
-      VIM::DoCommand("return '" . $data . "'"); 
+      VIM::DoCommand("call delete(s:k_doneFile)");
+      VIM::DoCommand("return '" . $data . "'");
 EOF
 endfunction
 
 function! s:SocketRead2()
-   try 
+   try
       " yeah this is a very inefficient but non blocking loop.
       " vdd signals that its done sending a msg when it touches the file.
       " while VimDebug thinks, the user can cancel their operation.
-      while !filereadable(s:DONE_FILE)
+      while !filereadable(s:k_doneFile)
       endwhile
    endtry
-   
+
    perl << EOF
       my $data = '';
       $data .= <$DBGRsocket2> until substr($data, -1 * $EOM_LEN) eq $EOM;
       $data .= <$DBGRsocket2> until substr($data, -1 * $EOM_LEN) eq $EOM;
       $data = substr($data, 0, -1 * $EOM_LEN); # chop EOM
       $data =~ s|'|''|g; # escape single quotes '
-      VIM::DoCommand("call delete(s:DONE_FILE)");
-      VIM::DoCommand("return '" . $data . "'"); 
+      VIM::DoCommand("call delete(s:k_doneFile)");
+      VIM::DoCommand("return '" . $data . "'");
 EOF
 endfunction
 
@@ -790,4 +898,9 @@ endfunction
 function! s:SocketWrite2(data)
    perl print $DBGRsocket2 VIM::Eval('a:data') . "\n";
 endfunction
+
+" --------------------------------------------------------------------
+" Initialize everything.
+
+call s:Initialize()
 

@@ -35,13 +35,13 @@
             "Pod::Coverage::TrustPod" : "0",
             "Test::CPAN::Meta" : "0",
             "Test::Pod" : "1.41",
-            "Test::Pod::Coverage" : "1.08",
-            "Dir::Self" : "0",
+            "Test::Pod::Coverage" : "1.08"
          }
       },
       "runtime" : {
          "requires" : {
             "Carp" : "0",
+            "Dir::Self" : "0",
             "File::Basename" : "0",
             "File::Copy::Recursive" : "0",
             "File::Path" : "0",
@@ -75,23 +75,23 @@
    "provides" : {
       "Vim::Debug" : {
          "file" : "lib/Vim/Debug.pm",
-         "version" : "0.903"
+         "version" : "0.904"
       },
       "Vim::Debug::Daemon" : {
          "file" : "lib/Vim/Debug/Daemon.pm",
-         "version" : "0.903"
+         "version" : "0.904"
       },
       "Vim::Debug::Manual" : {
          "file" : "lib/Vim/Debug/Manual.pm",
-         "version" : "0.903"
+         "version" : "0.904"
       },
       "Vim::Debug::Perl" : {
          "file" : "lib/Vim/Debug/Perl.pm",
-         "version" : "0.903"
+         "version" : "0.904"
       },
       "Vim::Debug::Protocol" : {
          "file" : "lib/Vim/Debug/Protocol.pm",
-         "version" : "0.903"
+         "version" : "0.904"
       }
    },
    "release_status" : "stable",
@@ -106,6 +106,12 @@
          "web" : "https://github.com/kablamo/VimDebug"
       }
    },
-   "version" : "0.903"
+   "version" : "0.904",
+   "x_contributors" : [
+      "Eric Johnson <eric.git@iijo.org>",
+      "Eric Johnson <github@iijo.org>",
+      "Gregg Jensen <g_jensen@swbell.net>",
+      "Luc St-Louis <lucs@pobox.com>"
+   ]
 }
 

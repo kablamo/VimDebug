@@ -1,3 +1,8 @@
+0.904 2013.05.25 11:49:00 GMT
+    * Improved handling of key bindings
+    * Added ability to "step out" or return from a subroutine
+    * Added a Gvim menu
+    * Bug fixes
 
 0.903 2013.02.22 12:57:27 GMT
     * Fix bug in starting the debugger with F12

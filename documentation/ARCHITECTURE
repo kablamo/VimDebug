@@ -10,8 +10,8 @@
                       |
                   tcp socket
                   port 6543
-                      | 
-                      v 
+                      |
+                      v
                       |
       +----------------------------------+
       | VimDebug daemon                  |
@@ -20,7 +20,7 @@
       | Perl libraries                   |
       | (VimDebug::*) |
       +----------------------------------+
-           READ                 WRITE    
+           READ                 WRITE
             |                     |
             ^                     v
             |                     |

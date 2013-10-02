@@ -1,4 +1,6 @@
 # ABSTRACT: Integrate the Perl debugger with Vim
+package Vim::Debug::Manual;
+# VERSION
 
 =head1 What is VimDebug?
 
@@ -58,8 +60,4 @@ done.
 Please note that this code is in beta.
 
 =cut
-
-package Vim::Debug::Manual;
-
-# VERSION
 

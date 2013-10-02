@@ -18,7 +18,7 @@ To try out the development code with no interference whatsoever from
 any other Vim module or setup, we have supplied a script that you can
 use, like this for example:
 
-    .../script/vim $file_to_debug
+    .../script/vdvim $file_to_debug
 
 Note that if you make any changes to the development code, for those
 code changes to apply you will have to relaunch that Vim instance.
@@ -85,12 +85,11 @@ STEP 3: Look at DBGRgetDebuggerName() in vimDebug.vim.  If necessary, add code
               let l:debugger = "Jdb"
               return l:debugger
 
-        l:debugger should match the name of your Perl module in step 2.  
-
-
+        l:debugger should match the name of your Perl module in step 2.
 
 Another option is to write your own version of vdd in your language
 (ruby/python/etc) and ensure it understands the network protocol used by
 VimDebug.vim.  Also note that you will need to use something event based to do
 this.  Think about how you will handle infinite loops.  This approach is
 probably going to take you longer I'm thinking.
+

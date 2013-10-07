@@ -43,6 +43,7 @@ sub {
         "-c", "set nocp",
         ($opts{m} ? ("-c", "map <F12> :echo 'f12'<cr>") : ()),
         "-c", "set runtimepath=$GIT_REPO/lib/Vim/Debug/_vim",
+        "-c", "helptags $GIT_REPO/lib/Vim/Debug/_vim/doc",
         "-c", "runtime plugin/VimDebug.vim",
         @ARGV
     );

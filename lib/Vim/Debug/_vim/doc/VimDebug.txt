@@ -5,49 +5,59 @@
 
 *VimDebug* *VimDebug.vim*
 
-1. VimDebug Intro                   |VimDebug-intro|
-2. Requirements                     |VimDebug-req|
-3. Installation                     |VimDebug-install|
-4. Usage                            |VimDebug-usage|
-5. Keybindings                      |VimDebug-bindings|
+1. Intro                            |VimDebug-intro|
+2. Credits                          |VimDebug-credits|
+3. Usage                            |VimDebug-usage|
+4. Keybindings                      |VimDebug-bindings|
+5. Global variables                 |VimDebug-globals|
 
 ==============================================================================
-1. VimDebug Intro                   *VimDebug-intro*
+1. Intro                            *VimDebug-intro*
 
-VimDebug integrates the Perl debugger with Vim.
+VimDebug integrates the Perl debugger with Vim. Requirements and installation
+instructions are provided in the Vim::Debug::Manual perl module which needs to
+have been installed for any of this to work. The VimDebug code is available
+from its git repository:
 
-To manage saving and restoring key bindings used when running
-VimDebug, we use 'savemap', vimscript code written by tyru,
-<tyru.exe@gmail.com>, whom we thank. We used files from this commit:
+    https://github.com/kablamo/VimDebug.git
 
+==============================================================================
+2. Credits                          *VimDebug-credits*
+
+Eric Johnson started the project and maintains the CPAN releases.
+
+Thanks to everyone who helped, including:
+
+    Other committers, including Luc St-Louis and Gregg Jensen:
+    
+        https://github.com/kablamo/VimDebug/graphs/contributors
+
+    The folks who reported issues:
+
+        https://github.com/kablamo/VimDebug/issues
+
+    tyru, <tyru.exe@gmail.com>, whose 'savemap' vimscript code we used to
+    manage saving and restoring VimDebug key bindings. We used files from this
+    commit:
     https://github.com/tyru/savemap.vim/commit/61c2afcb6e16c01b82950565093cc8b532ea57f6
 
-==============================================================================
-2. Requirements                     *VimDebug-req*
+    Mark James, who designed the Silk icon set, some of which we use in the
+    GUI version. Mark makes the icons available under a Creative Commons
+    Attribution 2.5 License. See: http://www.famfamfam.com/lab/icons/silk/
 
-VimDebug requires the following to function:
+    Asis Hallab, who helped with testing and hunting down a newline display
+    issue on OSX.
 
-- *nix/Ubuntu/OSX
-- Vim with +signs, and +perl compiled in
-- Perl 5.FIXME
-- The Vim::Debug Perl module
+    Kevin Harris, who helped make PerlDebugger work for perl v.5.6+ instead of
+    v.5.8+.
 
-VimDebug is a Vim plugin, see |add-plugin|.  This plugin is only available if
-'compatible' is not set and vim has been compiled with '+signs' and '+perl'.
+    Eric Sherman, who fixed jdb bug where vim crashed in an infinite loop
+    because the debugger started at ClassName:1 instead of ClassName.main.
 
-==============================================================================
-3. Installation                     *VimDebug-install*
-
-Use Perl's package manager, cpanm, to install the Vim::Debug Perl module.
-
-  curl -L http://cpanmin.us | perl - --sudo App::cpanminus # install cpanm
-  sudo cpanm Vim::Debug                                    # install Vim::Debug
-
-For more help with installing Perl modules, see the cpanm documentation on
-cpan.
+    Alan Grow, who supplied a vim filetype patch.
 
 ==============================================================================
-4. Usage                            *VimDebug-usage*
+3. Usage                            *VimDebug-usage*
 
 When you launch Vim, VimDebug will check to see if it has unique normal mode
 access to its start key, by default <F12>. If it does, pressing this key will
@@ -74,15 +84,12 @@ If you are using the GUI version, gvim, VimDebug will install a "Debugger"
 menu. At first only a "Start" entry will be available, to launch the debugger,
 prompting for arguments in a dialog box this time. Once launched, this entry
 becomes disabled and a "Toggle key bindings" one becomes available instead, as
-well as entries for the debugger commands. These entries show the corresponding
-key bindings that can be used; if the key bindings have been toggled back to
-your previous bindings, they will be shown in parentheses.
-
-If you don't like the default start key or other key bindings, you can always
-change them by editing VimDebug.vim.
+well as entries for the debugger commands. These entries show the
+corresponding key bindings that can be used; if the key bindings have been
+toggled back to your previous bindings, they will be shown in parentheses.
 
 ==============================================================================
-5. Key bindings                     *VimDebug-bindings*
+4. Key bindings                     *VimDebug-bindings*
 
 These are the default key bindings. To change them edit VimDebug.vim.
 
@@ -102,4 +109,31 @@ These are the default key bindings. To change them edit VimDebug.vim.
 <Leader>x     Print the value of the variable under the cursor.
 <Leader>x/    Print the value of an expression that's entered.
 <Leader>/     Type a command for the debugger to execute and echo the result.
+
+<Leader>g     Reset geometry.
+<Leader>d     Show debugger in window.
+<Leader>s     Show source in window.
+<Leader>t     Toggle cursor snap.
+
+==============================================================================
+5. Global variables                 *VimDebug-globals*
+
+Some global Vim variables affect VimDebug behaviour. You can change their
+values (default shown in parentheses) permanently by modifying VimDebug.vim,
+or temporarirly, by assigning them a value at runtime, with for example ":let
+g:DBGRcloseInterm = 0"
+
+g:DBGRconsoleHeight (7)
+    The height of the debug window when it first opens.
+
+g:DBGRdebugArgs ("")
+    The arguments passed on to the debugger.
+
+g:DBGRsetNumber (1)
+    If true, files opened upon traversal by the debugger will have ":set
+    number", else, ":set nonumber".
+
+g:DBGRcloseInterm (1)
+    If true, files opened upon traversal by the debugger will be closed when
+    the debugger ends, else they will remain open.
 

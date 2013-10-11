@@ -1,4 +1,6 @@
 # ABSTRACT: Perl debugger interface.
+package Vim::Debug::Perl;
+# VERSION
 
 =head1 DESCRIPTION
 
@@ -10,99 +12,78 @@ L<Vim::Debug> represents a debugger.  This module only handles the Perl
 specific bits.  Theoretically there might be a Ruby or Python role someday.
 
 =cut
-package Vim::Debug::Perl;
-
-# VERSION
-
 use Moose::Role;
 
 $ENV{"PERL5DB"}     = 'BEGIN {require "perl5db.pl";}';
 $ENV{"PERLDB_OPTS"} = "ornaments=''";
 
-=head1 TRANSLATION CLASS ATTRIBUTES
-
-These attributes are used to convert commands from the communication
-protocol to commands the Perl debugger can recognize.  For example,
-the communication protocol uses the keyword 'next' while the Perl
-debugger uses 'n'.
-
-=func next()
-
-=func step()
-
-=func cont()
-
-=func break()
-
-=func clear()
-
-=func clearAll()
-
-=func print()
-
-=func command()
-
-=func restart()
-
-=func quit()
+=head1 TRANSLATION METHODS
 
 =cut
-sub next     { 'n' }
-sub step     { 's' }
-sub stepout  { 'r' }
-sub cont     { 'c' }
-sub break    { "f $_[2]", "b $_[1]" }
-sub clear    { "f $_[2]", "B $_[1]" }
-sub clearAll { 'B *' }
-sub print    { "x $_[1]" }
-sub command  { $_[1] }
-sub restart  { 'R' }
-sub quit     { 'q' }
+sub translations {
+    return +{
+        next     => sub { 'n' },
+        stepin   => sub { 's' },
+        stepout  => sub { 'r' },
+        cont     => sub { 'c' },
+        break    => sub { "f $_[1]", "b $_[0]" },
+        clear    => sub { "f $_[1]", "B $_[0]" },
+        clearAll => sub { 'B *' },
+        print    => sub { "x $_[0]" },
+        command  => sub { $_[0] },
+        restart  => sub { 'R' },
+    };
+}
 
-=method prompted_and_parsed($output)
+sub launch { 'perl -d -Ilib' }
 
-If the $output string doesn't end with the debugger prompt string,
-this method will return false, because that means that there should be
-more debugger output coming.
+=method respond($dbgr_output)
 
-Otherwise, $output will be parsed and the object's 'file', 'line',
-'value', and 'status' attributes will be set and the method will
-return true.
+If the $dbgr_output string doesn't end with the debugger prompt
+string, this method will return false, because that means that there
+should be more debugger output coming.
+
+Otherwise, $dbgr_output will be parsed and the object's 'result',
+'status', 'file', and 'line', attributes will be set and the method
+will return true.
 
 =cut
     # Debugger prompt regex.
 my $dpr = qr/  DB<+\d+>+ \z/s;
 
-sub prompted_and_parsed {
-    my ($self, $str) = @_;
+sub respond {
+    my ($self, $dbgr_output) = @_;
 
         # If we don't have the debugger prompt string, we're not ready
-        # to parse.
-    return unless $str =~ s/$dpr//;
+        # to parse yet.
+    return unless $dbgr_output =~ s/$dpr//;
 
-    $self->parseOutput($str);
+    $self->_parse_output($dbgr_output);
     return 1;
 }
 
-sub parseOutput {
-    my ($self, $str) = @_;
+sub _parse_output {
+    my ($self, $dbgr_output) = @_;
 
+    $self->output($dbgr_output);
+
+    my $result = '';
+    my $status = "unknown";
     my $file;
     my $line;
-    my $status;
 
     if (
-        $str  =~ /
+        $dbgr_output  =~ /
             ^ Execution\ of\ .*?\ aborted\ due\ to\ compilation\ errors\.
             \n \ at\ (.*?)\ line\ (\d+)\.
         /xm
     ) {
-        $status = $self->s_compilerError;
+        $status = "compiler_error";
         $file = $1;
         $line = $2;
     }
     elsif (
-        $str =~ /
+        $dbgr_output =~ /
             (?:
                 (?: \/perl5db.pl: ) |
                 (?: Use\ .*\ to\ quit\ or\ .*\ to\ restart ) |
@@ -110,11 +91,11 @@ sub parseOutput {
             )
         /sx
     ) {
-        $status = $self->s_appExited;
+        $status = "app_exited";
     }
     else {
-        $status = $self->s_dbgrReady;
-        $str =~ /
+        $status = "ready";
+        $dbgr_output =~ /
             ^ \w+ ::
             (?: \w+ :: )*
             (?: CODE \( 0x \w+ \) | \w+ )?
@@ -127,16 +108,17 @@ sub parseOutput {
         $line = $2;
 
             # Remove first and last lines when 'x' was the command,
-            # the text remaining being the value that was requested.
-        if ($str =~ /^x .*\n/m) {
-            $str =~ s/^x .*\n//m;
-            $str =~ s/\n.*$//m;
-            $self->value($str);
+            # the text remaining being the result we want.
+        if ($dbgr_output =~ /^x .*\n/m) {
+            ($result = $dbgr_output) =~ s/^x .*\n//m;
+            $result =~ s/\n.*$//m;
         }
     }
+    $self->result($result);
+    $self->status($status);
     $self->file($file) if $file;
     $self->line($line) if $line;
-    $self->status($status);
 }
 
 1;
+

@@ -1,95 +1,102 @@
-# --------------------------------------------------------------------
-Running the development code
-
-You will need to obtain the development code if you want to run the
-latest, perhaps unreleased version or if you want to experiment with
-it or improve it in some way.
-
-The code can be cloned from its git repository:
+You can obtain VimDebug's development code from its git repository:
 
     https://github.com/kablamo/VimDebug.git
 
-To run it, you will also need:
+Please read the ./lib/Vim/Debug/Manual.pm file. It explains what
+VimDebug needs so it can run and how regular users will install it.
 
-    . A 5.FIXME Perl; CPAN access may be required.
-    . A 7.FIXME Vim built with the +perl and +signs extensions.
-
-To try out the development code with no interference whatsoever from
-any other Vim module or setup, we have supplied a script that you can
-use, like this for example:
-
-    .../script/vdvim $file_to_debug
-
-Note that if you make any changes to the development code, for those
-code changes to apply you will have to relaunch that Vim instance.
+At runtime, the +perl Vim extension must be able to find the proper
+Vim::Debug Perl module files and the proper VimDebug plugin files.
 
 # --------------------------------------------------------------------
-Installing the development code
+Trying out the git repo VimDebug code.
 
-At some point, you may want to make your copy of the development code,
-with your modifications, the VimDebug you regularly use, perhaps
-replacing an already installed instance. To do this, you must first
-package the VimDebug distribution with DistZilla (you may need to
-learn about and install Dist::Zilla from CPAN):
+During development, it is practical to be able to try out on a live
+Vim instance the VimDebug code as it stands in the working directory,
+with as little interference as possible from other Vim code or
+settings.
+
+For this, there is the ./script/vdvim program: it launches a very
+plain Vim instance with PERL5LIB pointing to the repo's ./lib and with
+a runtimepath having ./lib/Vim/Debug/_vim; it also rebuilds VimDebug's
+help tags file.
+
+There is also the ./t/sample.pl file that you can play on with
+VimDebug.
+
+FIXME-rephrase If you change any relevant files, for those code
+changes to apply you'd better relaunch any Vim instance that uses
+them.
+
+# --------------------------------------------------------------------
+Running the git repo VimDebug from outside the git working directory
+
+You may want to try out the code that is currently checked out in the
+git repo with your regular Vim setup.
+
+One way to do this is to make sure you launch your Vim instance with
+PERL5LIB pointing to the repo's ./lib, for example:
+
+    export PERL5LIB=.../lib
+
+and an appropriate Vim runtimepath, for example by having in your
+.vimrc something like:
+
+    let &runtimepath .= ',.../lib/Vim/Debug/_vim
+
+You may need to manually rebuild the help tags file, with ':helptags
+.../_vim/doc'.
+
+# --------------------------------------------------------------------
+Making a snapshot of the code ready for distribution
+
+When you find that the code in development is suitable for release,
+you can test it and build a distribution package for it with
+Dist::Zilla:
 
     dzil test
     dzil build
 
-That will update or create a VimDebug-x.xxx/ directory and a
-VimDebug-x.xxx.tar.gz file, each containing an image the distribution
-in its current state.
+That will update or create a VimDebug-x.xxx/ distribution directory,
+and its corresponding tar/gzip archive. The directory can be moved
+around and/or pointed to by the PERL5LIB that want it. The Vim add-on
+files are in the ./lib/Vim/Debug/_vim subdirectory, that can be added
+to Vim's runtimepath and/or be installed with 'vimdebug-install'. Note
+that this will not necessarily override an already runtimepath'ed
+VimDebug version.
 
-So you can now install the module either from that newly built
-directory, or by expanding the .tar.gz archive somewhere and moving to
-that directory, and then:
+These files get rebuilt by 'dzil build':
+
+    ./META.json
+    ./README.pod
+
+They only need to be updated in the github repo when a CPAN
+distribution is made available, so during development you can ignore
+them. To get rid of perhaps annoying "modified" 'git status' messages,
+you can checkout the unmodified version, with 'git checkout META.json
+README.pod'.
+
+To permanently incoporate the distribution to your version of perl or
+another, you could run from the distribution directory or from its
+expanded archive:
 
     perl Makefile.PL
     make
     make test
     make install
 
-If you don't possess sufficient privileges to install where your
-current perl runs from, or simply to avoid writing there, CPAN's
-local::lib module may prove useful.
-
-Then, don't forget to then run the Vim component installer, for
-example:
-
-    vimdebug-install -d ~/.vim
-
-See L<Vim::Debug::Manual> for more information.
-
 # --------------------------------------------------------------------
 Releasing to CPAN
 
-Currently, only kablamo does this.
-
-FIXME Eventually flesh this out, for documentation purposes.
+Currently, only Eric (kablamo) does this.
 
 # --------------------------------------------------------------------
 Custom debugger support
 
-If you just want to add support for your debugger, its easy.  Really.  Here's
-how in just 3 steps:
+To add support for a debugger for language Foo let's say, one would
+need to build ./lib/Vim/Debug/Foo.pm, copying and adapting from
+.../Perl.pm for inspiration. Not sure what else is needed...
 
-STEP 1: Read the ARCHITECTURE document (its short and easy)
-        perldoc Vim::Debug
-        perldoc Vim::Debug::Perl
-
-STEP 2: Create lib/Vim/Debug/DebuggerName.pm (not hard)
-
-STEP 3: Look at DBGRgetDebuggerName() in vimDebug.vim.  If necessary, add code
-        like:
-
-           elseif l:fileExtension == ".java"
-              let l:debugger = "Jdb"
-              return l:debugger
-
-        l:debugger should match the name of your Perl module in step 2.
-
-Another option is to write your own version of vdd in your language
-(ruby/python/etc) and ensure it understands the network protocol used by
-VimDebug.vim.  Also note that you will need to use something event based to do
-this.  Think about how you will handle infinite loops.  This approach is
-probably going to take you longer I'm thinking.
+Then VimDebug.vim would need to be tweaked to decide which debugger to
+use -- currently s:LaunchDebugger() only invokes Perl's.
 

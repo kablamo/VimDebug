@@ -5,8 +5,8 @@
 " --------------------------------------------------------------------
 " Check prerequisites.
 
-if (!has('perl') || !has('signs'))
-   echo "VimDebug requires +perl and +signs"
+if ! has('perl') || ! has('signs') || ! has('autocmd')
+   echo "VimDebug requires +perl, +signs, and +autocmd."
    finish
 endif
 

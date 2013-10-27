@@ -489,6 +489,112 @@ function! s:VDmapStartKey_toggleKeyBindings ()
 endfunction
 
 " --------------------------------------------------------------------
+" Marks and signs.
+
+function! s:MarkLine(on_or_off, markName, bufNr, lynNr)
+   if a:bufNr == 0 || a:lynNr == 0
+      return
+   endif
+   let l:bufLineId = s:BufLynId(a:bufNr, a:lynNr)
+   let l:want = get(s:dbgr.marks, l:bufLineId, {})
+   if l:want == {}
+      let l:want.cursor = 0
+      let l:want.bkpt = 0
+   endif
+   let l:want[a:markName] = a:on_or_off
+   let s:dbgr.marks[l:bufLineId] = l:want
+
+   let l:sign =
+    \     l:want.cursor &&   l:want.bkpt ? "s_both"
+    \ : ! l:want.cursor &&   l:want.bkpt ? "s_bkpt"
+    \ :   l:want.cursor && ! l:want.bkpt ? "s_curs"
+    \ :   a:lynNr == 1                   ? "s_invis"
+    \ : "none"
+   call s:PlaceSign(l:sign, a:bufNr, a:lynNr)
+endfunction
+
+function! s:PlaceSign(signName, bufNr, lynNr)
+   if a:signName == 'none'
+      exe 'sign unplace ' . s:BufLynId(a:bufNr, a:lynNr)
+      return
+   endif
+   let l:cmd = "sign place " . s:BufLynId(a:bufNr, a:lynNr)
+    \ . " line="   . a:lynNr
+    \ . " name="   . a:signName
+    \ . " buffer=" . a:bufNr
+   exe l:cmd
+endfunction
+
+" --------------------------------------------------------------------
+" The arguments should be provided by reading debugger output,
+" ensuring a bit of sanity.
+
+function! s:SetCursorLine(fileName, lynNr)
+
+      " Note previous cursor position.
+   let l:prev_bufNr = s:cursor.bufNr
+   let l:prev_lynNr = s:cursor.lynNr
+
+      " Note the position of the text cursor in the code window.
+   let l:prev_bufNr = s:cursor.bufNr
+   let l:prev_lynNr = s:cursor.lynNr
+
+      " Turn off previous cursor line hilight.
+   call s:MarkLine(0, "cursor", s:cursor.bufNr, s:cursor.lynNr)
+
+      " Set current cursor values.
+   let s:cursor.bufNr = s:SrcBufNr(a:fileName)
+   let s:cursor.lynNr = a:lynNr
+
+      " Turn on current cursor line hilight.
+   call s:MarkLine(1, "cursor", s:cursor.bufNr, s:cursor.lynNr)
+
+   let l:str = 'call s:MarkLine(1, "cursor", ' . s:cursor.bufNr . ', ' . s:cursor.lynNr . ')'
+   if s:cursor.snapped
+      call VDfocusCursor()
+   endif
+endfunction
+
+" --------------------------------------------------------------------
+" When the debugger moves to some source code, that code might be in
+" another file. This function makes sure that such a file is loaded
+" and returns its buffer number.
+
+function! s:SrcBufNr(srcFileName)
+      " Return it if we had it stored.
+   let l:dbgrSrc = get(s:dbgr.src, a:srcFileName, {})
+   if l:dbgrSrc != {}
+      return l:dbgrSrc.bufNr
+   endif
+   let s:dbgr.src[a:srcFileName] = {}
+
+      " If the file already in some buffer, use that.
+   let l:bufNr = bufnr(a:srcFileName)
+   if l:bufNr != -1
+      let s:dbgr.src[a:srcFileName].hadBuf = 1
+   else
+      let s:dbgr.src[a:srcFileName].hadBuf = 0
+         " We need to load the buffer, but let's do it discreetly.
+      wincmd n
+      exe ":e! " . a:srcFileName
+      let l:bufNr = bufnr('')
+      wincmd w
+      wincmd o
+   endif
+   let s:dbgr.src[a:srcFileName].bufNr = l:bufNr
+
+   let s:dbgr.src[a:srcFileName].setNum = &number
+
+   exe "setl " . (g:DBGRsetNumber ? "" : "no") . "number"
+
+      " Make the buffer open its two-column-wide signs space right
+      " away rather than having the text annoyingly shift right and
+      " left as cursor and breakpoint signs are added and removed.
+   call s:PlaceSign('s_invis', l:bufNr, 1)
+   return l:bufNr
+endfunction
+
+" --------------------------------------------------------------------
 " Communications with daemon.
 
 function! s:EnsureDaemonLaunched()

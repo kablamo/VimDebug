@@ -489,6 +489,188 @@ function! s:VDmapStartKey_toggleKeyBindings ()
 endfunction
 
 " --------------------------------------------------------------------
+" Communications with daemon.
+
+function! s:EnsureDaemonLaunched()
+   if s:daemon.launched
+      return
+   endif
+   perl << EOF
+      use Vim::Debug::Daemon;
+         # Initialized here, this Vim::Debug::Talker reference is
+         # supplied by the starting daemon and used to communicate
+         # with it. A package (main::) variable like this one, when
+         # used in vimscript, contrary to perl lexicals, retains its
+         # value across perl vimscript snippets; we consider it to be
+         # a kind of "global" and thus prefix it with "g".
+      $gTalker = Vim::Debug::Daemon->start;
+         # Now we fork. The child will run the daemon, and the parent
+         # will drop POE and from now on use $gTalker to communicate
+         # with the daemon.
+      $gPid = fork;
+      if (! defined $gPid) {
+         VIM::DoCommand(qq<echo "Couldn't fork daemon.">);
+      }
+      elsif ($gPid == 0) {
+            # Child process.
+         Vim::Debug::Daemon->run;
+      }
+      else {
+            # Parent process.
+         POE::Kernel->stop;
+         VIM::DoCommand("let s:daemon.doneFile = '" . $gTalker->done_file . "'");
+         VIM::DoCommand("let s:daemon.launched = 1");
+      }
+EOF
+   if ! s:daemon.launched
+      throw /CouldntLaunchDaemon/
+   endif
+endfunction
+
+function! s:LaunchDebugger(language, fileName, debuggerArgs)
+   let l:cmd =
+    \ "start:" . a:language .
+    \      ":" . a:fileName .
+    \      ":" . a:debuggerArgs
+   perl $gTalker->send((VIM::Eval('l:cmd'))[1]);
+   let l:heard = s:TalkerRecv()
+
+   call s:ConsolePrint(l:heard.output)
+
+   if l:heard.status == "ready"
+      if len(l:heard.line) > 0
+         call s:SetCursorLine(l:heard.file, l:heard.line)
+      endif
+   else
+      if l:heard.status == "compiler_error"
+         echo "The program did not compile."
+      else
+         echo "Unexpected status '" . l:heard.status . "' while attempting to start debugger."
+      endif
+   endif
+      " Set up the interface.
+   call _VDsetInterface(1)
+   call s:VDmapStartKey_toggleKeyBindings()
+   call s:VDsetToolBar(1)
+   let s:dbgr.launched = 1
+   call VDresetGeom()
+endfunction
+
+function! s:VddCmd(cmd, msg)
+   if s:dbgr.launched != 1
+      echo "The debugger is not running."
+      return 0
+   endif
+
+   if a:cmd =~ '\v^(next|stepin|stepout|cont|break|clear|clearAll|print|command)'
+      if s:cursor.bufNr == 0
+         echo "The application being debugged is not running."
+         return 0
+      endif
+   elseif a:cmd !~ '^\v(restart|stop)'
+      echo "Unknown command '" . a:cmd . "'."
+      return 0
+   endif
+
+   echo a:msg . "..."
+   perl $gTalker->send((VIM::Eval('a:cmd'))[1]);
+   let l:heard = s:TalkerRecv()
+
+   if l:heard.status == "ready"
+      call s:ConsolePrint(l:heard.output)
+      if len(l:heard.line) > 0
+         call s:SetCursorLine(l:heard.file, l:heard.line)
+      endif
+
+   elseif l:heard.status == "app_exited"
+      call s:ConsolePrint(l:heard.output)
+      call s:ClearCursor()
+      redraw! | echo "The application being debugged terminated."
+
+   elseif l:heard.status == "runtime_error"
+      call s:ConsolePrint(l:heard.output)
+      call s:ClearCursor()
+      redraw! | echo "There was a runtime error."
+
+   else
+      call s:ErrorReport("e001", "Unexpected status '" . l:heard.status . "'.")
+
+   endif
+      " Erases any currently echoed message.
+   redraw!
+   return 1
+endfunction
+
+function! s:TalkerRecv()
+   try
+         " A blocking loop. The daemon signals that it's done sending
+         " a msg by touching the file. While the debugger remains
+         " busy, the user can interrupt the operation.
+      while !filereadable(s:daemon.doneFile)
+         sleep 200m
+      endwhile
+   perl << EOF
+         # Split the data into an array, escaping single quotes. The
+         # apostrophe in the comment is to balance the last one in the
+         # regex to obtain proper syntax highlighting :-(
+      my $data = $gTalker->recv;
+      $data->{$_} =~ s|'|''|g for keys %$data;    # '
+      VIM::DoCommand("
+         return {
+          \\ 'status' : '$data->{status}',
+          \\ 'file'   : '$data->{file}',
+          \\ 'line'   : '$data->{line}',
+          \\ 'result' : '$data->{result}',
+          \\ 'output' : '$data->{output}',
+         \\}
+      ");
+EOF
+   catch
+      echo "Interrupted!"
+      perl $gTalker->interrupt
+      call s:TalkerRecv()
+   endtry
+endfunction
+
+function! s:ConsolePrint(msg)
+      " Open the console if needed.
+   if s:dbgr.consoleBufNr == 0
+      set hidden
+      new Debugger_console
+      normal iDebugger console
+      let s:dbgr.consoleBufNr = bufnr('')
+      setl number
+      set buftype=nofile
+      wincmd c
+   endif
+
+   let l:saveBuf = bufnr('')
+   exe "buffer " . s:dbgr.consoleBufNr
+   let l:saveReg = @x
+   let @x = a:msg
+   silent exe 'normal G"xpG'
+   let @x = l:saveReg
+   exe "buffer " . l:saveBuf
+      " If the console window is visible, move to its last line.
+   let l:consoleWinNr = bufwinnr(s:dbgr.consoleBufNr)
+   if l:consoleWinNr >= 1
+      let l:saveWinNr = bufwinnr(l:saveBuf)
+      exe bufwinnr(s:dbgr.consoleBufNr) . " wincmd w"
+      normal G
+      exe l:saveWinNr . " wincmd w"
+   endif
+endfunction
+
+function! s:EnsureDaemonStopped()
+   if s:daemon.launched
+      perl $gTalker->send('quit_daemon')
+      if s:dbgr.launched
+         perl $gTalker->send('stop')
+      endif
+   endif
+endfunction
+
+" --------------------------------------------------------------------
 " User commands.
 
 command! -nargs=* VDstart      call DBGRstart(<f-args>)

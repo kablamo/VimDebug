@@ -145,7 +145,7 @@ EOT
    endif
 
       " Set up the start key and menus.
-   call s:mapStartKey_DBGRstart()
+   call s:VDmapStartKey_DBGRstart()
    call s:VDmenuSet(0)
 
 endfunction
@@ -177,7 +177,7 @@ function! DBGRstart(...)
       call s:SocketConnect2()
       call s:HandleCmdResult2()
       call _VDsetInterface(1)
-      call s:mapStartKey_toggleKeyBindings()
+      call s:VDmapStartKey_toggleKeyBindings()
       let s:dbgrIsRunning = 1
       let s:programDone = 0
    catch /AbortLaunch/
@@ -346,7 +346,7 @@ function! DBGRquit()
       return
    endif
    call _VDsetInterface(0)
-   call s:mapStartKey_DBGRstart()
+   call s:VDmapStartKey_DBGRstart()
 
    " unplace all signs that were set in this debugging session
    call s:UnplaceBreakPointSigns()
@@ -491,15 +491,15 @@ function! s:VDmenuSet (request)
    endfor
 endfunction
 
-function! s:mapStartKey_DBGRstart ()
-   if s:canMapStartKey
-      exec "nmap " . s:cfg_startKey . " :call DBGRstart(\"\")<cr>"
+function! s:VDmapStartKey_DBGRstart ()
+   if s:interf.canMapStartKey
+      exe "nmap " . s:cfg.startKey . " :call DBGRstart(\"\")<cr>"
    endif
 endfunction
 
-function! s:mapStartKey_toggleKeyBindings ()
-   if s:canMapStartKey
-      exec "nmap " . s:cfg_startKey . " :call _VDsetInterface(3)<cr>"
+function! s:VDmapStartKey_toggleKeyBindings ()
+   if s:interf.canMapStartKey
+      exe "nmap " . s:cfg.startKey . " :call _VDsetInterface(3)<cr>"
    endif
 endfunction
 

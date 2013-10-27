@@ -53,96 +53,81 @@ let s:cfg_globals = {
 " This function will be called at the end of this script to
 " initialize everything.
 
-function! s:Initialize ()
-   perl << EOT
-         # Setting up 'lib' like this is useful during development.
-      use Dir::Self;
-      use lib __DIR__ . "/../../..";
-         # Obtain protocol constant values directly from the Perl
-         # module. This will allow us to use things like "s:k_eor" for
-         # example in our Vim code.
-      use Vim::Debug::Protocol;
-      use Vim::Debug::Daemon;
-      for my $method (qw<
-         k_compilerError
-         k_runtimeError
-         k_dbgrReady
-         k_appExited
-         k_eor
-         k_badCmd
-         k_connect
-         k_disconnect
-         k_doneFile
-      >) {
-         VIM::DoCommand("let s:$method = '" . Vim::Debug::Protocol->$method . "'");
-      }
-         # Later perl snippets will use these variables.
-      $DBGRsocket1 = 0;
-      $DBGRsocket2 = 0;
-      $EOM = Vim::Debug::Protocol->k_eom . "\r\n";
-      $EOM_LEN = length $EOM;
-      $PORT = Vim::Debug::Daemon->port;
-EOT
+function! s:Initialize()
 
-      " Colors.
-   hi currentLine term=reverse cterm=reverse gui=reverse
-   hi breakPoint  term=NONE    cterm=NONE    gui=NONE
-   hi empty       term=NONE    cterm=NONE    gui=NONE
-
-      " Signs.
-   sign define currentLine linehl=currentLine
-   sign define breakPoint  linehl=breakPoint  text=>>
-   sign define both        linehl=currentLine text=>>
-   sign define empty       linehl=empty
+      " Colors and signs.
+   hi hi_rev term=reverse cterm=reverse gui=reverse
+   hi hi_non term=NONE    cterm=NONE    gui=NONE
+   sign define s_invis
+   sign define s_curs linehl=hi_rev
+   sign define s_bkpt linehl=hi_non text=>>
+   sign define s_both linehl=hi_rev text=>>
 
       " Initialize globals to their default value, unless they already
       " have a value.
-   for [l:var, l:dft_val] in items(s:cfg_globals)
-      exec 
+   for [l:var, l:dft_val] in items(s:cfg.globals)
+      exe
        \ "if ! exists('g:" . l:var . "') |" .
        \    "let " . l:var . " = '" . l:dft_val . "'| " .
        \ "endif"
    endfor
 
+      " Make sure we exit the daemon when we leave Vim.
+   autocmd VimLeave * call s:EnsureDaemonStopped()
+
+      " Make the debugger launchable from the GUI toolbar.
+   if has("gui_running")
+      amenu ToolBar.-debuggerSep1- :
+      amenu ToolBar.DBGRbug :call DBGRstart("")<cr>
+      tmenu ToolBar.DBGRbug Start perl debugging session
+   endif
+
    " Script variables.
 
-      " The string used to invoke the language's debugger.
-   let s:incantation = ""
+   let s:daemon = {}
+   let s:daemon.launched = 0
+   let s:daemon.doneFile = ""
 
-      " 0, the language's debugger is not running; 1, it is running.
-   let s:dbgrIsRunning = 0
+   let s:dbgr = {}
 
-      " 0, a program is being debugged; 1, no program is being
-      " debugged, or it has done running.
-   let s:programDone = 1
+      " If the debugger is running, 1, else, 0.
+   let s:dbgr.launched = 0
 
-      " Could eventually be some other debugger, but currently we
-      " support only Perl.
-   let s:debugger = "Perl"
+      " The number of the buffer where we will write debugger info.
+   let s:dbgr.consoleBufNr  = 0
 
-   let s:consoleBufNr    = -99
-   let s:bufNr           = 0
-   let s:fileName        = ""
-   let s:lineNumber      = 0
-   let s:emptySigns      = []
-   let s:breakPoints     = []
-   let s:sessionId       = -1
+      " One entry for each breakpoint set. Keys come from
+      " s:BufLynId(), and values are a dictionary having keys
+      " 'bufNr', 'lynNr', 'cond'.
+   let s:dbgr.bkpts = {}
 
-   let s:interfaceSetting = 0
+      " Source files traversed by the debugger. Keys are file names,
+      " values are dicts having keys 'bufNr', 'setNum', and 'hadBuf'.
+   let s:dbgr.src = {}
+
+      " Keys come from s:BufLynId(), values are dicts with mark name
+      " keys 'cursor' and 'bkpt'.
+   let s:dbgr.marks = {}
+
+      " The cursor is where the debugger is poised to execute its next
+      " instruction.
+   let s:cursor = {}
+   call s:ClearCursor()
+
+   let s:interf = {}
+
+      " See _VDsetInterface() for usage.
+   let s:interf.state = 0
 
       " The user key bindings will be saved here if/when we launch
       " VimDebug. The entries of this list will be a bit different:
       " each one will be a two-element list of a key and of a
       " "saved-map" that will be provided by the 'savemap' vimscript.
-   let s:userSavedkeys = []
+   let s:interf.userSavedkeys = []
 
-      " Will be set to 1 (true) if the start key is defined
-      " and we can map to it.
-   let s:canMapStartKey = 0
-
-   if s:cfg_startKey != "" && empty(maparg(s:cfg_startKey, "n"))
-      let s:canMapStartKey = 1
-   endif
+      " If the start key is defined and we can map to it, 1, else, 0.
+   let s:interf.canMapStartKey =
+    \ s:cfg.startKey != "" && empty(maparg(s:cfg.startKey, "n"))
 
       " Set up the start key and menus.
    call s:VDmapStartKey_DBGRstart()

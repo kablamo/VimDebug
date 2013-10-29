@@ -138,224 +138,160 @@ endfunction
 " --------------------------------------------------------------------
 " Debugger functions.
 
-   " Start the debugger if it's not already running. If there is an
-   " empty string argument, prompt for debugger arguments.
+   " Start the debugger if it's not already running. If there are no
+   " arguments, no debugger arguments will be passed. If the first
+   " argument is an empty string, prompt for debugger arguments, else
+   " pass the first argument as a space-delimited debugger arguments
+   " string.
 function! DBGRstart(...)
-   if s:dbgrIsRunning
-      echo "The debugger is already running."
+   if s:dbgr.launched
       return
    endif
    try
-      call s:Incantation(a:000)
-      call s:StartVdd()
-      " do after system() so nongui vim doesn't show a blank screen
-      echo "\rstarting the debugger..."
-      call s:SocketConnect()
-      if has("autocmd")
-         autocmd VimLeave * call DBGRquit()
+         " Make sure we have a file name to pass to the debugger.
+      let l:launchFileName = bufname("%")
+      if l:launchFileName == ""
+         throw "NoFileName"
       endif
-      call DBGRopenConsole()
+      if ! filereadable(l:launchFileName)
+         throw "NoSuchFileYet"
+      endif
+
+         " Okay, we have a candidate file for the debugger, let's
+         " launch the daemon.
+      call s:EnsureDaemonLaunched()
+
+         " Note the launch file's buffer number and 'number' setting.
+      let s:dbgr.launchFile = {}
+      let s:dbgr.launchFile.bufNr = bufnr("%")
+      let s:dbgr.launchFile.setNum = &number
+
+         " Get arguments for the debugger and launch it.
+      let l:nb_dbgr_args = len(a:000)
+      let l:cancelStr = "ccanccelll"
+      let l:got =
+       \ l:nb_dbgr_args == 0
+       \ ? ""
+       \ : a:000[0] == ""
+       \ ? inputdialog("Enter arguments for debugging, if any: ", g:DBGRdebugArgs, l:cancelStr)
+       \ : a:000[0]
       redraw!
-      call s:HandleCmdResult("connected to VimDebug daemon")
-      call s:Handshake()
-      call s:HandleCmdResult("started the debugger")
-      call s:SocketConnect2()
-      call s:HandleCmdResult2()
-      call _VDsetInterface(1)
-      call s:VDmapStartKey_toggleKeyBindings()
-      let s:dbgrIsRunning = 1
-      let s:programDone = 0
-   catch /AbortLaunch/
-      echo "Debugger launch aborted."
-   catch /MissingVdd/
-      echo "vdd is not in your PATH. Something went wrong with your VimDebug install."
-   catch /.*/
-      echo "Unexpected error: " . v:exception
+      if l:got == l:cancelStr
+         throw "CancelLaunch"
+      endif
+      let g:DBGRdebugArgs = l:got
+      call s:LaunchDebugger("Perl", l:launchFileName, g:DBGRdebugArgs)
+   catch /CouldntLaunchDaemon/
+      echo "Couldn't launch daemon."
+   catch /NoFileName/
+      echo "Buffer has no filename, can't debug."
+   catch /NoSuchFileYet/
+      echo "Not a file on disk yet."
+   catch /CancelLaunch/
+      echo "Debugger launch cancelled."
+   catch
+      echo "Exception caught: " . v:exception
    endtry
 endfunction
 
 function! DBGRnext()
-   if !s:Copacetic()
-      return
-   endif
-   echo "\rnext..."
-   call s:SocketWrite("next")
-   call s:HandleCmdResult()
+    call s:VddCmd("next", "Next")
 endfunction
 
-function! DBGRstep()
-   if !s:Copacetic()
-      return
-   endif
-   echo "\rstep..."
-   call s:SocketWrite("step")
-   call s:HandleCmdResult()
+function! DBGRstepin()
+   call s:VddCmd("stepin", "Step in")
 endfunction
 
 function! DBGRstepout()
-   if !s:Copacetic()
-      return
-   endif
-   echo "\rstepout..."
-   call s:SocketWrite("stepout")
-   call s:HandleCmdResult()
+   call s:VddCmd("stepout", "Step out")
 endfunction
 
 function! DBGRcont()
-   if !s:Copacetic()
-      return
-   endif
-   echo "\rcontinue..."
-   call s:SocketWrite("cont")
-   call s:HandleCmdResult()
+   call s:VddCmd("cont", "Continue")
 endfunction
 
-function! DBGRsetBreakPoint()
-   if !s:Copacetic()
-      return
+function! DBGRsetBreakPoint(fileName, bufNr, lynNr)
+   if s:VddCmd("break:" . a:lynNr . ':' . a:fileName, "Set breakpoint")
+      exe "let s:dbgr.bkpts." . s:BufLynId(a:bufNr, a:lynNr) . " = {" .
+       \ "'bufNr' : " . a:bufNr . "," .
+       \ "'lynNr' : " . a:lynNr . "," .
+       \ "'cond' : 1,"
+       \ "}"
+      call s:MarkLine(1, 'bkpt', a:bufNr, a:lynNr)
    endif
-
-   let l:currFileName = bufname("%")
-   let l:bufNr        = bufnr("%")
-   let l:currLineNr   = line(".")
-   let l:id           = s:CreateId(l:bufNr, l:currLineNr)
-
-   if count(s:breakPoints, l:id) == 1
-      redraw! | echo "\rbreakpoint already set"
-      return
-   endif
-
-   " tell vdd
-   call s:SocketWrite("break:" . l:currLineNr . ':' . l:currFileName)
-
-   call add(s:breakPoints, l:id)
-
-   " check if a currentLine sign is already placed
-   if (s:lineNumber == l:currLineNr)
-      exe "sign unplace " . l:id
-      exe "sign place " . l:id . " line=" . l:currLineNr . " name=both file=" . l:currFileName
-   else
-      exe "sign place " . l:id . " line=" . l:currLineNr . " name=breakPoint file=" . l:currFileName
-   endif
-
-   call s:HandleCmdResult("breakpoint set")
 endfunction
 
-function! DBGRclearBreakPoint()
-   if !s:Copacetic()
-      return
+function! DBGRclearBreakPoint(fileName, bufNr, lynNr)
+   if s:VddCmd("clear:" . a:lynNr . ':' . a:fileName, "Clear breakpoint")
+      exe "unlet s:dbgr.bkpts." . s:BufLynId(a:bufNr, a:lynNr)
+      call s:MarkLine(0, 'bkpt', a:bufNr, a:lynNr)
    endif
-
-   let l:currFileName = bufname("%")
-   let l:bufNr        = bufnr("%")
-   let l:currLineNr   = line(".")
-   let l:id           = s:CreateId(l:bufNr, l:currLineNr)
-
-   if count(s:breakPoints, l:id) == 0
-      redraw! | echo "\rno breakpoint set here"
-      return
-   endif
-
-   " tell vdd
-   call s:SocketWrite("clear:" . l:currLineNr . ':' . l:currFileName)
-
-   call filter(s:breakPoints, 'v:val != l:id')
-   exe "sign unplace " . l:id
-
-   if(s:lineNumber == l:currLineNr)
-      exe "sign place " . l:id . " line=" . l:currLineNr . " name=currentLine file=" . l:currFileName
-   endif
-
-   call s:HandleCmdResult("breakpoint disabled")
 endfunction
 
 function! DBGRclearAllBreakPoints()
-   if !s:Copacetic()
-      return
+   if s:VddCmd("clearAll", "Clear all breakpoints")
+      call s:UnsetBkpts()
    endif
-
-   call s:UnplaceBreakPointSigns()
-
-   let l:currFileName = bufname("%")
-   let l:bufNr        = bufnr("%")
-   let l:currLineNr   = line(".")
-   let l:id           = s:CreateId(l:bufNr, l:currLineNr)
-
-   call s:SocketWrite("clearAll")
-
-   " do this in case the last current line had a break point on it
-   call s:UnplaceTheLastCurrentLineSign()                " unplace the old sign
-   call s:PlaceCurrentLineSign(s:lineNumber, s:fileName) " place the new sign
-
-   call s:HandleCmdResult("all breakpoints disabled")
 endfunction
 
 function! DBGRprint(...)
-   if !s:Copacetic()
-      return
-   endif
    if a:0 > 0
-      call s:SocketWrite("print:" . a:1)
-      call s:HandleCmdResult()
+      call s:VddCmd("print:" . a:1, "Print")
    endif
 endfunction
 
 function! DBGRcommand(...)
-   if !s:Copacetic()
-      return
-   endif
-   echo ""
    if a:0 > 0
-      call s:SocketWrite('command:' . a:1)
-      call s:HandleCmdResult()
+      call s:VddCmd("command:" . a:1, "Do command")
    endif
 endfunction
 
 function! DBGRrestart()
-   if ! s:dbgrIsRunning
-      echo "\rthe debugger is not running"
-      return
+   if s:VddCmd("restart", "Restart the debugger")
+      redraw!
    endif
-   call s:SocketWrite("restart")
-   " do after the system() call so that nongui vim doesn't show a blank screen
-   echo "\rrestarting..."
-   call s:UnplaceTheLastCurrentLineSign()
-   redraw!
-   call s:HandleCmdResult("restarted")
-   let s:programDone = 0
 endfunction
 
 function! DBGRquit()
-   if ! s:dbgrIsRunning
-      echo "\rthe debugger is not running"
+   if ! s:VddCmd("stop", "Stop")
       return
    endif
    call _VDsetInterface(0)
    call s:VDmapStartKey_DBGRstart()
+   let s:dbgr.launched = 0
+   call s:UnsetBkpts()
 
-   " unplace all signs that were set in this debugging session
-   call s:UnplaceBreakPointSigns()
-   call s:UnplaceEmptySigns()
-   call s:UnplaceTheLastCurrentLineSign()
-   call s:SetNoNumber()
+   set lazyredraw
+      " Bring launch window and debug console to front.
+   silent only
+   exe "buffer " . s:dbgr.launchFile.bufNr
+   wincmd n
+   exe "buffer " . s:dbgr.consoleBufNr
+   wincmd w
 
-   call s:SocketWrite("quit")
-
-   if has("autocmd")
-     autocmd! VimLeave * call DBGRquit()
-   endif
-
-   " reinitialize script variables
-   let s:lineNumber      = 0
-   let s:fileName        = ""
-   let s:bufNr           = 0
-   let s:programDone     = 1
-
-   let s:dbgrIsRunning = 0
-   redraw! | echo "\rexited the debugger"
-
-   " must do this last
-   call DBGRcloseConsole()
+   for l:fileName in keys(s:dbgr.src)
+      let l:info = s:dbgr.src[l:fileName]
+      exe "buffer " . l:info.bufNr
+      exe 'sign unplace ' . s:BufLynId(l:info.bufNr, 1)
+      exe "setl " . (l:info.setNum ? "" : "no") . "number"
+      exe "buffer " . s:dbgr.consoleBufNr
+      if g:DBGRcloseInterm && ! l:info.hadBuf
+         exe "bdelete " . l:info.bufNr
+      endif
+   endfor
+   let s:dbgr.src = {}
+   exe "buffer " . s:dbgr.launchFile.bufNr
+   silent only
+   let &l:number = s:dbgr.launchFile.setNum
+   set nolazyredraw
+   call s:PlaceSign('none', s:cursor.bufNr, 1)
+   call s:VDsetToolBar(0)
+      " Dispose of the console.
+   exe s:dbgr.consoleBufNr . "bwipeout"
+   let s:dbgr.consoleBufNr = 0
+   call s:ClearCursor()
+   redraw!
+   echo "\rExited the debugger."
 endfunction
 
 " --------------------------------------------------------------------

@@ -15,24 +15,27 @@ endif
 
 " Make sure all the values remain coherent if you change any.
 
+let s:cfg = {}
+
    " The VimDebug start key. If this key is not already mapped in
    " normal mode (nmap), we will map it to start VimDebug. Otherwise,
    " to start the debugger one can call DBGRstart(...) or use the GUI
    " with its menu interface.
-let s:cfg_startKey = "<F12>"
+let s:cfg.startKey = "<F12>"
 
    " GUI menu label.
-let s:cfg_menuLabel = '&Debugger'
+let s:cfg.menuLabel = '&Debugger'
 
    " Key bindings and menu settings. Each entry has: key, label, map.
-let s:cfg_interface = [
+   " Used menu keys: nsoc blap vxrq - defghijkmtuwyz
+let s:cfg.interface = [
  \ ['<F8>',       '&Next',                   'DBGRnext()'],
  \ ['<F7>',       '&Step in',                'DBGRstep()'],
  \ ['<F6>',       'Step &out',               'DBGRstepout()'],
  \ ['<F9>',       '&Continue',               'DBGRcont()'],
  \ ['<Leader>b',  'Set &breakpoint',         'DBGRsetBreakPoint()'],
  \ ['<Leader>c',  'C&lear breakpoint',       'DBGRclearBreakPoint()'],
- \ ['<Leader>ca', 'Clear &all breakpoints',  'DBGRclearAllBreakPoints()'],
+ \ ['<Leader>C',  'Clear &all breakpoints',  'DBGRclearAllBreakPoints()'],
  \ ['<Leader>x/', '&Print value',            'DBGRprint(inputdialog("Value to print: "))'],
  \ ['<Leader>x',  'Print &value here',       'DBGRprint(expand("<cword>"))'],
  \ ['<Leader>/',  'E&xecute command',        'DBGRcommand(inputdialog("Command to execute: "))'],
@@ -42,11 +45,11 @@ let s:cfg_interface = [
 
    " Global variables. Each entry has: global variable name, default
    " value.
-let s:cfg_globals = {
+let s:cfg.globals = {
  \ 'g:DBGRconsoleHeight'  : 7,
- \ 'g:DBGRlineNumbers'    : 1,
- \ 'g:DBGRshowConsole'    : 1,
  \ 'g:DBGRdebugArgs'      : "",
+ \ 'g:DBGRsetNumber'      : 1,
+ \ 'g:DBGRcloseInterm'    : 1,
 \}
 
 " --------------------------------------------------------------------
@@ -297,22 +300,22 @@ endfunction
 " --------------------------------------------------------------------
 " Interface handling.
 
-" These are the possible values of s:interfaceSetting, which tells us
+" These are the possible values of s:interf.state, which tells us
 " which key bindings are active and what the GUI menu looks like.
 "
 "  0 : User keys,     grayed out menu entries.
 "  1 : VimDebug keys, active menu entries.
-"  2 : User keys,     active menu entries, keys in  parentheses.
+"  2 : User keys,     active menu entries, keys in parentheses.
 
    " Request interface setting 0, 1, or 2, or 3 to toggle between 1
    " and 2.
 function! _VDsetInterface(request)
    if a:request == 3
-      if s:interfaceSetting == 0
+      if s:interf.state == 0
          return
       endif
          " Toggle between 1 and 2.
-      let l:want = 3 - s:interfaceSetting
+      let l:want = 3 - s:interf.state
    else
       let l:want = a:request
    endif
@@ -326,65 +329,65 @@ function! _VDsetInterface(request)
    endif
 
    call s:VDmenuSet(l:want)
-   let s:interfaceSetting = l:want
+   let s:interf.state = l:want
 endfunction
 
-function! s:VDsetKeyBindings ()
-   let s:userSavedkeys = []
-   for l:data in s:cfg_interface
+function! s:VDsetKeyBindings()
+   let s:interf.userSavedkeys = []
+   for l:data in s:cfg.interface
       let l:key = l:data[0]
       let l:map = l:data[2]
-      call add(s:userSavedkeys, [l:key, savemap#save_map("n", l:key)])
-      exec "nmap " . l:key . " :call " . l:map . "<cr>"
+      call add(s:interf.userSavedkeys, [l:key, savemap#save_map("n", l:key)])
+      exe "nmap " . l:key . " :call " . l:map . "<cr>"
    endfor
    echo "VimDebug keys are active."
 endfunction
 
-function! s:VDrestoreKeyBindings ()
-   for l:key_savedmap in s:userSavedkeys
+function! s:VDrestoreKeyBindings()
+   for l:key_savedmap in s:interf.userSavedkeys
       let l:key = l:key_savedmap[0]
       let l:saved_map = l:key_savedmap[1]
       if empty(l:saved_map['__map_info'][0]['normal'])
-         exec "unmap " . l:key
+         exe "unmap " . l:key
       else
          call l:saved_map.restore()
       endif
    endfor
-   let s:userSavedkeys = []
+   let s:interf.userSavedkeys = []
    echo "User keys are active."
 endfunction
 
-function! s:VDmenu_Start (on_or_off)
+function! s:VDmenu_Start(on_or_off)
    if a:on_or_off == 1
-      exec "amenu " . s:cfg_menuLabel . ".Start :call DBGRstart(\"\")<cr>"
+      exe "amenu " . s:cfg.menuLabel . ".Start :call DBGRstart(\"\")<cr>"
    else
-      exec "amenu disable " . s:cfg_menuLabel . ".Start"
+      exe "amenu disable " . s:cfg.menuLabel . ".Start"
    endif
 endfunction
 
-function! s:VDmenu_Toggle (on_or_off)
+function! s:VDmenu_Toggle(on_or_off)
    if a:on_or_off == 1
-      exec "amenu " . s:cfg_menuLabel . ".To&ggle\\ key\\ bindings :call _VDsetInterface(3)<cr>"
+      exe "amenu " . s:cfg.menuLabel . ".To&ggle\\ key\\ bindings :call _VDsetInterface(3)<cr>"
    else
-      exec "amenu disable "  . s:cfg_menuLabel . ".To&ggle\\ key\\ bindings"
+      exe "amenu disable "  . s:cfg.menuLabel . ".To&ggle\\ key\\ bindings"
    endif
 endfunction
 
    " Set up the GUI menu.
-function! s:VDmenuSet (request)
+function! s:VDmenuSet(request)
    if ! has("gui_running")
       return
    endif
       " Delete the existing menu.
    try
-      exec ":aunmenu " . s:cfg_menuLabel
+      exe ":aunmenu " . s:cfg.menuLabel
    catch
    endtry
 
       " Insert the first three menu lines.
    call s:VDmenu_Start(1)
    call s:VDmenu_Toggle(1)
-   exec "amenu ". s:cfg_menuLabel . ".-separ- :"
+   exe "amenu ". s:cfg.menuLabel . ".-separ- :"
       " Disable the relevant one.
    if a:request == 0
       call s:VDmenu_Toggle(0)
@@ -393,19 +396,19 @@ function! s:VDmenuSet (request)
    endif
 
       " Build the other menu entries.
-   for l:data in s:cfg_interface
+   for l:data in s:cfg.interface
       let l:key   = l:data[0]
       let l:label = l:data[1]
       let l:map   = l:data[2]
       let l:esc_label_key = escape(l:label . "\t" . l:key, " \t")
       try
          if a:request == 0
-            exec "amenu disable " . s:cfg_menuLabel . "." . l:esc_label_key
+            exe "amenu disable " . s:cfg.menuLabel . "." . l:esc_label_key
          elseif a:request == 1
-            exec "amenu " . s:cfg_menuLabel . "." . l:esc_label_key . " :call " . l:map . "<cr>"
+            exe "amenu " . s:cfg.menuLabel . "." . l:esc_label_key . " :call " . l:map . "<cr>"
          else
             let l:esc_label_no_key = escape(l:label . "\t(" . l:key . ")", " \t")
-            exec "amenu " . s:cfg_menuLabel . "." . l:esc_label_no_key . " :call " . l:map . "<cr>"
+            exe "amenu " . s:cfg.menuLabel . "." . l:esc_label_no_key . " :call " . l:map . "<cr>"
          endif
       catch
       endtry

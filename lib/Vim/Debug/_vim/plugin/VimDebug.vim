@@ -425,6 +425,41 @@ function! s:VDmapStartKey_toggleKeyBindings ()
 endfunction
 
 " --------------------------------------------------------------------
+" Utility functions.
+
+function! s:ErrorReport(errorId, msg)
+   echo "Error " . a:errorId . ": " . a:msg
+    \ . " Please report this to vimdebug at iijo dot org."
+endfunction
+
+   " Build a number identifying a given line in a given buffer.
+function! s:BufLynId(bufNr, lynNr)
+   return a:bufNr * 10000000 + a:lynNr
+endfunction
+
+function! s:ClearCursor()
+   if s:cursor != {}
+      call s:MarkLine(0, "cursor", s:cursor.bufNr, s:cursor.lynNr)
+      " FIXME What about snapped?
+   endif
+   let s:cursor.bufNr = 0
+   let s:cursor.lynNr = 0
+   let s:cursor.snapped = 1
+endfunction
+
+function! s:UnsetBkpts()
+   for l:bkpt in values(s:dbgr.bkpts)
+      call s:MarkLine(
+       \ 0,
+       \ 'bkpt',
+       \ l:bkpt.bufNr,
+       \ l:bkpt.lynNr,
+      \)
+   endfor
+   let s:dbgr.bkpts = {}
+endfunction
+
+" --------------------------------------------------------------------
 " Marks and signs.
 
 function! s:MarkLine(on_or_off, markName, bufNr, lynNr)

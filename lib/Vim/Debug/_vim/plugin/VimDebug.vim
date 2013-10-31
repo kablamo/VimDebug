@@ -427,6 +427,42 @@ function! s:VDmapStartKey_toggleKeyBindings ()
    endif
 endfunction
 
+    " Set up the toolbar buttons.
+function! s:VDsetToolBar(turningOnDbgr)
+   if ! has("gui_running")
+      return
+   endif
+   if a:turningOnDbgr
+         " Disable.
+      amenu disable ToolBar.DBGRbug
+         " Add these.
+      amenu ToolBar.DBGRrestart  :call DBGRrestart()<cr>
+      tmenu ToolBar.DBGRrestart  Restart debugging session
+      amenu ToolBar.DBGRquit     :call DBGRquit()<cr>
+      tmenu ToolBar.DBGRquit     Quit debugging session
+      amenu ToolBar.-DBGRSep1-   :
+      amenu ToolBar.DBGRnext     :call DBGRnext()<cr>
+      tmenu ToolBar.DBGRnext     Next line
+      amenu ToolBar.DBGRstepin   :call DBGRstepin()<cr>
+      tmenu ToolBar.DBGRstepin   Step into subroutine
+      amenu ToolBar.DBGRstepout  :call DBGRstepout()<cr>
+      tmenu ToolBar.DBGRstepout  Step out of subroutine
+      amenu ToolBar.DBGRcontinue :call DBGRcont()<cr>
+      tmenu ToolBar.DBGRcontinue Continue
+   else
+         " Remove these.
+      aunmenu ToolBar.DBGRrestart
+      aunmenu ToolBar.DBGRquit
+      aunmenu ToolBar.DBGRnext
+      aunmenu ToolBar.DBGRstepin
+      aunmenu ToolBar.DBGRstepout
+      aunmenu ToolBar.DBGRcontinue
+      aunmenu ToolBar.-DBGRSep1-
+         " Reenable.
+      amenu enable ToolBar.DBGRbug
+   endif
+endfunction
+
 " --------------------------------------------------------------------
 " Utility functions.
 

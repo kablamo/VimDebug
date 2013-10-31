@@ -27,20 +27,24 @@ let s:cfg.startKey = "<F12>"
 let s:cfg.menuLabel = '&Debugger'
 
    " Key bindings and menu settings. Each entry has: key, label, map.
-   " Used menu keys: nsoc blap vxrq - defghijkmtuwyz
+   " Used menu keys: nsoc blap vxrq gdet - fhijkmuwyz
 let s:cfg.interface = [
- \ ['<F8>',       '&Next',                   'DBGRnext()'],
- \ ['<F7>',       '&Step in',                'DBGRstep()'],
- \ ['<F6>',       'Step &out',               'DBGRstepout()'],
- \ ['<F9>',       '&Continue',               'DBGRcont()'],
- \ ['<Leader>b',  'Set &breakpoint',         'DBGRsetBreakPoint()'],
- \ ['<Leader>c',  'C&lear breakpoint',       'DBGRclearBreakPoint()'],
- \ ['<Leader>C',  'Clear &all breakpoints',  'DBGRclearAllBreakPoints()'],
- \ ['<Leader>x/', '&Print value',            'DBGRprint(inputdialog("Value to print: "))'],
- \ ['<Leader>x',  'Print &value here',       'DBGRprint(expand("<cword>"))'],
- \ ['<Leader>/',  'E&xecute command',        'DBGRcommand(inputdialog("Command to execute: "))'],
- \ ['<F10>',      '&Restart',                'DBGRrestart()'],
- \ ['<F11>',      '&Quit',                   'DBGRquit()'],
+ \ ['<F8>',       '&Next',                    'DBGRnext()'],
+ \ ['<F7>',       '&Step in',                 'DBGRstepin()'],
+ \ ['<F6>',       'Step &out',                'DBGRstepout()'],
+ \ ['<F9>',       '&Continue',                'DBGRcont()'],
+ \ ['<Leader>b',  'Set &breakpoint',          'DBGRsetBreakPoint(bufname("%"), bufnr("%"), line("."))'],
+ \ ['<Leader>c',  'C&lear breakpoint',        'DBGRclearBreakPoint(bufname("%"), bufnr("%"), line("."))'],
+ \ ['<Leader>C',  'Clear &all breakpoints',   'DBGRclearAllBreakPoints()'],
+ \ ['<Leader>x/', '&Print value',             'DBGRprint(inputdialog("Value to print: "))'],
+ \ ['<Leader>x',  'Print &value here',        'DBGRprint(expand("<cword>"))'],
+ \ ['<Leader>/',  'E&xecute command',         'DBGRcommand(inputdialog("Command to execute: "))'],
+ \ ['<F10>',      '&Restart',                 'DBGRrestart()'],
+ \ ['<F11>',      '&Quit',                    'DBGRquit()'],
+ \ ['<Leader>g',  'Reset &geometry',          'VDresetGeom()'],
+ \ ['<Leader>d',  'Show &debugger in window', 'VDfocusDbgr()'],
+ \ ['<Leader>s',  'Show sourc&e in window',   'VDfocusCursor()'],
+ \ ['<Leader>t',  '&Toggle cursor snap',      'VDtoggleCursorSnap()'],
 \]
 
    " Global variables. Each entry has: global variable name, default
@@ -461,6 +465,64 @@ function! s:VDsetToolBar(turningOnDbgr)
          " Reenable.
       amenu enable ToolBar.DBGRbug
    endif
+endfunction
+
+function! VDresetGeom()
+   if ! s:dbgr.launched
+      return
+   endif
+   silent only
+   call VDfocusCursor()
+   bot split
+   exe "resize " . g:DBGRconsoleHeight
+   call VDfocusDbgr()
+   wincmd w
+endfunction
+
+" --------------------------------------------------------------------
+function! VDtoggleCursorSnap()
+   let s:cursor.snapped = s:cursor.snapped ? 0 : 1
+endfunction
+
+" --------------------------------------------------------------------
+function! VDfocusCursor()
+      " Focus on the current cursor, or if none, on the launch file.
+   call VDmoveFocus(
+    \ s:cursor.bufNr > 0 ? s:cursor.bufNr : s:dbgr.launchFile.bufNr,
+    \ s:cursor.lynNr > 0 ? s:cursor.lynNr : -1,
+   \)
+endfunction
+
+function! VDfocusDbgr()
+      " Focus on the last line of the debugger.
+   call VDmoveFocus(s:dbgr.consoleBufNr, -1)
+endfunction
+
+" --------------------------------------------------------------------
+function! VDmoveFocus(bufNr, lynNr)
+      " Focus on an already visible window holding the buffer, or move
+      " the requested buffer into the current window.
+   let l:bufWinNr = bufwinnr(a:bufNr)
+   if l:bufWinNr != -1
+      exe l:bufWinNr . "wincmd w"
+   else
+      exe ":buffer " . a:bufNr
+   endif
+
+      " Go to the last line
+   if a:lynNr == -1
+      normal G
+   else
+      exe ":" . a:lynNr
+   endif
+
+      " Center line.
+   normal z.
+
+  " if foldlevel(a:lynNr) != 0
+  "    normal zo
+  " endif
+
 endfunction
 
 " --------------------------------------------------------------------

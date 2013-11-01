@@ -71,15 +71,12 @@ sub {
 
         # Copy the Vim files to the destination directory.
     my $src_dir = dirname($INC{"Vim/Debug.pm"}) . "/Debug/_vim";
-    if (dircopy($src_dir, $dst_dir) <= 0) {
-        usage_die("For some reason, no files were copied from '$src_dir' to '$dst_dir'.");
-    }
-    else {
-        print STDERR
-            "VimDebug's Vim plugin and doc files " .
-            "were successfully copied from '$src_dir' to '$dst_dir'.\n"
-        ;
-        exit 0;
-    }
+    local $File::Copy::Recursive::RMTrgFil = 1;
+    usage_die("Got error copying files from '$src_dir' to '$dst_dir'.")
+      unless dircopy($src_dir, $dst_dir);
+    print STDERR
+        "Successfully copied VimDebug's Vim plugin and doc files ",
+        "from '$src_dir' to '$dst_dir'.\n",
+    ;
 }->();
 

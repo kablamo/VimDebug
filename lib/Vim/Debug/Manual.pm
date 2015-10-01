@@ -61,5 +61,6 @@ Please note that this code is in beta.
 
 package Vim::Debug::Manual;
 
+use strict; use warnings;
 # VERSION
-
+1;

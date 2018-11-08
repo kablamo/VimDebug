@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 # PODNAME: vdd
-# ABSTRACT: The Vim Debugger Daemon
+# ABSTRACT: The Vim Debugger Daemon (DEPRECATED)
 # VERSION
 
 use strict;

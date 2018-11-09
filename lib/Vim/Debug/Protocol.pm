@@ -1,4 +1,4 @@
-# ABSTRACT: Everything needed for the VimDebug network protocol
+# ABSTRACT: Everything needed for the VimDebug network protocol (DEPRECATED)
 
 =head1 SYNOPSIS
 
@@ -15,6 +15,8 @@
     my $response = Vim::Debug::Protocol->respond( $dbgr->status );
 
 =head1 DESCRIPTION
+
+Please note that this module is deprecated and no longer maintained.
 
 If you are new to Vim::Debug please read the user manual,
 L<Vim::Debug::Manual>, first.

@@ -1,4 +1,4 @@
-# ABSTRACT: Integrate the Perl debugger with Vim
+# ABSTRACT: Integrate the Perl debugger with Vim (DEPRECATED)
 
 =head1 What is VimDebug?
 

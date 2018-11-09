@@ -2,13 +2,15 @@
 
 =head1 NAME
 
-    vdvim - Launch a minimal vim/gvim with VimDebug development files.
+    vdvim - Launch a minimal vim/gvim with VimDebug development files. (DEPRECATED)
 
 =head1 SYNOPSIS
 
     vdvim [-g] [-m] [$some_file_to_edit]
 
 =head1 DESCRIPTION
+
+Please note that this program is deprecated and no longer maintained.
 
 This program is useful for VimDebug developers to try out things. It
 launches Vim with the VimDebug development code with no interference

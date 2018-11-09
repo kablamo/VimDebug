@@ -1,4 +1,4 @@
-# ABSTRACT: A Vim::Debug client, for testing.
+# ABSTRACT: A Vim::Debug client, for testing. (DEPRECATED)
 
 =head1 SYNOPSIS
 
@@ -6,6 +6,8 @@
     Vim::Debug::Client->connect();
 
 =head1 DESCRIPTION
+
+Please note that this module is deprecated and no longer maintained.
 
 This module implements a Vim::Debug client. The client communicates
 with the Vim::Debug::Daemon.  It's probably only useful for testing.

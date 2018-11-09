@@ -4,7 +4,11 @@
 
 =head1 NAME
 
-Vim::Debug::Manual - Integrate the Perl debugger with Vim
+Vim::Debug::Manual - Integrate the Perl debugger with Vim (DEPRECATED)
+
+=head1 Deprecation Notice
+
+Please note that this module is deprecated and no longer maintained.
 
 =head1 What is VimDebug?
 
